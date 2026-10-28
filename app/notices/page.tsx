@@ -18,7 +18,7 @@ export default async function NoticesPage() {
     <div className="max-w-3xl mx-auto flex flex-col gap-4">
       <div>
         <h1 className="text-2xl font-bold">학과 공지</h1>
-        <p className="text-sm text-zinc-500">공지를 열어 AI에게 궁금한 점을 물어보세요.</p>
+        <p className="text-sm text-zinc-500">공지방에 올라온 원문 공지와 정리된 일정을 확인하세요.</p>
       </div>
       <Card className="p-0">
         {!notices?.length ? (

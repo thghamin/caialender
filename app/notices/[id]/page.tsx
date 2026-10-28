@@ -3,10 +3,8 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatKst } from "@/lib/datetime";
-import { aiConfig } from "@/lib/ai/provider";
 import { KindBadge } from "@/components/upcoming-list";
 import { Card } from "@/components/ui";
-import { NoticeChat } from "./notice-chat";
 import type { CalendarEvent, Notice } from "@/lib/types";
 
 export default async function NoticePage({ params }: PageProps<"/notices/[id]">) {
@@ -24,7 +22,7 @@ export default async function NoticePage({ params }: PageProps<"/notices/[id]">)
   ]);
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[1fr_400px]">
+    <div className="max-w-3xl mx-auto">
       <div className="flex flex-col gap-4">
         <Link href="/notices" className="text-sm text-zinc-500 hover:text-zinc-900">← 공지 목록</Link>
         <Card className="flex flex-col gap-3">
@@ -53,7 +51,6 @@ export default async function NoticePage({ params }: PageProps<"/notices/[id]">)
           </Card>
         )}
       </div>
-      <NoticeChat noticeId={notice.id} enabled={aiConfig() !== null} />
     </div>
   );
 }

@@ -4,7 +4,7 @@ import "server-only";
  * OpenAI 호환 Chat Completions API 하나로 모든 AI 백엔드를 다룬다.
  * - 개발: 로컬 Ollama (http://127.0.0.1:11434/v1)
  * - 운영: 클라우드 호스팅 API (OpenRouter, DeepInfra, Alibaba Model Studio 등)
- * 환경변수 AI_BASE_URL / AI_API_KEY / AI_MODEL / AI_CHAT_MODEL 로 전환한다.
+ * 환경변수 AI_BASE_URL / AI_API_KEY / AI_MODEL / AI_TEXT_MODEL(브리핑용, 선택) 로 전환한다.
  */
 
 export type ContentPart =
@@ -26,7 +26,7 @@ export class AIError extends Error {
   }
 }
 
-type AIConfig = { baseUrl: string; apiKey?: string; model: string; chatModel: string };
+type AIConfig = { baseUrl: string; apiKey?: string; model: string; textModel: string };
 
 export function aiConfig(): AIConfig | null {
   const baseUrl = process.env.AI_BASE_URL?.replace(/\/$/, "");
@@ -36,7 +36,7 @@ export function aiConfig(): AIConfig | null {
     baseUrl,
     apiKey: process.env.AI_API_KEY || undefined,
     model,
-    chatModel: process.env.AI_CHAT_MODEL || model,
+    textModel: process.env.AI_TEXT_MODEL || model,
   };
 }
 
@@ -117,54 +117,13 @@ export async function generateText(opts: {
   const config = requireConfig();
   const res = await post(
     config,
-    { model: config.chatModel, messages: opts.messages, temperature: 0.3, max_tokens: opts.maxTokens ?? 1000 },
+    { model: config.textModel, messages: opts.messages, temperature: 0.3, max_tokens: opts.maxTokens ?? 1000 },
     opts.timeoutMs ?? 120_000,
   );
   const json = await res.json();
   const text: string | undefined = json.choices?.[0]?.message?.content;
   if (!text) throw new AIError("AI 응답이 비어 있습니다.", true);
-  return { text, model: json.model ?? config.chatModel };
-}
-
-/** 스트리밍 텍스트 응답 (챗봇용). 토큰 조각을 차례로 돌려준다 */
-export async function* streamText(opts: {
-  messages: ChatMessage[];
-  maxTokens?: number;
-  timeoutMs?: number;
-}): AsyncGenerator<string> {
-  const config = requireConfig();
-  const res = await post(
-    config,
-    {
-      model: config.chatModel,
-      messages: opts.messages,
-      temperature: 0.3,
-      max_tokens: opts.maxTokens ?? 1000,
-      stream: true,
-    },
-    opts.timeoutMs ?? 120_000,
-  );
-  if (!res.body) throw new AIError("AI 응답 스트림이 없습니다.", true);
-
-  const decoder = new TextDecoder();
-  let buffer = "";
-  for await (const chunk of res.body as unknown as AsyncIterable<Uint8Array>) {
-    buffer += decoder.decode(chunk, { stream: true });
-    let newline: number;
-    while ((newline = buffer.indexOf("\n")) >= 0) {
-      const line = buffer.slice(0, newline).trim();
-      buffer = buffer.slice(newline + 1);
-      if (!line.startsWith("data:")) continue;
-      const data = line.slice(5).trim();
-      if (data === "[DONE]") return;
-      try {
-        const delta = JSON.parse(data).choices?.[0]?.delta?.content;
-        if (delta) yield delta;
-      } catch {
-        // keep-alive 주석 등은 무시
-      }
-    }
-  }
+  return { text, model: json.model ?? config.textModel };
 }
 
 function stripFence(s: string) {

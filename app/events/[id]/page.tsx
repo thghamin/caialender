@@ -101,7 +101,7 @@ export default async function EventPage({ params }: PageProps<"/events/[id]">) {
           )}
           {notice && (
             <Link href={`/notices/${notice.id}`} className="text-sm text-zinc-600 hover:text-zinc-900">
-              📄 원문 공지 보기 · AI에게 질문하기
+              📄 원문 공지 보기
             </Link>
           )}
         </div>

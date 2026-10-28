@@ -1,4 +1,4 @@
-// 챗봇·브리핑 프롬프트 (순수 함수)
+// 주간 브리핑 프롬프트 (순수 함수)
 import { formatKst } from "../datetime";
 import { KIND_LABEL, type CalendarEvent } from "../types";
 
@@ -8,28 +8,6 @@ export function describeEvent(e: Pick<CalendarEvent, "title" | "kind" | "start_a
     : formatKst(e.start_at, !e.all_day);
   const target = e.target_grades.length ? `${e.target_grades.join("·")}학년` : "전체";
   return `- [${KIND_LABEL[e.kind]}] ${e.title} | ${when} | 장소: ${e.location ?? "공지에 없음"} | 대상: ${target}${e.target_note ? ` (${e.target_note})` : ""}${e.description ? ` | ${e.description}` : ""}`;
-}
-
-export function buildNoticeChatSystemPrompt(input: {
-  today: string;
-  notice: { title: string; body: string; posted_at: string };
-  events: Parameters<typeof describeEvent>[0][];
-  hasImage: boolean;
-}) {
-  return `너는 경북대 인공지능전공 학과 공지에 대해 학생 질문에 답하는 도우미 "C:AI:ender"다. 오늘은 ${input.today}(한국 시간)이다.
-규칙:
-- 아래 [공지 원문]${input.hasImage ? "과 첨부 포스터 이미지" : ""}, [정리된 일정]에 있는 내용만 근거로 답한다.
-- 근거에 없는 내용(가격, 장소, 시간, 자격 등)은 절대 추측하지 말고 "공지에 나와 있지 않아요. 학생회에 문의해 주세요."라고 답한다.
-- 날짜를 말할 때는 요일까지 함께 말하고, 마감이 지났으면 지났다고 알려준다.
-- 한국어로 짧고 친절하게(3~5문장) 답한다. 마크다운 표는 쓰지 않는다.
-
-[공지 원문]
-제목: ${input.notice.title}
-게시: ${formatKst(input.notice.posted_at)}
-${input.notice.body || "(본문 없음, 포스터 이미지 참고)"}
-
-[정리된 일정]
-${input.events.length ? input.events.map(describeEvent).join("\n") : "(없음)"}`;
 }
 
 export function buildBriefingPrompt(input: {
