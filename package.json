@@ -11,7 +11,8 @@
     "db:push": "node --env-file=.env.local scripts/db-push.mjs",
     "make-admin": "node --env-file=.env.local scripts/make-admin.mjs",
     "test:rls": "INTEGRATION=1 node --env-file=.env.local node_modules/.bin/vitest run tests/rls.integration.test.ts",
-    "test:e2e": "node --env-file=.env.local node_modules/.bin/playwright test"
+    "test:e2e": "node --env-file=.env.local node_modules/.bin/playwright test",
+    "setup-cron": "node --env-file=.env.local scripts/setup-cron.mjs"
   },
   "dependencies": {
     "@fullcalendar/react": "^7.1.3",
