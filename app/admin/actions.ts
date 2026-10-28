@@ -150,10 +150,15 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
   return { message: parsed.row.status === "published" ? "저장하고 게시했습니다." : "저장했습니다." };
 }
 
-export async function setEventStatus(id: string, status: "draft" | "published" | "archived") {
+/** 공지에서 나온 검수 대기 초안을 한 번에 게시 */
+export async function publishNoticeDrafts(noticeId: string) {
   await requireAdmin();
   const supabase = await createClient();
-  const { error } = await supabase.from("events").update({ status }).eq("id", id);
+  const { error } = await supabase
+    .from("events")
+    .update({ status: "published" })
+    .eq("notice_id", noticeId)
+    .eq("status", "draft");
   if (error) throw new Error(error.message);
   revalidatePath("/", "layout");
 }

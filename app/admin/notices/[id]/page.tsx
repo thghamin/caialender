@@ -84,7 +84,7 @@ export default async function AdminNoticePage({ params }: PageProps<"/admin/noti
           <Card>
             <div className="flex items-center justify-between mb-3">
               <h2 className="font-semibold">추출된 일정 ({events?.length ?? 0})</h2>
-              {drafts.length > 0 && <PublishAllButton ids={drafts.map((d) => d.id)} />}
+              {drafts.length > 0 && <PublishAllButton noticeId={notice.id} count={drafts.length} />}
             </div>
             {notice.status === "analyzed" && !events?.length && !changes?.length && (
               <p className="text-sm text-zinc-500">이 공지에서 일정을 찾지 못했습니다.</p>

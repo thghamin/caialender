@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { deleteNotice, reanalyzeNotice, setEventStatus } from "@/app/admin/actions";
+import { deleteNotice, publishNoticeDrafts, reanalyzeNotice } from "@/app/admin/actions";
 
 export function ReanalyzeButton({ id }: { id: string }) {
   const [pending, start] = useTransition();
@@ -34,17 +34,15 @@ export function DeleteNoticeButton({ id }: { id: string }) {
   );
 }
 
-export function PublishAllButton({ ids }: { ids: string[] }) {
+export function PublishAllButton({ noticeId, count }: { noticeId: string; count: number }) {
   const [pending, start] = useTransition();
   return (
     <button
       disabled={pending}
-      onClick={() => start(async () => {
-        for (const id of ids) await setEventStatus(id, "published");
-      })}
+      onClick={() => start(() => publishNoticeDrafts(noticeId))}
       className="rounded-md bg-brand px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
     >
-      {pending ? "게시 중…" : `초안 ${ids.length}개 모두 게시`}
+      {pending ? "게시 중…" : `초안 ${count}개 모두 게시`}
     </button>
   );
 }

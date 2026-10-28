@@ -44,3 +44,6 @@ next-env.d.ts
 # playwright
 /test-results/
 /playwright-report/
+
+# 실제 공지 예시 (외부 자료, 커밋하지 않음)
+/tests/fixtures/private/

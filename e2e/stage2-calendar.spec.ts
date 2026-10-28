@@ -102,6 +102,7 @@ test("개인 일정: 학과 일정과 겹치면 경고, 확인 후 저장, 상�
 
   // 다른 학생에게는 내 개인 일정이 보이지 않는다
   await page.getByRole("button", { name: "로그아웃" }).click();
+  await expect(page.getByRole("link", { name: "회원가입", exact: true })).toBeVisible();
   await signupViaUi(page, { name: "타학생", studentNo: "2027000003", grade: 1, email: `${prefix}-other@caialender-test.dev` });
   await expect(page).toHaveURL(/\/my$/);
   await expect(page.getByText(`${T} 새내기 배움터`).first()).toBeVisible();

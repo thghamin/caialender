@@ -98,6 +98,14 @@ async function analyze(db: SupabaseClient, notice: Notice) {
   const { events, dropped } = normalizeExtraction(raw, known);
   const byId = new Map(existing.map((e) => [e.id, e]));
 
+  // 같은 변경 제안이 이미 검토 대기 중이면 다시 만들지 않는다 (같은 공지가 여러 번 올라오는 경우)
+  const { data: pending } = await db
+    .from("event_changes")
+    .select("event_id, changes")
+    .eq("status", "pending")
+    .in("event_id", existing.map((e) => e.id));
+  const pendingKeys = new Set((pending ?? []).map((p) => `${p.event_id}:${JSON.stringify(p.changes)}`));
+
   const newEvents: ExtractedEvent[] = [];
   const changeRows: object[] = [];
   for (const ev of events) {
@@ -107,8 +115,10 @@ async function analyze(db: SupabaseClient, notice: Notice) {
       continue;
     }
     const changes = diffEvent(target, ev);
-    // 같은 일정을 다시 언급했을 뿐 바뀐 게 없으면 저장하지 않음
-    if (changes.length) {
+    // 같은 일정을 다시 언급했을 뿐 바뀐 게 없거나, 같은 제안이 이미 대기 중이면 저장하지 않음
+    const key = `${target.id}:${JSON.stringify(changes)}`;
+    if (changes.length && !pendingKeys.has(key)) {
+      pendingKeys.add(key);
       changeRows.push({
         event_id: target.id,
         notice_id: notice.id,
