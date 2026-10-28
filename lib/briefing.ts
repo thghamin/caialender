@@ -7,7 +7,7 @@ import { requestNow } from "@/lib/datetime";
 import type { CalendarEvent } from "@/lib/types";
 
 const DAY = 86400_000;
-const PROMPT_VERSION = 2;
+const PROMPT_VERSION = 3;
 
 /** KST 기준 이번 주 월요일 0시 ~ 다음 주 월요일 0시 */
 export function weekRange(now = requestNow()) {

@@ -33,5 +33,6 @@ run("AI 주간 브리핑 평가", () => {
     for (const title of ["새내기 배움터", "2학년 전공 설명회", "학과 총회", "장학금 신청 마감"]) expect(text).toContain(title);
     expect(text).not.toMatch(/새내기 배움터[^\n]*(끝났|종료되었)/);
     expect(text).not.toContain("**");
+    expect(text).not.toContain("공지에 없음");
   }, 120_000);
 });
