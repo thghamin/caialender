@@ -3,10 +3,11 @@ import { createHash } from "node:crypto";
 import { createServiceClient } from "@/lib/supabase/server";
 import { generateText } from "@/lib/ai/provider";
 import { buildBriefingPrompt } from "@/lib/ai/prompts";
-import { kstDate, requestNow } from "@/lib/datetime";
+import { requestNow } from "@/lib/datetime";
 import type { CalendarEvent } from "@/lib/types";
 
 const DAY = 86400_000;
+const PROMPT_VERSION = 2;
 
 /** KST 기준 이번 주 월요일 0시 ~ 다음 주 월요일 0시 */
 export function weekRange(now = requestNow()) {
@@ -40,7 +41,7 @@ export async function getBriefing(opts: { userId: string | null; scopeLabel: str
   const { weekStart } = weekRange(now);
   const selected = selectBriefingEvents(opts.events, now);
   const hash = createHash("sha256")
-    .update(JSON.stringify(selected.map((e) => [e.id, e.updated_at])))
+    .update(JSON.stringify([PROMPT_VERSION, selected.map((e) => [e.id, e.updated_at])]))
     .digest("hex")
     .slice(0, 32);
 
@@ -57,7 +58,7 @@ export async function getBriefing(opts: { userId: string | null; scopeLabel: str
       {
         role: "user",
         content: buildBriefingPrompt({
-          today: kstDate(new Date(now).toISOString()),
+          now: new Date(now).toISOString(),
           weekLabel: `이번 주(${weekStart} 주간)`,
           scope: opts.scopeLabel,
           events: selected,

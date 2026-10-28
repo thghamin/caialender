@@ -26,7 +26,7 @@ export class AIError extends Error {
   }
 }
 
-type AIConfig = { baseUrl: string; apiKey?: string; model: string; textModel: string };
+type AIConfig = { baseUrl: string; apiKey?: string; model: string; textModel: string; extraBody: object };
 
 export function aiConfig(): AIConfig | null {
   const baseUrl = process.env.AI_BASE_URL?.replace(/\/$/, "");
@@ -37,6 +37,7 @@ export function aiConfig(): AIConfig | null {
     apiKey: process.env.AI_API_KEY || undefined,
     model,
     textModel: process.env.AI_TEXT_MODEL || model,
+    extraBody: parseExtraBody(),
   };
 }
 
@@ -61,7 +62,7 @@ async function post(config: AIConfig, body: object, timeoutMs: number) {
     res = await fetch(`${config.baseUrl}/chat/completions`, {
       method: "POST",
       headers: headers(config),
-      body: JSON.stringify(body),
+      body: JSON.stringify({ ...config.extraBody, ...body }),
       signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (e) {
@@ -124,6 +125,21 @@ export async function generateText(opts: {
   const text: string | undefined = json.choices?.[0]?.message?.content;
   if (!text) throw new AIError("AI 응답이 비어 있습니다.", true);
   return { text, model: json.model ?? config.textModel };
+}
+
+/**
+ * 제공자별 추가 요청 옵션 (JSON). 예: OpenRouter 업체 우선순위
+ *   AI_EXTRA_BODY={"provider":{"order":["novita","parasail"],"allow_fallbacks":true}}
+ */
+function parseExtraBody(): object {
+  const raw = process.env.AI_EXTRA_BODY;
+  if (!raw) return {};
+  try {
+    return JSON.parse(raw);
+  } catch {
+    console.error("AI_EXTRA_BODY가 올바른 JSON이 아닙니다. 무시합니다.");
+    return {};
+  }
 }
 
 function stripFence(s: string) {
