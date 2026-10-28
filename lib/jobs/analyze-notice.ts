@@ -5,11 +5,12 @@ import { AIError, generateJson, type ContentPart } from "@/lib/ai/provider";
 import {
   EXTRACTION_JSON_SCHEMA,
   buildExtractionSystemPrompt,
+  buildExtractionUserText,
   normalizeExtraction,
   type ExtractedEvent,
 } from "@/lib/ai/extract-schema";
 import { diffEvent, summarizeChanges } from "@/lib/ai/change-detect";
-import { formatKst, kstDate } from "@/lib/datetime";
+import { kstDate } from "@/lib/datetime";
 import type { CalendarEvent, Notice } from "@/lib/types";
 
 const MAX_ATTEMPTS = 3;
@@ -67,23 +68,7 @@ async function analyze(db: SupabaseClient, notice: Notice) {
   const existing = await loadExistingEvents(db, notice.posted_at);
   const known = new Set(existing.map((e) => e.id));
 
-  const content: ContentPart[] = [
-    {
-      type: "text",
-      text: [
-        `공지 게시 시각: ${formatKst(notice.posted_at)}`,
-        `제목: ${notice.title}`,
-        notice.body ? `본문:\n${notice.body}` : "본문 없음 (첨부 포스터 이미지를 읽어라)",
-        "",
-        "기존 일정 목록 (id | 종류 | 날짜 | 제목 | 장소):",
-        existing.length
-          ? existing
-              .map((e) => `${e.id} | ${e.kind} | ${formatKst(e.start_at, !e.all_day)} | ${e.title} | ${e.location ?? "-"}`)
-              .join("\n")
-          : "(없음)",
-      ].join("\n"),
-    },
-  ];
+  const content: ContentPart[] = [{ type: "text", text: buildExtractionUserText(notice, existing) }];
   if (notice.image_path) content.push({ type: "image_url", image_url: { url: await imageDataUrl(db, notice.image_path) } });
 
   const { data: raw, model } = await generateJson({
@@ -95,7 +80,7 @@ async function analyze(db: SupabaseClient, notice: Notice) {
     ],
   });
 
-  const { events, dropped } = normalizeExtraction(raw, known);
+  const { events, dropped } = normalizeExtraction(raw, known, notice.posted_at);
   const byId = new Map(existing.map((e) => [e.id, e]));
 
   // 같은 변경 제안이 이미 검토 대기 중이면 다시 만들지 않는다 (같은 공지가 여러 번 올라오는 경우)

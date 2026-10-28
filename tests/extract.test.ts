@@ -43,7 +43,7 @@ describe("normalizeExtraction", () => {
       title: "새내기 배움터",
       kind: "event",
       start_at: "2027-02-24T00:00:00.000Z",
-      end_at: "2027-02-24T15:00:00.000Z",
+      end_at: "2027-02-25T14:59:00.000Z",
       all_day: false,
       target_grades: [1],
       missing_fields: [],
@@ -61,6 +61,39 @@ describe("normalizeExtraction", () => {
       events: [{ ...base, kind: "party", target_grades: [0, 2, 2, 5, 3], end: "2027-01-01" }],
     });
     expect(events[0]).toMatchObject({ kind: "other", target_grades: [2, 3], end_at: null });
+  });
+
+  it("대상 설명에 학년 표현이 없으면 AI가 지정한 학년을 무시한다", () => {
+    const { events } = normalizeExtraction({
+      events: [
+        { ...base, target_grades: [2, 3, 4], target_note: "6단대 재적생" },
+        { ...base, target_grades: [1], target_note: "27학번 신입생" },
+        { ...base, target_grades: [2, 3, 4], target_note: "인공지능전공 2~4학년" },
+        { ...base, target_grades: [1], target_note: null },
+      ],
+    });
+    expect(events.map((e) => e.target_grades)).toEqual([[], [1], [2, 3, 4], [1]]);
+  });
+
+  it("게시일보다 한참 전 날짜는 다음 해로 보정한다 (연도 없는 날짜 오해석)", () => {
+    const posted = "2026-10-29T01:00:00.000Z";
+    const { events } = normalizeExtraction(
+      {
+        events: [
+          { ...base, start: "2026-03-18T16:00", end: "2026-03-18T18:00" },
+          { ...base, start: "2026-09-30T23:59", end: null },
+          { ...base, start: "2026-11-02", end: null },
+        ],
+      },
+      new Set(),
+      posted,
+    );
+    expect(events.map((e) => e.start_at)).toEqual([
+      "2027-03-18T07:00:00.000Z",
+      "2026-09-30T14:59:00.000Z",
+      "2026-11-01T15:00:00.000Z",
+    ]);
+    expect(events[0].end_at).toBe("2027-03-18T09:00:00.000Z");
   });
 
   it("목록에 없는 existing_event_id는 무시한다 (AI 환각 방지)", () => {
