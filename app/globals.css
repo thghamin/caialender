@@ -23,19 +23,20 @@ body {
   background-attachment: fixed;
 }
 
-/* FullCalendar를 KNU 색으로 */
+/* FullCalendar 색. 페이지마다 --cal-accent 로 바꾼다 (학사: KNU 빨강, 학과: 초록, 내 캘린더: 사용자 지정) */
 .caialender-calendar {
+  --accent: var(--cal-accent, #da2128);
   --fc-classic-button: #ffffff;
-  --fc-classic-button-border: #e7d6d5;
-  --fc-classic-button-strong: #da2128;
-  --fc-classic-button-strong-border: #da2128;
-  --fc-classic-button-outline: #da212855;
+  --fc-classic-button-border: #e7e2e1;
+  --fc-classic-button-strong: var(--accent);
+  --fc-classic-button-strong-border: var(--accent);
+  --fc-classic-button-outline: color-mix(in srgb, var(--accent) 35%, transparent);
   --fc-classic-button-foreground: #3f3f46;
-  --fc-classic-primary: #da2128;
-  --fc-classic-today: #da212814;
-  --fc-classic-now: #da2128;
-  --fc-classic-border: #efe4e3;
-  --fc-classic-highlight: #fdecec;
+  --fc-classic-primary: var(--accent);
+  --fc-classic-today: color-mix(in srgb, var(--accent) 9%, transparent);
+  --fc-classic-now: var(--accent);
+  --fc-classic-border: #ece6e5;
+  --fc-classic-highlight: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 .caialender-calendar .fc-button-active,
 .caialender-calendar .fc-button-primary:not(:disabled).fc-button-active {
@@ -43,6 +44,11 @@ body {
 }
 .caialender-calendar a {
   cursor: pointer;
+}
+
+/* 학과 캘린더 배경: 옅은 초록 K:AI 무늬 */
+.dept-backdrop {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='140'%3E%3Ctext x='10' y='90' font-family='Arial Black,Arial,sans-serif' font-size='52' font-weight='900' fill='%2316a34a' fill-opacity='0.06' transform='rotate(-14 110 70)'%3EK:AI%3C/text%3E%3C/svg%3E");
 }
 
 @keyframes pop-in {

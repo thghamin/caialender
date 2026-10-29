@@ -81,10 +81,19 @@ test("개인 일정: 학과 일정과 겹치면 경고, 확인 후 저장, 상�
   await signupViaUi(page, { name: "최충돌", studentNo: "2027000002", grade: 1, email: `${prefix}-c@caialender-test.dev` });
   await expect(page).toHaveURL(/\/my$/);
 
-  const local = (iso: string) => new Date(new Date(iso).getTime() + 9 * 3600_000).toISOString().slice(0, 16);
+  const ymd = (iso: string) => new Date(new Date(iso).getTime() + 9 * 3600_000).toISOString().slice(0, 10);
+  // 오전/오후 → 시 → 분 버튼으로 고른다
+  const pick = async (label: "시작" | "종료", ampm: "오전" | "오후", hour: number, minute = "00") => {
+    await page.getByRole("button", { name: `${label} ${ampm}`, exact: true }).click();
+    await page.getByRole("button", { name: `${label} ${hour}시`, exact: true }).click();
+    await page.getByRole("button", { name: `${label} ${minute}분`, exact: true }).click();
+  };
   await page.getByLabel("제목").fill("편의점 알바");
-  await page.getByLabel("시작").fill(local(kstDay(2, 15)));
-  await page.getByLabel("종료").fill(local(kstDay(2, 20)));
+  await page.getByLabel("날짜").fill(ymd(kstDay(2)));
+  await pick("시작", "오후", 3);
+  await page.getByRole("button", { name: "끝나는 시간 직접" }).click();
+  await pick("종료", "오후", 8);
+  await expect(page.getByText("오후 3:00 ~ 오후 8:00")).toBeVisible();
   await page.getByRole("button", { name: "추가", exact: true }).click();
   await expect(page.getByText(/다음 일정과 시간이 겹칩니다: .*새내기 배움터/)).toBeVisible();
 
@@ -98,8 +107,10 @@ test("개인 일정: 학과 일정과 겹치면 경고, 확인 후 저장, 상�
   // 겹치지 않는 일정은 바로 저장
   await page.goto("/my");
   await page.getByLabel("제목").fill("스터디");
-  await page.getByLabel("시작").fill(local(kstDay(6, 10)));
-  await page.getByLabel("종료").fill(local(kstDay(6, 12)));
+  await page.getByLabel("날짜").fill(ymd(kstDay(6)));
+  await pick("시작", "오전", 10);
+  await page.getByRole("button", { name: "2시간", exact: true }).click();
+  await expect(page.getByText("오전 10:00 ~ 오후 12:00")).toBeVisible();
   await page.getByRole("button", { name: "추가", exact: true }).click();
   await expect(page.getByText("개인 일정을 추가했습니다.")).toBeVisible();
 

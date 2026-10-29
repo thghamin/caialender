@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { createNotice } from "@/app/admin/actions";
 import { Alert, Button, Field } from "@/components/ui";
+import { PosterPicker } from "./file-picker";
 
 export function NoticeForm({ now }: { now: string }) {
   const [state, action, pending] = useActionState(createNotice, undefined);
@@ -19,10 +20,7 @@ export function NoticeForm({ now }: { now: string }) {
           className="rounded-md border border-zinc-300 bg-white px-3 py-2 font-mono text-[13px] outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
         />
       </label>
-      <label className="flex flex-col gap-1 text-sm">
-        <span className="font-medium text-zinc-700">포스터 이미지 (선택, PNG·JPG·WEBP, 8MB 이하)</span>
-        <input name="image" type="file" accept="image/png,image/jpeg,image/webp" className="text-sm" />
-      </label>
+      <PosterPicker />
       {state?.error && <Alert kind="error">{state.error}</Alert>}
       <Button disabled={pending}>{pending ? "업로드 중…" : "등록하고 AI 분석 시작"}</Button>
       <p className="text-xs text-zinc-500">

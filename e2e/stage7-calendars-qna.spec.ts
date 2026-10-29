@@ -154,3 +154,21 @@ test("총관리자만 관리자를 임명하고, 임명된 학생은 관리자 �
   await sup.close();
   await student.close();
 });
+
+test("학과 캘린더는 초록·K:AI·학부 로고, 내 캘린더 색은 무지개 중에서 고르고 유지된다", async ({ page }) => {
+  await loginViaUi(page, email("student"));
+  await page.waitForURL("**/my");
+  await page.goto("/");
+  await expect(page.getByAltText("경북대학교 전자공학부 로고")).toBeVisible();
+  await expect(page.getByText("K:AI", { exact: true })).toBeVisible();
+
+  await page.goto("/my");
+  const theme = page.locator("#my-theme");
+  await page.getByRole("button", { name: "파랑" }).click();
+  await expect(page.getByRole("button", { name: "파랑" })).toHaveAttribute("aria-pressed", "true");
+  await expect(theme).toHaveCSS("--my-main", "#3b82f6");
+  // 새로고침해도 고른 색 그대로 (쿠키)
+  await page.reload();
+  await expect(page.locator("#my-theme")).toHaveCSS("--my-main", "#3b82f6");
+  await expect(page.getByRole("button", { name: "파랑" })).toHaveAttribute("aria-pressed", "true");
+});

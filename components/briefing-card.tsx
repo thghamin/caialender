@@ -24,7 +24,13 @@ export function BriefingCard({ scope }: { scope: "all" | "me" }) {
   }, [scope]);
 
   return (
-    <div className="rounded-xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-5">
+    <div
+      className="rounded-2xl border p-5"
+      style={{
+        borderColor: "color-mix(in srgb, var(--cal-accent, #da2128) 30%, transparent)",
+        background: "linear-gradient(135deg, color-mix(in srgb, var(--cal-accent, #da2128) 8%, white), white)",
+      }}
+    >
       <h2 className="font-semibold mb-2">✨ AI 주간 브리핑</h2>
       {state.status === "loading" && <p className="text-sm text-zinc-500 animate-pulse">이번 주 일정을 정리하고 있어요…</p>}
       {state.status === "error" && <p className="text-sm text-zinc-500">{state.message}</p>}

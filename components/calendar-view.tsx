@@ -32,13 +32,14 @@ export type CalendarItem = {
 
 type ColorKey = "dept-event" | "dept-deadline" | "dept-other" | "academic" | "academic-holiday" | "personal";
 
+// 학과 일정은 초록(전자공학부), 학사일정은 회색·금색(KNU), 개인 일정은 내 캘린더에서 고른 색(--my-main)
 const COLORS: Record<ColorKey, string> = {
-  "dept-event": "#da2128",
+  "dept-event": "#16a34a",
   "dept-deadline": "#9f1239",
-  "dept-other": "#e8833a",
+  "dept-other": "#0d9488",
   academic: "#52525b",
   "academic-holiday": "#c48a3c",
-  personal: "#0f766e",
+  personal: "var(--my-main, #0f766e)",
 };
 
 const LEGEND_LABEL: Record<ColorKey, string> = {
@@ -152,8 +153,10 @@ function EventPopup({ item, loggedIn, onClose }: { item: CalendarItem; loggedIn:
                       setInterested(!interested);
                     })
                   }
+                  // 페이지 색(--accent)을 따른다: 학과 초록, 학사 빨강, 내 캘린더 사용자 지정
+                  style={interested ? undefined : { background: "var(--accent)" }}
                   className={`rounded-full px-4 py-2 text-sm font-semibold disabled:opacity-50 ${
-                    interested ? "border border-zinc-300 bg-white hover:bg-zinc-100" : "bg-brand text-white shadow-sm shadow-red-200 hover:bg-brand-dark"
+                    interested ? "border border-zinc-300 bg-white hover:bg-zinc-100" : "text-white shadow-sm hover:brightness-95"
                   }`}
                 >
                   {pending ? "처리 중…" : interested ? "★ 내 캘린더에서 빼기" : "☆ 내 캘린더에 추가"}

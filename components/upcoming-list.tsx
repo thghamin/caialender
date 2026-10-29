@@ -24,7 +24,7 @@ export function UpcomingList({ events, title, limit = 8 }: { events: CalendarEve
                   {formatKst(e.start_at, !e.all_day)}
                   <DDay iso={e.start_at} />
                 </div>
-                <p className="text-sm font-medium group-hover:text-brand">{e.title}</p>
+                <p className="text-sm font-medium group-hover:underline">{e.title}</p>
               </Link>
             </li>
           ))}
@@ -44,5 +44,9 @@ function DDay({ iso }: { iso: string }) {
   const kstDay = (t: number) => Math.floor((t + 9 * 3600_000) / 86400_000);
   const diff = kstDay(new Date(iso).getTime()) - kstDay(requestNow());
   if (diff < 0) return null;
-  return <span className="font-semibold text-brand">{diff === 0 ? "D-DAY" : `D-${diff}`}</span>;
+  return (
+    <span className="font-semibold" style={{ color: "var(--cal-accent, #da2128)" }}>
+      {diff === 0 ? "D-DAY" : `D-${diff}`}
+    </span>
+  );
 }

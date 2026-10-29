@@ -1,4 +1,7 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
+import { isMyColor, MY_COLOR_COOKIE, myColorVars } from "@/lib/my-color";
+import { MyColorPicker } from "./color-picker";
 import { getCurrentUserId, requireUser } from "@/lib/auth";
 import { getInterestIds, getPersonalEvents, getPublishedEvents, pickMyEvents } from "@/lib/data/events";
 import { formatKst, requestNow } from "@/lib/datetime";
@@ -15,24 +18,30 @@ export default async function MyPage() {
   const userId = await getCurrentUserId();
   if (!userId) redirect("/login");
   // 프로필(승인 확인)·일정·관심 일정·개인 일정을 병렬로 조회
-  const [user, events, interests, personal] = await Promise.all([
+  const [user, events, interests, personal, cookieStore] = await Promise.all([
     requireUser(),
     getPublishedEvents(),
     getInterestIds(userId),
     getPersonalEvents(userId),
+    cookies(),
   ]);
+  const saved = cookieStore.get(MY_COLOR_COOKIE)?.value;
+  const color = isMyColor(saved) ? saved : "red";
   const mine = pickMyEvents(events, user, interests);
   const upcomingPersonal = personal.filter((p) => new Date(p.end_at).getTime() >= requestNow());
 
   const academicCount = mine.filter((e) => e.calendar === "academic").length;
 
   return (
-    <div className="flex flex-col gap-6">
+    <div id="my-theme" className="flex flex-col gap-6" style={myColorVars(color) as React.CSSProperties}>
       <PageHero
+        tone="custom"
         badge={user.grade ? `${user.grade}학년 ${user.name}` : user.name}
         title="내 캘린더"
         subtitle={`내 학년·전체 대상 학과 일정 + 직접 담은 일정 ${interests.size}개(학사일정 ${academicCount}개) + 개인 일정 ${personal.length}개`}
-      />
+      >
+        <MyColorPicker initial={color} targetId="my-theme" />
+      </PageHero>
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
       <section className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
@@ -61,7 +70,7 @@ export default async function MyPage() {
         <UpcomingList events={mine} title="나의 다가오는 일정" />
         <Card>
           <h2 className="font-semibold mb-3">개인 일정 추가</h2>
-          <PersonalEventForm />
+          <PersonalEventForm nowIso={new Date(requestNow()).toISOString()} />
           {upcomingPersonal.length > 0 && (
             <ul className="mt-4 flex flex-col gap-2 border-t border-zinc-100 pt-3">
               {upcomingPersonal.map((p) => (

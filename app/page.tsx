@@ -22,13 +22,15 @@ export default async function Home() {
   ]);
 
   return (
-    <div className="flex flex-col gap-6">
+    // 학과 캘린더는 초록 테마 + 배경 K:AI 무늬 (학사 캘린더는 KNU 빨강 유지)
+    <div className="dept-backdrop flex flex-col gap-6" style={{ "--cal-accent": "#15803d" } as React.CSSProperties}>
       <PageHero
-        badge="경북대학교 인공지능전공"
+        tone="dept"
+        badge="K:AI · 경북대학교 인공지능전공"
         title="학과 캘린더"
         subtitle="학생회가 공지방에 올린 공지를 AI가 정리하고, 기획부가 검수해 게시한 우리 과 일정이에요."
       >
-        <Link href="/academic" className="rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-brand hover:bg-red-50">
+        <Link href="/academic" className="rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-green-700 hover:bg-green-50">
           학사 캘린더 보기
         </Link>
         <Link href="/my" className="rounded-full px-4 py-1.5 text-sm font-semibold text-white ring-1 ring-white/50 hover:bg-white/10">
