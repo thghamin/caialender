@@ -31,10 +31,10 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  // getUser()가 토큰을 검증하고 필요하면 갱신한다
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims()는 만료된 토큰을 갱신하고, 비대칭 서명(ES256) JWT를 공개키로 로컬 검증한다.
+  // getUser()와 달리 요청마다 Auth 서버를 왕복하지 않아 빠르다.
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims.sub ? data.claims : null;
 
   const { pathname, search } = request.nextUrl;
   if (!user && !isPublic(pathname)) {

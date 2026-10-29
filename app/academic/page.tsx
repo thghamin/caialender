@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { requireUser } from "@/lib/auth";
+import { getCurrentUserId, requireUser } from "@/lib/auth";
 import { getInterestIds, getPublishedEvents } from "@/lib/data/events";
 import { toCalendarItem } from "@/lib/calendar-items";
 import { KNU_SCHEDULE_URL } from "@/lib/academic/knu-schedule";
@@ -12,8 +12,13 @@ import { AcademicCalendar } from "./academic-calendar";
 export const metadata: Metadata = { title: "학사 캘린더 — C:AI:ender" };
 
 export default async function AcademicPage() {
-  const [user, events] = await Promise.all([requireUser(), getPublishedEvents("academic")]);
-  const interests = await getInterestIds(user.id);
+  const userId = await getCurrentUserId();
+  // 프로필(승인 확인)·일정·관심 일정을 병렬로 조회. 승인 전이면 requireUser가 안내 화면으로 보낸다
+  const [, events, interests] = await Promise.all([
+    requireUser(),
+    getPublishedEvents("academic"),
+    userId ? getInterestIds(userId) : new Set<string>(),
+  ]);
   const undergrad = events.filter((e) => e.target_note !== "대학원");
 
   return (

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireUser } from "@/lib/auth";
+import { getCurrentUserId, requireUser } from "@/lib/auth";
 import { getInterestIds, getPublishedEvents } from "@/lib/data/events";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { toCalendarItem } from "@/lib/calendar-items";
@@ -13,8 +13,13 @@ export default async function Home() {
   if (!isSupabaseConfigured()) {
     return <Alert kind="error">Supabase가 설정되지 않았습니다. .env.local을 확인하세요.</Alert>;
   }
-  const [user, events] = await Promise.all([requireUser(), getPublishedEvents("dept")]);
-  const interests = await getInterestIds(user.id);
+  const userId = await getCurrentUserId();
+  // 프로필(승인 확인)·일정·관심 일정을 병렬로 조회. 승인 전이면 requireUser가 안내 화면으로 보낸다
+  const [, events, interests] = await Promise.all([
+    requireUser(),
+    getPublishedEvents("dept"),
+    userId ? getInterestIds(userId) : new Set<string>(),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">

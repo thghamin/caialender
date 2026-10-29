@@ -5,19 +5,27 @@ import { createClient } from "./supabase/server";
 import { isSupabaseConfigured } from "./supabase/env";
 import { isAdminRole, type Profile } from "./types";
 
-/** 현재 로그인 사용자와 프로필. 비로그인이면 null */
-export const getCurrentUser = cache(async (): Promise<Profile | null> => {
+/**
+ * 현재 로그인 사용자 id. JWT를 공개키로 로컬 검증하므로(getClaims) Auth 서버 왕복이 없다.
+ * 데이터 접근 권한은 이 JWT로 DB의 RLS가 다시 검사한다.
+ */
+export const getCurrentUserId = cache(async (): Promise<string | null> => {
   if (!isSupabaseConfigured()) return null;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+  const { data } = await supabase.auth.getClaims();
+  return data?.claims.sub ?? null;
+});
 
+/** 현재 로그인 사용자와 프로필. 비로그인이면 null */
+export const getCurrentUser = cache(async (): Promise<Profile | null> => {
+  const userId = await getCurrentUserId();
+  if (!userId) return null;
+
+  const supabase = await createClient();
   const { data: profile } = await supabase
     .from("profiles")
     .select("id, name, student_no, grade, department, role, approval_status")
-    .eq("id", user.id)
+    .eq("id", userId)
     .single();
   return (profile as Profile | null) ?? null;
 });

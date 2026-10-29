@@ -47,8 +47,10 @@ test("학과 캘린더에 게시된 일정만 보이고 초안은 안 보인다"
   await expect(page.getByText(`${T} 학과 총회`).first()).toBeVisible();
   await expect(page.getByText(`${T} 검수 전 초안`)).toHaveCount(0);
   // 초안은 URL로 직접 들어가도 안 보인다
-  const res = await page.goto(`/events/${ids.draft}`);
-  expect(res?.status()).toBe(404);
+  // (로딩 화면을 먼저 스트리밍하므로 HTTP 상태는 200일 수 있지만, 화면은 404이고 초안 내용은 없다)
+  await page.goto(`/events/${ids.draft}`);
+  await expect(page.getByText("This page could not be found.")).toBeVisible();
+  await expect(page.getByText(`${T} 검수 전 초안`)).toHaveCount(0);
 });
 
 test("1학년: 내 캘린더에 1학년·전체 대상만, 관심 추가하면 2학년 일정도", async ({ page }) => {

@@ -1,4 +1,5 @@
-import { requireUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { getCurrentUserId, requireUser } from "@/lib/auth";
 import { getInterestIds, getPersonalEvents, getPublishedEvents, pickMyEvents } from "@/lib/data/events";
 import { formatKst, requestNow } from "@/lib/datetime";
 import { CalendarLegend, CalendarView } from "@/components/calendar-view";
@@ -11,11 +12,14 @@ import { PersonalEventForm } from "./personal-form";
 import { DeletePersonalButton } from "./delete-personal";
 
 export default async function MyPage() {
-  const user = await requireUser();
-  const [events, interests, personal] = await Promise.all([
+  const userId = await getCurrentUserId();
+  if (!userId) redirect("/login");
+  // 프로필(승인 확인)·일정·관심 일정·개인 일정을 병렬로 조회
+  const [user, events, interests, personal] = await Promise.all([
+    requireUser(),
     getPublishedEvents(),
-    getInterestIds(user.id),
-    getPersonalEvents(user.id),
+    getInterestIds(userId),
+    getPersonalEvents(userId),
   ]);
   const mine = pickMyEvents(events, user, interests);
   const upcomingPersonal = personal.filter((p) => new Date(p.end_at).getTime() >= requestNow());
