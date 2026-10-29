@@ -45,7 +45,7 @@ function DDay({ iso }: { iso: string }) {
   const diff = kstDay(new Date(iso).getTime()) - kstDay(requestNow());
   if (diff < 0) return null;
   return (
-    <span className="font-semibold" style={{ color: "var(--cal-accent, #da2128)" }}>
+    <span className="font-semibold" style={{ color: "var(--brand)" }}>
       {diff === 0 ? "D-DAY" : `D-${diff}`}
     </span>
   );

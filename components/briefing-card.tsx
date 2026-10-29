@@ -27,8 +27,8 @@ export function BriefingCard({ scope }: { scope: "all" | "me" }) {
     <div
       className="rounded-2xl border p-5"
       style={{
-        borderColor: "color-mix(in srgb, var(--cal-accent, #da2128) 30%, transparent)",
-        background: "linear-gradient(135deg, color-mix(in srgb, var(--cal-accent, #da2128) 8%, white), white)",
+        borderColor: "color-mix(in srgb, var(--brand) 30%, transparent)",
+        background: "linear-gradient(135deg, color-mix(in srgb, var(--brand) 8%, white), white)",
       }}
     >
       <h2 className="font-semibold mb-2">✨ AI 주간 브리핑</h2>

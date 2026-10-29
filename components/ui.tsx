@@ -16,7 +16,7 @@ export function Button({ className = "", ...props }: ComponentProps<"button">) {
   return (
     <button
       {...props}
-      className={`rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-red-200 hover:bg-brand-dark disabled:opacity-50 ${className}`}
+      className={`rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-brand/25 hover:bg-brand-dark disabled:opacity-50 ${className}`}
     />
   );
 }
@@ -30,7 +30,7 @@ export function Card({ className = "", ...props }: ComponentProps<"div">) {
   return (
     <div
       {...props}
-      className={`rounded-2xl border border-red-100/80 bg-white/95 p-5 shadow-sm shadow-red-100/50 ${className}`}
+      className={`rounded-2xl border border-brand/15 bg-white/95 p-5 shadow-sm shadow-brand/10 ${className}`}
     />
   );
 }

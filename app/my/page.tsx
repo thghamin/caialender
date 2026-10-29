@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { isMyColor, MY_COLOR_COOKIE, myColorVars } from "@/lib/my-color";
+import { isMyColor, MY_COLOR_COOKIE } from "@/lib/my-color";
 import { MyColorPicker } from "./color-picker";
 import { getCurrentUserId, requireUser } from "@/lib/auth";
 import { getInterestIds, getPersonalEvents, getPublishedEvents, pickMyEvents } from "@/lib/data/events";
@@ -33,14 +33,14 @@ export default async function MyPage() {
   const academicCount = mine.filter((e) => e.calendar === "academic").length;
 
   return (
-    <div id="my-theme" className="flex flex-col gap-6" style={myColorVars(color) as React.CSSProperties}>
+    <div className="flex flex-col gap-6">
       <PageHero
         tone="custom"
         badge={user.grade ? `${user.grade}학년 ${user.name}` : user.name}
         title="내 캘린더"
         subtitle={`내 학년·전체 대상 학과 일정 + 직접 담은 일정 ${interests.size}개(학사일정 ${academicCount}개) + 개인 일정 ${personal.length}개`}
       >
-        <MyColorPicker initial={color} targetId="my-theme" />
+        <MyColorPicker initial={color} />
       </PageHero>
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
       <section className="flex flex-col gap-3">

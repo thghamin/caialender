@@ -55,7 +55,7 @@ export default async function AdminPage() {
       <Link
         href="/qna?status=pending"
         className={`flex items-center justify-between rounded-2xl border p-4 text-sm shadow-sm ${
-          pendingQuestions ? "border-brand/40 bg-brand-soft text-brand" : "border-red-100 bg-white text-zinc-600"
+          pendingQuestions ? "border-brand/40 bg-brand-soft text-brand" : "border-brand/15 bg-white text-zinc-600"
         }`}
       >
         <span className="font-semibold">💬 답변을 기다리는 학생 질문 {pendingQuestions}개</span>

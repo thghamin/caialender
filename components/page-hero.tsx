@@ -2,15 +2,15 @@ import { Hobanu } from "./hobanu";
 
 export type HeroTone = "knu" | "dept" | "custom";
 
-// knu: 경북대 빨강, dept: 학과(전자공학부) 초록, custom: 내 캘린더 사용자 지정 색 (--my-main / --my-dark)
+// knu: 경북대 빨강(학사), dept: 학과(전자공학부) 초록, custom: 사용자 지정 색(--brand) — 내 캘린더·공지·질문 등
 const GRADIENT: Record<HeroTone, string> = {
   knu: "linear-gradient(135deg, #da2128, #c81a22 50%, #a8141b)",
   dept: "linear-gradient(135deg, #16a34a, #15803d 50%, #14532d)",
-  custom: "linear-gradient(135deg, var(--my-main), var(--my-dark))",
+  custom: "linear-gradient(135deg, var(--brand-main), var(--brand) 55%, var(--brand-dark))",
 };
 
 /** 페이지 상단 배너. 학과 캘린더는 초록 + K:AI + 전자공학 로고, 나머지는 호반우 */
-export function PageHero({ title, subtitle, badge, tone = "knu", children }: {
+export function PageHero({ title, subtitle, badge, tone = "custom", children }: {
   title: string;
   subtitle: React.ReactNode;
   badge?: string;
@@ -19,7 +19,7 @@ export function PageHero({ title, subtitle, badge, tone = "knu", children }: {
 }) {
   return (
     <section
-      className="relative overflow-hidden rounded-3xl px-6 py-6 text-white shadow-lg shadow-zinc-300/60 transition-[background] duration-300 sm:px-8"
+      className="relative overflow-hidden rounded-3xl px-6 py-6 text-white shadow-lg shadow-zinc-300/60 transition-[background] duration-300 [text-shadow:0_1px_2px_rgb(0_0_0/0.25)] sm:px-8"
       style={{ background: GRADIENT[tone] }}
     >
       {/* 장식: 흰 원과 아래 띠 */}

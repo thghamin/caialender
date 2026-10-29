@@ -91,7 +91,8 @@ test("개인 일정: 학과 일정과 겹치면 경고, 확인 후 저장, 상�
   await page.getByLabel("제목").fill("편의점 알바");
   await page.getByLabel("날짜").fill(ymd(kstDay(2)));
   await pick("시작", "오후", 3);
-  await page.getByRole("button", { name: "끝나는 시간 직접" }).click();
+  // 종료는 시작 + 1시간을 따라오다가, 직접 고르면 그 값으로
+  await expect(page.getByText("오후 3:00 ~ 오후 4:00")).toBeVisible();
   await pick("종료", "오후", 8);
   await expect(page.getByText("오후 3:00 ~ 오후 8:00")).toBeVisible();
   await page.getByRole("button", { name: "추가", exact: true }).click();
@@ -109,8 +110,13 @@ test("개인 일정: 학과 일정과 겹치면 경고, 확인 후 저장, 상�
   await page.getByLabel("제목").fill("스터디");
   await page.getByLabel("날짜").fill(ymd(kstDay(6)));
   await pick("시작", "오전", 10);
-  await page.getByRole("button", { name: "2시간", exact: true }).click();
-  await expect(page.getByText("오전 10:00 ~ 오후 12:00")).toBeVisible();
+  await pick("종료", "오후", 12);
+  // 분은 '직접'을 누르면 나오는 시계에서 1분 단위로
+  await page.getByRole("button", { name: "종료 분 직접" }).click();
+  await expect(page.getByRole("slider", { name: "종료 분" })).toBeVisible();
+  for (let i = 0; i < 7; i++) await page.getByRole("button", { name: "종료 1분 더하기" }).click();
+  await page.getByRole("button", { name: "완료" }).click();
+  await expect(page.getByText("오전 10:00 ~ 오후 12:07")).toBeVisible();
   await page.getByRole("button", { name: "추가", exact: true }).click();
   await expect(page.getByText("개인 일정을 추가했습니다.")).toBeVisible();
 

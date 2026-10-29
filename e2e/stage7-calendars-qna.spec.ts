@@ -155,20 +155,28 @@ test("총관리자만 관리자를 임명하고, 임명된 학생은 관리자 �
   await student.close();
 });
 
-test("학과 캘린더는 초록·K:AI·학부 로고, 내 캘린더 색은 무지개 중에서 고르고 유지된다", async ({ page }) => {
+test("학과 초록·학사 빨강 고정, 나머지는 무지개 중 고른 색으로 사이트 전체가 바뀌고 유지된다", async ({ page }) => {
   await loginViaUi(page, email("student"));
   await page.waitForURL("**/my");
   await page.goto("/");
   await expect(page.getByAltText("경북대학교 전자공학부 로고")).toBeVisible();
   await expect(page.getByText("K:AI", { exact: true })).toBeVisible();
 
+  // 학과 캘린더 화면은 초록 테마
+  const brand = () => page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--brand").trim());
+  expect(await brand()).toBe("#15803d");
+
   await page.goto("/my");
-  const theme = page.locator("#my-theme");
   await page.getByRole("button", { name: "파랑" }).click();
   await expect(page.getByRole("button", { name: "파랑" })).toHaveAttribute("aria-pressed", "true");
-  await expect(theme).toHaveCSS("--my-main", "#3b82f6");
-  // 새로고침해도 고른 색 그대로 (쿠키)
+  expect(await brand()).toBe("#1d4ed8");
+  // 새로고침해도, 다른 화면(질문)에서도 고른 색. 학사 캘린더는 KNU 빨강 고정
   await page.reload();
-  await expect(page.locator("#my-theme")).toHaveCSS("--my-main", "#3b82f6");
-  await expect(page.getByRole("button", { name: "파랑" })).toHaveAttribute("aria-pressed", "true");
+  expect(await brand()).toBe("#1d4ed8");
+  await page.goto("/qna");
+  expect(await brand()).toBe("#1d4ed8");
+  await page.goto("/academic");
+  expect(await brand()).toBe("#c41b22");
+  // 선택된 '월' 버튼 글자는 흰색
+  await expect(page.getByRole("tab", { name: "월", selected: true })).toHaveCSS("color", "rgb(255, 255, 255)");
 });

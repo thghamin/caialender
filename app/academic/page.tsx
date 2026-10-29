@@ -22,8 +22,10 @@ export default async function AcademicPage() {
   const undergrad = events.filter((e) => e.target_note !== "대학원");
 
   return (
-    <div className="flex flex-col gap-6">
+    // 학사 캘린더는 KNU 빨강 고정
+    <div className="theme-academic flex flex-col gap-6">
       <PageHero
+        tone="knu"
         badge="경북대학교 공식 학사일정"
         title="학사 캘린더"
         subtitle={

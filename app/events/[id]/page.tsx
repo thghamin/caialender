@@ -52,7 +52,8 @@ export default async function EventPage({ params }: PageProps<"/events/[id]">) {
     : formatKst(event.start_at, !event.all_day);
 
   return (
-    <div className="max-w-2xl mx-auto flex flex-col gap-4">
+    // 학사 일정은 KNU 빨강, 학과 일정은 초록 테마로 보여준다
+    <div className={`max-w-2xl mx-auto flex flex-col gap-4 ${event.calendar === "academic" ? "theme-academic" : "theme-dept"}`}>
       <Link href={event.calendar === "academic" ? "/academic" : "/"} className="text-sm text-zinc-500 hover:text-brand">
         ← {CALENDAR_LABEL[event.calendar]}로
       </Link>

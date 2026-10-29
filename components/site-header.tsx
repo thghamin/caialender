@@ -12,7 +12,7 @@ export async function SiteHeader() {
   const approved = user?.approval_status === "approved";
 
   return (
-    <header className="sticky top-0 z-30 border-b border-red-100 bg-white/90 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-brand/15 bg-white/90 backdrop-blur">
       <div className="h-1 bg-gradient-to-r from-brand via-brand-dark to-knu-gold" />
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center gap-6">
         <Link href="/" className="flex items-center gap-2 font-extrabold text-lg tracking-tight">
@@ -48,7 +48,7 @@ export async function SiteHeader() {
           ) : (
             <>
               <Link href="/login" className="hover:text-brand">로그인</Link>
-              <Link href="/signup" className="rounded-full bg-brand px-4 py-1.5 font-medium text-white shadow-sm shadow-red-200 hover:bg-brand-dark">
+              <Link href="/signup" className="rounded-full bg-brand px-4 py-1.5 font-medium text-white shadow-sm shadow-brand/25 hover:bg-brand-dark">
                 회원가입
               </Link>
             </>

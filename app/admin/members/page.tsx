@@ -78,7 +78,7 @@ function MemberTable({ members, me, canApprove }: { members: Member[]; me: Profi
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
-        <thead className="border-b border-red-100 text-left text-xs text-zinc-500">
+        <thead className="border-b border-brand/15 text-left text-xs text-zinc-500">
           <tr>
             <th className="px-2 py-2 font-medium">이름</th>
             <th className="px-2 py-2 font-medium">학번</th>

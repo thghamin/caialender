@@ -25,7 +25,7 @@ export function AnswerForm({ id, current }: { id: string; current: string | null
         defaultValue={current ?? ""}
         placeholder="학생회 답변을 입력하세요"
         aria-label="답변"
-        className="rounded-lg border border-red-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+        className="rounded-lg border border-brand/30 bg-white px-3 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
       />
       <div className="flex items-center gap-2">
         <Button disabled={pending}>{pending ? "저장 중…" : current ? "답변 수정" : "답변 등록"}</Button>

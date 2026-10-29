@@ -32,14 +32,14 @@ export type CalendarItem = {
 
 type ColorKey = "dept-event" | "dept-deadline" | "dept-other" | "academic" | "academic-holiday" | "personal";
 
-// 학과 일정은 초록(전자공학부), 학사일정은 회색·금색(KNU), 개인 일정은 내 캘린더에서 고른 색(--my-main)
+// 학과 일정은 초록(전자공학부), 학사일정은 회색·금색(KNU), 개인 일정은 사용자 지정 색(--brand)
 const COLORS: Record<ColorKey, string> = {
   "dept-event": "#16a34a",
   "dept-deadline": "#9f1239",
   "dept-other": "#0d9488",
   academic: "#52525b",
   "academic-holiday": "#c48a3c",
-  personal: "var(--my-main, #0f766e)",
+  personal: "var(--brand)",
 };
 
 const LEGEND_LABEL: Record<ColorKey, string> = {

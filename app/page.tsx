@@ -23,7 +23,7 @@ export default async function Home() {
 
   return (
     // 학과 캘린더는 초록 테마 + 배경 K:AI 무늬 (학사 캘린더는 KNU 빨강 유지)
-    <div className="dept-backdrop flex flex-col gap-6" style={{ "--cal-accent": "#15803d" } as React.CSSProperties}>
+    <div className="theme-dept dept-backdrop flex flex-col gap-6">
       <PageHero
         tone="dept"
         badge="K:AI · 경북대학교 인공지능전공"

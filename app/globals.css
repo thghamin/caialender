@@ -4,28 +4,50 @@
 @theme inline {
   --font-sans: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
-  --color-brand: #da2128;
-  --color-brand-dark: #a8141b;
-  --color-brand-soft: #fdecec;
+  --color-brand: var(--brand);
+  --color-brand-dark: var(--brand-dark);
+  --color-brand-soft: var(--brand-soft);
   --color-knu-gray: #8a8a8a;
   --color-knu-gold: #c48a3c;
 }
 
+/*
+ * 사이트 색 (--brand): 기본은 사용자가 고른 색(--user-brand, 쿠키 → <html> style), 없으면 KNU 빨강.
+ * 학과 캘린더 화면(.theme-dept)은 초록, 학사 캘린더 화면(.theme-academic)은 KNU 빨강으로 고정.
+ * :has()로 고르므로 JS 없이 서버 HTML에서 바로 적용되고, 페이지를 옮겨도 깜빡이지 않는다.
+ */
+:root {
+  --brand: var(--user-brand, #c41b22);
+  --brand-main: var(--user-main, #da2128);
+}
+html:has(.theme-dept) {
+  --brand: #15803d;
+  --brand-main: #16a34a;
+}
+html:has(.theme-academic) {
+  --brand: #c41b22;
+  --brand-main: #da2128;
+}
+:root {
+  --brand-dark: color-mix(in srgb, var(--brand) 78%, black);
+  --brand-soft: color-mix(in srgb, var(--brand) 10%, white);
+}
+
 body {
   font-family: var(--font-sans);
-  background-color: #fbf7f6;
-  /* 은은한 빨강 빛과 점 무늬 */
+  background-color: color-mix(in srgb, var(--brand) 3%, #fbfaf9);
+  /* 은은한 테마색 빛과 점 무늬 */
   background-image:
-    radial-gradient(1200px 500px at 100% -10%, rgb(218 33 40 / 0.12), transparent 60%),
+    radial-gradient(1200px 500px at 100% -10%, color-mix(in srgb, var(--brand) 12%, transparent), transparent 60%),
     radial-gradient(900px 500px at -10% 110%, rgb(196 138 60 / 0.12), transparent 60%),
-    radial-gradient(rgb(218 33 40 / 0.07) 1px, transparent 1.2px);
+    radial-gradient(color-mix(in srgb, var(--brand) 7%, transparent) 1px, transparent 1.2px);
   background-size: auto, auto, 22px 22px;
   background-attachment: fixed;
 }
 
-/* FullCalendar 색. 페이지마다 --cal-accent 로 바꾼다 (학사: KNU 빨강, 학과: 초록, 내 캘린더: 사용자 지정) */
+/* FullCalendar 색은 화면의 테마색(--brand)을 따른다: 학과 초록, 학사 KNU 빨강, 나머지 사용자 지정 */
 .caialender-calendar {
-  --accent: var(--cal-accent, #da2128);
+  --accent: var(--brand);
   --fc-classic-button: #ffffff;
   --fc-classic-button-border: #e7e2e1;
   --fc-classic-button-strong: var(--accent);
@@ -38,9 +60,11 @@ body {
   --fc-classic-border: #ece6e5;
   --fc-classic-highlight: color-mix(in srgb, var(--accent) 12%, transparent);
 }
-.caialender-calendar .fc-button-active,
-.caialender-calendar .fc-button-primary:not(:disabled).fc-button-active {
-  color: #fff;
+/* 선택된 보기 버튼(월·주·일정)은 진한 테마색 배경이므로 글자를 흰색·굵게 */
+.caialender-calendar button[aria-pressed="true"],
+.caialender-calendar button[aria-selected="true"] {
+  color: #fff !important;
+  font-weight: 700;
 }
 .caialender-calendar a {
   cursor: pointer;
