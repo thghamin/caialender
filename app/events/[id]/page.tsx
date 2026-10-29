@@ -1,17 +1,22 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getCurrentUser } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { getEvent, getInterestIds, getPersonalEvents, getPublishedEvents, pickMyEvents } from "@/lib/data/events";
 import { findConflicts } from "@/lib/conflicts";
 import { formatKst } from "@/lib/datetime";
 import { KindBadge } from "@/components/upcoming-list";
+import { targetLabel } from "@/lib/calendar-items";
+import { CALENDAR_LABEL } from "@/lib/types";
 import { Alert, Card } from "@/components/ui";
 import { InterestButton } from "./interest-button";
+import { getQuestions } from "@/lib/data/questions";
+import { AskForm } from "@/app/qna/ask-form";
+import { QuestionList } from "@/app/qna/question-list";
 
 export default async function EventPage({ params }: PageProps<"/events/[id]">) {
   const { id } = await params;
-  const [event, user] = await Promise.all([getEvent(id), getCurrentUser()]);
+  const [event, user] = await Promise.all([getEvent(id), requireUser()]);
   if (!event) notFound();
 
   const supabase = await createClient();
@@ -29,6 +34,7 @@ export default async function EventPage({ params }: PageProps<"/events/[id]">) {
       : Promise.resolve({ data: null }),
   ]);
 
+  const questions = user ? await getQuestions({ eventId: id }) : [];
   let interested = false;
   let conflicts: { id: string; title: string; start_at: string }[] = [];
   if (user) {
@@ -47,9 +53,16 @@ export default async function EventPage({ params }: PageProps<"/events/[id]">) {
 
   return (
     <div className="max-w-2xl mx-auto flex flex-col gap-4">
-      <Link href="/" className="text-sm text-zinc-500 hover:text-zinc-900">← 캘린더로</Link>
+      <Link href={event.calendar === "academic" ? "/academic" : "/"} className="text-sm text-zinc-500 hover:text-brand">
+        ← {CALENDAR_LABEL[event.calendar]}로
+      </Link>
       <Card className="flex flex-col gap-4">
         <div className="flex items-center gap-2">
+          <span
+            className={`rounded-full px-2 py-0.5 text-[11px] font-semibold text-white ${event.calendar === "academic" ? "bg-zinc-600" : "bg-brand"}`}
+          >
+            {CALENDAR_LABEL[event.calendar]}
+          </span>
           <KindBadge kind={event.kind} />
           {event.status !== "published" && (
             <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-700">
@@ -62,12 +75,11 @@ export default async function EventPage({ params }: PageProps<"/events/[id]">) {
           <dt className="text-zinc-500">일시</dt>
           <dd>{when}</dd>
           <dt className="text-zinc-500">장소</dt>
-          <dd>{event.location ?? <span className="text-zinc-400">공지에 없음</span>}</dd>
-          <dt className="text-zinc-500">대상</dt>
           <dd>
-            {event.target_grades.length ? `${event.target_grades.join("·")}학년` : "전체"}
-            {event.target_note && <span className="text-zinc-500"> ({event.target_note})</span>}
+            {event.location ?? <span className="text-zinc-400">{event.calendar === "academic" ? "-" : "공지에 없음"}</span>}
           </dd>
+          <dt className="text-zinc-500">대상</dt>
+          <dd>{targetLabel(event)}</dd>
         </dl>
         {event.description && <p className="whitespace-pre-wrap text-sm leading-6 text-zinc-700">{event.description}</p>}
         {event.missing_fields.length > 0 && (
@@ -105,6 +117,19 @@ export default async function EventPage({ params }: PageProps<"/events/[id]">) {
             </Link>
           )}
         </div>
+      </Card>
+      <Card className="flex flex-col gap-4">
+        <h2 className="font-semibold">💬 이 일정에 대한 질문 {questions.length > 0 && <span className="text-brand">{questions.length}</span>}</h2>
+        {user ? (
+          <>
+            <QuestionList questions={questions} me={user} showEvent={false} />
+            <AskForm eventId={event.id} />
+          </>
+        ) : (
+          <Link href={`/login?next=/events/${event.id}`} className="text-sm text-brand hover:underline">
+            로그인하고 학생회에 질문하기
+          </Link>
+        )}
       </Card>
     </div>
   );

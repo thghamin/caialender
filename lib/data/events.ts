@@ -1,20 +1,18 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
-import type { CalendarEvent, PersonalEvent, Profile } from "@/lib/types";
+import type { CalendarEvent, CalendarKind, PersonalEvent, Profile } from "@/lib/types";
 
 const EVENT_COLUMNS =
-  "id, notice_id, title, description, kind, start_at, end_at, all_day, location, target_grades, target_note, missing_fields, status, created_at, updated_at";
+  "id, notice_id, calendar, title, description, kind, start_at, end_at, all_day, location, target_grades, target_note, missing_fields, status, created_at, updated_at";
 
-/** 게시된 학과 일정 전체 (비로그인도 조회 가능, AI 호출 없음) */
-export async function getPublishedEvents(): Promise<CalendarEvent[]> {
+/** 게시된 일정 (비로그인도 조회 가능, AI 호출 없음). calendar를 주면 그 캘린더만 */
+export async function getPublishedEvents(calendar?: CalendarKind): Promise<CalendarEvent[]> {
   if (!isSupabaseConfigured()) return [];
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("events")
-    .select(EVENT_COLUMNS)
-    .eq("status", "published")
-    .order("start_at");
+  let query = supabase.from("events").select(EVENT_COLUMNS).eq("status", "published");
+  if (calendar) query = query.eq("calendar", calendar);
+  const { data, error } = await query.order("start_at");
   if (error) throw new Error(`일정을 불러오지 못했습니다: ${error.message}`);
   return data as CalendarEvent[];
 }
@@ -46,12 +44,14 @@ export async function getPersonalEvents(userId: string): Promise<PersonalEvent[]
 export type MyEvent = CalendarEvent & { reason: "grade" | "all" | "interest" };
 
 /**
- * 내 캘린더 = 내 학년 대상 일정 + 전체 대상 일정 + 직접 추가한 관심 일정
+ * 내 캘린더 = 학과 일정 중 내 학년·전체 대상 + 직접 추가한 일정(학사·학과)
+ * 학사일정은 양이 많아서 직접 추가한 것만 넣는다.
  */
 export function pickMyEvents(events: CalendarEvent[], profile: Pick<Profile, "grade">, interests: Set<string>): MyEvent[] {
   const mine: MyEvent[] = [];
   for (const e of events) {
     if (interests.has(e.id)) mine.push({ ...e, reason: "interest" });
+    else if (e.calendar === "academic") continue;
     else if (profile.grade && e.target_grades.includes(profile.grade)) mine.push({ ...e, reason: "grade" });
     else if (e.target_grades.length === 0) mine.push({ ...e, reason: "all" });
   }

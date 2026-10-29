@@ -1,11 +1,60 @@
 @import "tailwindcss";
 
+/* 경북대학교 UI관리지침 전용색상: KNU Red(C10 M100 Y100 K0), 회색(C5 M5 Y7 K50), 보조색상 Gold(PANTONE 877C) */
 @theme inline {
   --font-sans: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
-  --color-brand: #4f46e5;
+  --color-brand: #da2128;
+  --color-brand-dark: #a8141b;
+  --color-brand-soft: #fdecec;
+  --color-knu-gray: #8a8a8a;
+  --color-knu-gold: #c48a3c;
 }
 
 body {
   font-family: var(--font-sans);
+  background-color: #fbf7f6;
+  /* 은은한 빨강 빛과 점 무늬 */
+  background-image:
+    radial-gradient(1200px 500px at 100% -10%, rgb(218 33 40 / 0.12), transparent 60%),
+    radial-gradient(900px 500px at -10% 110%, rgb(196 138 60 / 0.12), transparent 60%),
+    radial-gradient(rgb(218 33 40 / 0.07) 1px, transparent 1.2px);
+  background-size: auto, auto, 22px 22px;
+  background-attachment: fixed;
+}
+
+/* FullCalendar를 KNU 색으로 */
+.caialender-calendar {
+  --fc-classic-button: #ffffff;
+  --fc-classic-button-border: #e7d6d5;
+  --fc-classic-button-strong: #da2128;
+  --fc-classic-button-strong-border: #da2128;
+  --fc-classic-button-outline: #da212855;
+  --fc-classic-button-foreground: #3f3f46;
+  --fc-classic-primary: #da2128;
+  --fc-classic-today: #da212814;
+  --fc-classic-now: #da2128;
+  --fc-classic-border: #efe4e3;
+  --fc-classic-highlight: #fdecec;
+}
+.caialender-calendar .fc-button-active,
+.caialender-calendar .fc-button-primary:not(:disabled).fc-button-active {
+  color: #fff;
+}
+.caialender-calendar a {
+  cursor: pointer;
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-pop-in {
+  animation: pop-in 0.18s ease-out;
 }

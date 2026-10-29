@@ -20,7 +20,8 @@ npm install
 cp .env.local.example .env.local   # 값 채우기
 npm run db:push                    # supabase/migrations 적용
 npm run dev
-npm run make-admin -- 이메일        # 기획부 관리자 지정
+npm run import-academic -- 2026     # 경북대 학사일정 불러오기 (관리자 화면 버튼으로도 가능)
+npm run make-admin -- 이메일 [admin|super_admin|student]  # 역할 지정 (평소에는 총관리자가 웹의 회원 관리에서 임명)
 ```
 
 ## 테스트

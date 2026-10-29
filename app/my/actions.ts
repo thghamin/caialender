@@ -15,8 +15,8 @@ export async function toggleInterest(eventId: string, add: boolean) {
     ? await supabase.from("user_events").upsert({ user_id: user.id, event_id: eventId })
     : await supabase.from("user_events").delete().eq("user_id", user.id).eq("event_id", eventId);
   if (error) throw new Error(error.message);
-  revalidatePath(`/events/${eventId}`);
-  revalidatePath("/my");
+  // 학과·학사·내 캘린더와 일정 상세의 ★ 표시를 모두 갱신
+  revalidatePath("/", "layout");
 }
 
 export type PersonalState =

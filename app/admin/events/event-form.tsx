@@ -18,6 +18,13 @@ export function EventForm({ event, values }: {
     <form action={action} className="flex flex-col gap-4">
       <input type="hidden" name="id" value={event?.id ?? ""} />
       <Field label="제목" name="title" defaultValue={event?.title} required maxLength={120} />
+      <label className="flex flex-col gap-1 text-sm">
+        <span className="font-medium text-zinc-700">캘린더</span>
+        <select name="calendar" defaultValue={event?.calendar ?? "dept"} className="rounded-md border border-zinc-300 bg-white px-3 py-2">
+          <option value="dept">학과 캘린더 (학생회 일정)</option>
+          <option value="academic">학사 캘린더 (학교 학사일정)</option>
+        </select>
+      </label>
       <div className="grid grid-cols-2 gap-3">
         <label className="flex flex-col gap-1 text-sm">
           <span className="font-medium text-zinc-700">종류</span>

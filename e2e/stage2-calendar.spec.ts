@@ -39,9 +39,10 @@ test.afterAll(async () => {
   await deleteUsersByPrefix(prefix);
 });
 
-test("비로그인: 전체 캘린더에 게시된 일정만 보이고 초안은 안 보인다", async ({ page }) => {
+test("학과 캘린더에 게시된 일정만 보이고 초안은 안 보인다", async ({ page }) => {
+  await signupViaUi(page, { name: "조회만", studentNo: "2027000004", grade: 2, email: `${prefix}-view@caialender-test.dev` });
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "전체 캘린더" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "학과 캘린더" })).toBeVisible();
   await expect(page.locator(".caialender-calendar")).toBeVisible();
   await expect(page.getByText(`${T} 학과 총회`).first()).toBeVisible();
   await expect(page.getByText(`${T} 검수 전 초안`)).toHaveCount(0);
@@ -102,7 +103,7 @@ test("개인 일정: 학과 일정과 겹치면 경고, 확인 후 저장, 상�
 
   // 다른 학생에게는 내 개인 일정이 보이지 않는다
   await page.getByRole("button", { name: "로그아웃" }).click();
-  await expect(page.getByRole("link", { name: "회원가입", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "로그인" })).toBeVisible();
   await signupViaUi(page, { name: "타학생", studentNo: "2027000003", grade: 1, email: `${prefix}-other@caialender-test.dev` });
   await expect(page).toHaveURL(/\/my$/);
   await expect(page.getByText(`${T} 새내기 배움터`).first()).toBeVisible();

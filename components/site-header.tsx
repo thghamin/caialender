@@ -1,23 +1,33 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { logout } from "@/app/auth/actions";
+import { isAdminRole, ROLE_LABEL } from "@/lib/types";
+import { Hobanu } from "./hobanu";
+import { NavLink } from "./nav-link";
 
 export async function SiteHeader() {
   const user = await getCurrentUser();
+  const admin = isAdminRole(user?.role);
+  // 승인 전 회원에게는 메뉴를 보여주지 않는다
+  const approved = user?.approval_status === "approved";
 
   return (
-    <header className="border-b border-zinc-200 bg-white">
-      <div className="max-w-6xl mx-auto px-4 h-14 flex items-center gap-6">
-        <Link href="/" className="font-bold text-lg tracking-tight">
-          C<span className="text-brand">:AI:</span>ender
+    <header className="sticky top-0 z-30 border-b border-red-100 bg-white/90 backdrop-blur">
+      <div className="h-1 bg-gradient-to-r from-brand via-brand-dark to-knu-gold" />
+      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center gap-6">
+        <Link href="/" className="flex items-center gap-2 font-extrabold text-lg tracking-tight">
+          <Hobanu className="size-9 drop-shadow-sm" title="" />
+          <span>
+            C<span className="text-brand">:AI:</span>ender
+          </span>
         </Link>
-        <nav className="flex gap-4 text-sm text-zinc-600">
-          <Link href="/" className="hover:text-zinc-900">전체 캘린더</Link>
-          {user && <Link href="/my" className="hover:text-zinc-900">내 캘린더</Link>}
-          {user && <Link href="/notices" className="hover:text-zinc-900">공지</Link>}
-          {user?.role === "admin" && (
-            <Link href="/admin" className="hover:text-zinc-900 font-medium text-brand">관리자</Link>
-          )}
+        <nav className="flex gap-1 text-sm">
+          {approved && <NavLink href="/">학과 캘린더</NavLink>}
+          {approved && <NavLink href="/academic">학사 캘린더</NavLink>}
+          {approved && <NavLink href="/my">내 캘린더</NavLink>}
+          {approved && <NavLink href="/notices">공지</NavLink>}
+          {approved && <NavLink href="/qna">질문</NavLink>}
+          {admin && <NavLink href="/admin" strong>관리자</NavLink>}
         </nav>
         <div className="ml-auto flex items-center gap-3 text-sm">
           {user ? (
@@ -25,16 +35,22 @@ export async function SiteHeader() {
               <span className="text-zinc-500">
                 {user.name}
                 {user.grade ? ` · ${user.grade}학년` : ""}
-                {user.role === "admin" ? " · 기획부" : ""}
+                {user.role !== "student" && (
+                  <span className="ml-1.5 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand">
+                    {ROLE_LABEL[user.role]}
+                  </span>
+                )}
               </span>
               <form action={logout}>
-                <button className="rounded-md border border-zinc-300 px-3 py-1 hover:bg-zinc-100">로그아웃</button>
+                <button className="rounded-full border border-zinc-300 px-3 py-1 hover:bg-zinc-100">로그아웃</button>
               </form>
             </>
           ) : (
             <>
-              <Link href="/login" className="hover:text-zinc-900">로그인</Link>
-              <Link href="/signup" className="rounded-md bg-brand px-3 py-1 text-white hover:opacity-90">회원가입</Link>
+              <Link href="/login" className="hover:text-brand">로그인</Link>
+              <Link href="/signup" className="rounded-full bg-brand px-4 py-1.5 font-medium text-white shadow-sm shadow-red-200 hover:bg-brand-dark">
+                회원가입
+              </Link>
             </>
           )}
         </div>

@@ -8,6 +8,7 @@ import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { kstToIso } from "@/lib/datetime";
 import { analyzeNextNotice } from "@/lib/jobs/analyze-notice";
+import { KNU_SCHEDULE_URL, parseKnuSchedule } from "@/lib/academic/knu-schedule";
 import type { FieldChange } from "@/lib/ai/change-detect";
 
 export type FormState = { error?: string; message?: string } | undefined;
@@ -84,6 +85,7 @@ export async function deleteNotice(id: string) {
 
 const eventSchema = z.object({
   title: z.string().trim().min(1, "제목을 입력하세요.").max(120),
+  calendar: z.enum(["dept", "academic"]).optional().default("dept"),
   kind: z.enum(["event", "deadline", "other"]),
   start: z.string().min(1, "시작 일시를 입력하세요."),
   end: z.string().optional().default(""),
@@ -108,6 +110,7 @@ function parseEventForm(formData: FormData) {
   return {
     row: {
       title: d.title,
+      calendar: d.calendar,
       kind: d.kind,
       start_at: start.iso,
       end_at: end?.iso ?? null,
@@ -191,4 +194,32 @@ export async function resolveChange(changeId: string, apply: boolean) {
   }
   await supabase.from("event_changes").update({ status: apply ? "applied" : "dismissed" }).eq("id", changeId);
   revalidatePath("/", "layout");
+}
+
+/** 경북대 홈페이지에서 학사일정을 다시 불러온다. 같은 일정은 external_key로 덮어써서 중복되지 않는다 */
+export async function importAcademicSchedule(_prev: FormState, formData: FormData): Promise<FormState> {
+  await requireAdmin();
+  const year = Number(formData.get("year"));
+  if (!Number.isInteger(year) || year < 2020 || year > 2100) return { error: "연도를 확인하세요." };
+
+  let items;
+  try {
+    const res = await fetch(KNU_SCHEDULE_URL(year), {
+      headers: { "user-agent": "Mozilla/5.0 (C:AI:ender academic import)" },
+      signal: AbortSignal.timeout(20_000),
+      cache: "no-store",
+    });
+    if (!res.ok) return { error: `경북대 홈페이지 응답 오류(${res.status})` };
+    items = parseKnuSchedule(await res.text(), year);
+  } catch (e) {
+    return { error: `학사일정을 가져오지 못했습니다: ${e instanceof Error ? e.message : String(e)}` };
+  }
+  if (items.length === 0) return { error: `${year}년 학사일정이 아직 홈페이지에 없습니다.` };
+
+  const supabase = await createClient();
+  const rows = items.map((i) => ({ ...i, calendar: "academic", status: "published", target_grades: [] }));
+  const { error } = await supabase.from("events").upsert(rows, { onConflict: "external_key" });
+  if (error) return { error: `저장 실패: ${error.message}` };
+  revalidatePath("/", "layout");
+  return { message: `${year}년 학사일정 ${items.length}건을 반영했습니다.` };
 }

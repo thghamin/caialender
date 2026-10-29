@@ -30,15 +30,24 @@ describe("시간 충돌", () => {
 });
 
 describe("내 캘린더 선별", () => {
-  const ev = (id: string, target_grades: number[]) => ({ id, target_grades }) as CalendarEvent;
-  const events = [ev("g1", [1]), ev("g23", [2, 3]), ev("all", []), ev("g4", [4])];
+  const ev = (id: string, target_grades: number[], calendar: CalendarEvent["calendar"] = "dept") =>
+    ({ id, target_grades, calendar }) as CalendarEvent;
+  const events = [
+    ev("g1", [1]),
+    ev("g23", [2, 3]),
+    ev("all", []),
+    ev("g4", [4]),
+    ev("academic-all", [], "academic"),
+    ev("academic-picked", [], "academic"),
+  ];
 
-  it("내 학년 + 전체 대상 + 관심 일정", () => {
-    const mine = pickMyEvents(events, { grade: 2 }, new Set(["g4"]));
+  it("학과 일정은 내 학년 + 전체 대상, 학사일정은 직접 담은 것만", () => {
+    const mine = pickMyEvents(events, { grade: 2 }, new Set(["g4", "academic-picked"]));
     expect(mine.map((e) => [e.id, e.reason])).toEqual([
       ["g23", "grade"],
       ["all", "all"],
       ["g4", "interest"],
+      ["academic-picked", "interest"],
     ]);
   });
 });

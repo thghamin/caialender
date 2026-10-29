@@ -1,56 +1,50 @@
 import Link from "next/link";
-import { getCurrentUser } from "@/lib/auth";
-import { getPublishedEvents } from "@/lib/data/events";
+import { requireUser } from "@/lib/auth";
+import { getInterestIds, getPublishedEvents } from "@/lib/data/events";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { toCalendarItem } from "@/lib/calendar-items";
 import { CalendarLegend, CalendarView } from "@/components/calendar-view";
 import { UpcomingList } from "@/components/upcoming-list";
 import { BriefingCard } from "@/components/briefing-card";
+import { PageHero } from "@/components/page-hero";
 import { Alert, Card } from "@/components/ui";
 
 export default async function Home() {
   if (!isSupabaseConfigured()) {
     return <Alert kind="error">Supabase가 설정되지 않았습니다. .env.local을 확인하세요.</Alert>;
   }
-  const [user, events] = await Promise.all([getCurrentUser(), getPublishedEvents()]);
+  const [user, events] = await Promise.all([requireUser(), getPublishedEvents("dept")]);
+  const interests = await getInterestIds(user.id);
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
-      <section className="flex flex-col gap-3">
-        <div className="flex items-end justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">전체 캘린더</h1>
-            <p className="text-sm text-zinc-500">학생회 기획부가 검수한 인공지능전공의 모든 일정</p>
+    <div className="flex flex-col gap-6">
+      <PageHero
+        badge="경북대학교 인공지능전공"
+        title="학과 캘린더"
+        subtitle="학생회가 공지방에 올린 공지를 AI가 정리하고, 기획부가 검수해 게시한 우리 과 일정이에요."
+      >
+        <Link href="/academic" className="rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-brand hover:bg-red-50">
+          학사 캘린더 보기
+        </Link>
+        <Link href="/my" className="rounded-full px-4 py-1.5 text-sm font-semibold text-white ring-1 ring-white/50 hover:bg-white/10">
+          내 캘린더 →
+        </Link>
+      </PageHero>
+      <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
+        <section className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-zinc-500">일정을 누르면 내 캘린더에 바로 추가할 수 있어요.</p>
+            <CalendarLegend keys={["dept-event", "dept-deadline", "dept-other"]} />
           </div>
-          <CalendarLegend />
-        </div>
-        <Card className="p-3">
-          <CalendarView
-            items={events.map((e) => ({
-              id: e.id,
-              title: e.title,
-              start: e.start_at,
-              end: e.end_at,
-              allDay: e.all_day,
-              kind: e.kind,
-              href: `/events/${e.id}`,
-            }))}
-          />
-        </Card>
-      </section>
-      <aside className="flex flex-col gap-4">
-        <BriefingCard scope="all" />
-        {!user && (
-          <Card>
-            <p className="text-sm text-zinc-600">
-              로그인하면 내 학년에 맞는 일정과 관심 일정을 <b>내 캘린더</b>에 모아볼 수 있어요.
-            </p>
-            <Link href="/signup" className="mt-3 inline-block text-sm font-medium text-brand hover:underline">
-              회원가입 →
-            </Link>
+          <Card className="p-3">
+            <CalendarView items={events.map((e) => toCalendarItem(e, interests))} loggedIn />
           </Card>
-        )}
-        <UpcomingList events={events} title="다가오는 일정" />
-      </aside>
+        </section>
+        <aside className="flex flex-col gap-4">
+          <BriefingCard scope="all" />
+          <UpcomingList events={events} title="다가오는 학과 일정" />
+        </aside>
+      </div>
     </div>
   );
 }

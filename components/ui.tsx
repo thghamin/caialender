@@ -6,7 +6,7 @@ export function Field({ label, ...props }: { label: string } & ComponentProps<"i
       <span className="font-medium text-zinc-700">{label}</span>
       <input
         {...props}
-        className="rounded-md border border-zinc-300 bg-white px-3 py-2 outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+        className="rounded-lg border border-zinc-300 bg-white px-3 py-2 outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
       />
     </label>
   );
@@ -16,16 +16,21 @@ export function Button({ className = "", ...props }: ComponentProps<"button">) {
   return (
     <button
       {...props}
-      className={`rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50 ${className}`}
+      className={`rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-red-200 hover:bg-brand-dark disabled:opacity-50 ${className}`}
     />
   );
 }
 
 export function Alert({ kind, children }: { kind: "error" | "info"; children: React.ReactNode }) {
-  const style = kind === "error" ? "bg-red-50 text-red-700 border-red-200" : "bg-blue-50 text-blue-700 border-blue-200";
-  return <p className={`rounded-md border px-3 py-2 text-sm ${style}`}>{children}</p>;
+  const style = kind === "error" ? "bg-red-50 text-red-700 border-red-200" : "bg-amber-50 text-amber-800 border-amber-200";
+  return <p className={`rounded-lg border px-3 py-2 text-sm ${style}`}>{children}</p>;
 }
 
 export function Card({ className = "", ...props }: ComponentProps<"div">) {
-  return <div {...props} className={`rounded-xl border border-zinc-200 bg-white p-5 ${className}`} />;
+  return (
+    <div
+      {...props}
+      className={`rounded-2xl border border-red-100/80 bg-white/95 p-5 shadow-sm shadow-red-100/50 ${className}`}
+    />
+  );
 }

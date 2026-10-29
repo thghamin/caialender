@@ -6,12 +6,14 @@ import { KindBadge } from "@/components/upcoming-list";
 import { Card } from "@/components/ui";
 import { NoticeStatusBadge } from "./status-badge";
 import { ChangeActions } from "./change-actions";
+import { AcademicImportForm } from "./academic-import";
+import { countPendingQuestions } from "@/lib/data/questions";
 import type { CalendarEvent, Notice } from "@/lib/types";
 
 export default async function AdminPage() {
   await requireAdmin();
   const supabase = await createClient();
-  const [{ data: notices }, { data: drafts }, { data: changes }] = await Promise.all([
+  const [{ data: notices }, { data: drafts }, { data: changes }, { count: academicCount }] = await Promise.all([
     supabase
       .from("notices")
       .select("id, title, status, posted_at, last_error, image_path")
@@ -23,16 +25,24 @@ export default async function AdminPage() {
       .select("id, summary, created_at, event_id, notice_id")
       .eq("status", "pending")
       .order("created_at", { ascending: false }),
+    supabase.from("events").select("*", { count: "exact", head: true }).eq("calendar", "academic"),
+  ]);
+  const [pendingQuestions, { count: pendingMembers }] = await Promise.all([
+    countPendingQuestions(),
+    supabase.from("profiles").select("*", { count: "exact", head: true }).eq("approval_status", "pending"),
   ]);
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">학생회 기획부 관리</h1>
-          <p className="text-sm text-zinc-500">공지를 등록하면 AI가 일정 초안을 만들고, 검수 후 게시합니다.</p>
+          <h1 className="text-2xl font-bold">학생회 관리</h1>
+          <p className="text-sm text-zinc-500">공지 문구나 포스터 사진을 올리면 AI가 일정 초안을 만들고, 검수 후 학과 캘린더에 게시합니다.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Link href="/admin/members" className="rounded-md border border-brand/40 bg-white px-4 py-2 text-sm font-medium text-brand hover:bg-brand-soft">
+            👥 회원 관리{pendingMembers ? ` (승인 대기 ${pendingMembers})` : ""}
+          </Link>
           <Link href="/admin/events/new" className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm hover:bg-zinc-100">
             일정 직접 추가
           </Link>
@@ -41,6 +51,16 @@ export default async function AdminPage() {
           </Link>
         </div>
       </div>
+
+      <Link
+        href="/qna?status=pending"
+        className={`flex items-center justify-between rounded-2xl border p-4 text-sm shadow-sm ${
+          pendingQuestions ? "border-brand/40 bg-brand-soft text-brand" : "border-red-100 bg-white text-zinc-600"
+        }`}
+      >
+        <span className="font-semibold">💬 답변을 기다리는 학생 질문 {pendingQuestions}개</span>
+        <span>질문 게시판에서 답변하기 →</span>
+      </Link>
 
       {changes && changes.length > 0 && (
         <Card className="border-amber-300">
@@ -81,6 +101,16 @@ export default async function AdminPage() {
             ))}
           </ul>
         )}
+      </Card>
+
+      <Card className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="font-semibold">🎓 학사 캘린더</h2>
+          <p className="text-sm text-zinc-500">
+            경북대 홈페이지 학사일정을 불러와 학사 캘린더에 게시합니다. 현재 {academicCount ?? 0}건. 다시 불러와도 중복되지 않아요.
+          </p>
+        </div>
+        <AcademicImportForm />
       </Card>
 
       <Card>

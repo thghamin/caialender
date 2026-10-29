@@ -2,6 +2,8 @@ import { requireUser } from "@/lib/auth";
 import { getInterestIds, getPersonalEvents, getPublishedEvents, pickMyEvents } from "@/lib/data/events";
 import { formatKst, requestNow } from "@/lib/datetime";
 import { CalendarLegend, CalendarView } from "@/components/calendar-view";
+import { toCalendarItem } from "@/lib/calendar-items";
+import { PageHero } from "@/components/page-hero";
 import { UpcomingList } from "@/components/upcoming-list";
 import { BriefingCard } from "@/components/briefing-card";
 import { Card } from "@/components/ui";
@@ -18,30 +20,26 @@ export default async function MyPage() {
   const mine = pickMyEvents(events, user, interests);
   const upcomingPersonal = personal.filter((p) => new Date(p.end_at).getTime() >= requestNow());
 
+  const academicCount = mine.filter((e) => e.calendar === "academic").length;
+
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+    <div className="flex flex-col gap-6">
+      <PageHero
+        badge={user.grade ? `${user.grade}학년 ${user.name}` : user.name}
+        title="내 캘린더"
+        subtitle={`내 학년·전체 대상 학과 일정 + 직접 담은 일정 ${interests.size}개(학사일정 ${academicCount}개) + 개인 일정 ${personal.length}개`}
+      />
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
       <section className="flex flex-col gap-3">
-        <div className="flex items-end justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">내 캘린더</h1>
-            <p className="text-sm text-zinc-500">
-              {user.grade ? `${user.grade}학년 대상` : "학년 미설정"} · 전체 대상 · 관심 일정 {interests.size}개 · 개인 일정
-            </p>
-          </div>
-          <CalendarLegend personal />
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-zinc-500">학사·학과 캘린더에서 일정을 눌러 ☆를 누르면 여기에 담겨요.</p>
+          <CalendarLegend keys={["dept-event", "dept-deadline", "academic", "academic-holiday", "personal"]} />
         </div>
         <Card className="p-3">
           <CalendarView
+            loggedIn
             items={[
-              ...mine.map((e) => ({
-                id: e.id,
-                title: e.title,
-                start: e.start_at,
-                end: e.end_at,
-                allDay: e.all_day,
-                kind: e.kind,
-                href: `/events/${e.id}`,
-              })),
+              ...mine.map((e) => toCalendarItem(e, interests)),
               ...personal.map((p) => ({
                 id: p.id,
                 title: p.title,
@@ -74,6 +72,7 @@ export default async function MyPage() {
           )}
         </Card>
       </aside>
+      </div>
     </div>
   );
 }

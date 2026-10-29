@@ -31,6 +31,8 @@ test.afterAll(async () => {
 
 test("전체 브리핑은 이번 주 일정을, 개인 브리핑은 내 학년 일정만 정리한다", async ({ page }) => {
   test.setTimeout(120_000);
+  // 서비스는 승인된 회원 전용이므로 먼저 가입·승인한다
+  await signupViaUi(page, { name: "브리핑", studentNo: "2027000077", grade: 1, email: `${prefix}@caialender-test.dev` });
   await page.goto("/");
   const card = page.locator("div", { has: page.getByRole("heading", { name: "✨ AI 주간 브리핑" }) }).last();
   await expect(card.getByText(/AI가 게시된 일정만으로 작성했어요/)).toBeVisible({ timeout: 60_000 });
@@ -39,8 +41,7 @@ test("전체 브리핑은 이번 주 일정을, 개인 브리핑은 내 학년 �
   expect(all).toContain(`${T} 1학년 멘토링`);
   expect(all).toContain(`${T} 3학년 취업특강`);
 
-  await signupViaUi(page, { name: "브리핑", studentNo: "2027000077", grade: 1, email: `${prefix}@caialender-test.dev` });
-  await expect(page).toHaveURL(/\/my$/);
+  await page.goto("/my");
   const myCard = page.locator("div", { has: page.getByRole("heading", { name: "✨ AI 주간 브리핑" }) }).last();
   await expect(myCard.getByText(/AI가 게시된 일정만으로 작성했어요/)).toBeVisible({ timeout: 60_000 });
   const mine = await myCard.innerText();

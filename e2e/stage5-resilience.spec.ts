@@ -36,6 +36,7 @@ test.afterAll(async () => {
 });
 
 test("AI 장애: 전체 캘린더·일정 상세는 정상, 브리핑만 안내 문구", async ({ page }) => {
+  await signupViaUi(page, { name: "장애조회", studentNo: "2027000008", grade: 2, email: `${prefix}-view@caialender-test.dev` });
   await page.goto("/");
   await expect(page.getByText(`${T} 학과 총회`).first()).toBeVisible();
   await expect(page.getByText("지금은 AI 브리핑을 만들 수 없어요. 캘린더에서 일정을 확인해 주세요.")).toBeVisible({ timeout: 30_000 });

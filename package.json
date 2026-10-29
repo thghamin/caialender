@@ -12,7 +12,8 @@
     "make-admin": "node --env-file=.env.local scripts/make-admin.mjs",
     "test:rls": "INTEGRATION=1 node --env-file=.env.local node_modules/.bin/vitest run tests/rls.integration.test.ts",
     "test:e2e": "node --env-file=.env.local node_modules/.bin/playwright test",
-    "setup-cron": "node --env-file=.env.local scripts/setup-cron.mjs"
+    "setup-cron": "node --env-file=.env.local scripts/setup-cron.mjs",
+    "import-academic": "node --env-file=.env.local --no-warnings scripts/import-academic.mjs"
   },
   "dependencies": {
     "@fullcalendar/react": "^7.1.3",
