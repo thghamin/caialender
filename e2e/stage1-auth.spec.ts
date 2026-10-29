@@ -53,6 +53,7 @@ test("회원가입 → 승인 대기(서비스 차단) → 관리자 승인 → 
 
   // 로그아웃 후 다시 로그인해도 안내 화면만
   await page.getByRole("button", { name: "로그아웃" }).first().click();
+  await page.waitForURL("**/login"); // 로그아웃이 끝난 뒤 다시 로그인
   await loginViaUi(page, studentEmail);
   await expect(page).toHaveURL(/\/pending$/);
 
