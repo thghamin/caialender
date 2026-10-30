@@ -37,6 +37,18 @@ test.afterAll(async () => {
   const { data: testNotices } = await s.from("notices").select("id").like("title", `${T}%`);
   if (testNotices?.length) await s.from("event_changes").delete().in("notice_id", testNotices.map((n) => n.id));
   await s.from("notices").delete().like("title", `${T}%`);
+  // 제목 없이 올린 공지(AI가 제목을 짓는)는 제목 태그로 못 찾을 수 있으므로 테스트 계정이 올린 공지도 지운다
+  const { data: users } = await s.auth.admin.listUsers({ perPage: 1000 });
+  const testIds = users.users.filter((u) => u.email?.startsWith(prefix)).map((u) => u.id);
+  if (testIds.length) {
+    const { data: mine } = await s.from("notices").select("id").in("created_by", testIds);
+    const ids = (mine ?? []).map((n) => n.id);
+    if (ids.length) {
+      await s.from("event_changes").delete().in("notice_id", ids);
+      await s.from("events").delete().in("notice_id", ids);
+      await s.from("notices").delete().in("id", ids);
+    }
+  }
   await deleteUsersByPrefix(prefix);
 });
 
@@ -51,6 +63,7 @@ async function becomeAdmin(page: Page) {
 /** 공지 등록 후 AI 분석이 끝날 때까지 기다린다 (화면 자동 새로고침) */
 async function submitNotice(page: Page, title: string, body: string, image?: string | string[]) {
   await page.goto("/admin/notices/new");
+  await page.getByText("✏️ 제목 직접 쓰기").click();
   await page.getByLabel("공지 제목").fill(title);
   await page.getByLabel("공지 본문").fill(body);
   if (image) {
@@ -205,4 +218,33 @@ test("공지 삭제 시 검수 전 초안만 지워지고 게시된 일정은 �
     const { data } = await s.from("events").select("title").eq("id", id).single();
     if (!data!.title.includes(tag)) await s.from("events").update({ title: `${data!.title} ${tag}` }).eq("id", id);
   }
+});
+
+test("제목 없이 공지를 올리면 AI가 제목을 짓고, 기획부가 바로 고칠 수 있다", async ({ page }) => {
+  test.setTimeout(150_000);
+  await page.goto("/login");
+  await page.getByLabel("이메일").fill(adminEmail);
+  await page.getByLabel("비밀번호").fill("e2e-Password-123");
+  await page.getByRole("button", { name: "로그인" }).click();
+  await expect(page).toHaveURL(/\/my$/);
+
+  await page.goto("/admin/notices/new");
+  await page.getByLabel("공지 본문").fill(`[학생회] ${M}월 20일(금) 오후 6시 대운동장에서 학과 체육대회 ${tag}가 열립니다. 참가 신청은 ${M}월 15일까지 구글폼으로 해 주세요.`);
+  await page.getByRole("button", { name: "등록하고 AI 분석 시작" }).click();
+  await expect(page).toHaveURL(/\/admin\/notices\/[0-9a-f-]{36}$/);
+  const id = page.url().split("/").pop()!;
+  await expect(page.getByText("분석 완료").first()).toBeVisible({ timeout: 90_000 });
+  await rememberNoticeEvents(id);
+  // AI가 지은 제목 (임시 제목이 아님)
+  await expect(page.getByText("🤖 AI가 지은 제목")).toBeVisible();
+  const { data: n } = await service().from("notices").select("title").eq("id", id).single();
+  expect(n!.title).not.toBe("AI가 제목을 정하는 중…");
+  expect(n!.title).toMatch(/체육대회/);
+
+  // 바로 고치기 (정리를 위해 테스트 태그를 붙인다)
+  await page.getByRole("button", { name: "✏️ 제목 고치기" }).click();
+  await page.getByLabel("공지 제목").fill(`${T} 고친 체육대회 제목`);
+  await page.getByRole("button", { name: "저장" }).click();
+  await expect(page.getByRole("heading", { name: `${T} 고친 체육대회 제목` })).toBeVisible();
+  await expect(page.getByText("🤖 AI가 지은 제목")).toHaveCount(0);
 });

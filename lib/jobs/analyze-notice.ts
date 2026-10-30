@@ -13,7 +13,7 @@ import {
 } from "@/lib/ai/extract-schema";
 import { diffEvent, summarizeChanges } from "@/lib/ai/change-detect";
 import { kstDate } from "@/lib/datetime";
-import { noticeImages, type CalendarEvent, type Notice } from "@/lib/types";
+import { AUTO_NOTICE_TITLE, noticeImages, type CalendarEvent, type Notice } from "@/lib/types";
 
 const MAX_ATTEMPTS = 3;
 
@@ -81,7 +81,7 @@ async function analyze(db: SupabaseClient, notice: Notice) {
   const first = await generateJson({ schemaName: "notice_events", schema: EXTRACTION_JSON_SCHEMA, messages });
   let raw = first.data;
   const model = first.model;
-  let { events, dropped } = normalizeExtraction(raw, known, notice.posted_at);
+  let { events, dropped, noticeTitle } = normalizeExtraction(raw, known, notice.posted_at);
 
   // 자체 점검: 마감이나 행사 본 일정이 빠졌으면 한 번 더 묻고, 빠진 것이 채워진 경우에만 바꾼다
   const gap = extractionGap(events, notice.body);
@@ -96,6 +96,7 @@ async function analyze(db: SupabaseClient, notice: Notice) {
       if (!extractionGap(second.events, notice.body) && second.events.length >= events.length) {
         raw = retry.data;
         ({ events, dropped } = second);
+        noticeTitle = second.noticeTitle ?? noticeTitle;
       }
     } catch (e) {
       console.warn("[analyze] 자체 점검 재요청 실패, 첫 결과 사용:", e);
@@ -151,6 +152,8 @@ async function analyze(db: SupabaseClient, notice: Notice) {
     .from("notices")
     .update({
       status: "analyzed",
+      // 제목 없이 올린 공지는 AI가 지은 제목으로 (기획부가 나중에 고칠 수 있다)
+      ...(notice.title === AUTO_NOTICE_TITLE && noticeTitle ? { title: noticeTitle } : {}),
       ai_result: { raw, dropped },
       ai_model: model,
       analyzed_at: new Date().toISOString(),

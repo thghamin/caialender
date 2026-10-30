@@ -10,7 +10,13 @@ export function NoticeForm({ now }: { now: string }) {
 
   return (
     <form action={action} className="flex flex-col gap-4">
-      <Field label="공지 제목" name="title" required maxLength={200} placeholder="예: 2027 새내기 배움터 안내" />
+      {/* 제목은 비워 두면 AI가 공지를 읽고 짓는다. 등록 후 공지 화면에서 고칠 수 있다 */}
+      <details className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm">
+        <summary className="cursor-pointer text-zinc-600">✏️ 제목 직접 쓰기 (선택 — 비워 두면 AI가 지어요)</summary>
+        <div className="mt-2">
+          <Field label="공지 제목" name="title" maxLength={200} placeholder="예: 2027 새내기 배움터 안내" />
+        </div>
+      </details>
       <Field label="공지방 게시 시각" name="posted_at" type="datetime-local" defaultValue={now} />
       <label className="flex flex-col gap-1 text-sm">
         <span className="font-medium text-zinc-700">공지 본문 (카톡 공지를 그대로 붙여넣기)</span>

@@ -11,6 +11,7 @@ import { AutoRefresh } from "./auto-refresh";
 import { DeleteNoticeButton, PublishAllButton, ReanalyzeButton } from "./notice-actions";
 import { noticeImages, type CalendarEvent, type Notice } from "@/lib/types";
 import { NoticeImages } from "@/components/notice-images";
+import { NoticeTitle } from "./notice-title";
 import { EvidenceText } from "@/components/evidence-text";
 
 export default async function AdminNoticePage({ params }: PageProps<"/admin/notices/[id]">) {
@@ -27,6 +28,8 @@ export default async function AdminNoticePage({ params }: PageProps<"/admin/noti
   const drafts = ((events ?? []) as CalendarEvent[]).filter((e) => e.status === "draft");
   const working = notice.status === "queued" || notice.status === "processing";
   const dropped = (notice.ai_result as { dropped?: string[] } | null)?.dropped ?? [];
+  const aiTitle = (notice.ai_result as { raw?: { notice_title?: string } } | null)?.raw?.notice_title?.trim();
+  const aiTitled = !!aiTitle && aiTitle === notice.title;
 
   return (
     <div className="flex flex-col gap-4">
@@ -38,7 +41,12 @@ export default async function AdminNoticePage({ params }: PageProps<"/admin/noti
             <NoticeStatusBadge status={notice.status} />
             <span className="text-xs text-zinc-500">게시 {formatKst(notice.posted_at)}</span>
           </div>
-          <h1 className="text-xl font-bold">{notice.title}</h1>
+          <NoticeTitle
+            key={notice.title}
+            id={notice.id}
+            title={notice.title}
+            auto={aiTitled}
+          />
           {notice.body && <EvidenceText body={notice.body} evidences={((events ?? []) as CalendarEvent[]).map((e) => e.evidence)} />}
           {notice.body && events && events.some((e) => e.evidence) && (
             <p className="text-xs text-zinc-500"><mark className="rounded bg-amber-200/70 px-1">형광펜</mark> = AI가 일정을 뽑은 근거 문장</p>

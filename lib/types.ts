@@ -81,3 +81,6 @@ export const KIND_LABEL: Record<EventKind, string> = {
 /** 공지의 첨부 사진 경로 목록 (예전 공지의 image_path도 포함) */
 export const noticeImages = (n: Pick<Notice, "image_path" | "image_paths">) =>
   n.image_paths?.length ? n.image_paths : n.image_path ? [n.image_path] : [];
+
+/** 제목 없이 등록한 공지의 임시 제목. AI 분석이 끝나면 AI가 지은 제목으로 바뀐다 */
+export const AUTO_NOTICE_TITLE = "AI가 제목을 정하는 중…";

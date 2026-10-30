@@ -57,6 +57,7 @@ test("AI 장애: 공지는 저장되고 분석은 재시도 대기 후 실패로
   await s.from("profiles").update({ role: "admin" }).eq("id", data.users.find((u) => u.email === adminEmail)!.id);
 
   await page.goto("/admin/notices/new");
+  await page.getByText("✏️ 제목 직접 쓰기").click();
   await page.getByLabel("공지 제목").fill(`${T} 장애 중 등록한 공지`);
   await page.getByLabel("공지 본문").fill("11월 20일 오후 6시 학과 체육대회, 장소 대운동장");
   await page.getByRole("button", { name: "등록하고 AI 분석 시작" }).click();

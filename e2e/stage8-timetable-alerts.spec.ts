@@ -158,6 +158,7 @@ test("AI 근거: 추출한 일정의 원문 문장을 형광펜으로 보여주�
   test.setTimeout(120_000);
   await login(page, "admin");
   await page.goto("/admin/notices/new");
+  await page.getByText("✏️ 제목 직접 쓰기").click();
   await page.getByLabel("공지 제목").fill(`${T} 학과 체육대회 안내`);
   await page.getByLabel("공지 본문").fill("안녕하세요 학생회입니다.\n11월 20일(금) 오후 6시에 대운동장에서 학과 체육대회가 열립니다.\n많은 참여 바랍니다.");
   await page.getByRole("button", { name: "등록하고 AI 분석 시작" }).click();

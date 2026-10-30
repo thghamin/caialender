@@ -10,7 +10,7 @@ import { kstToIso } from "@/lib/datetime";
 import { analyzeNextNotice } from "@/lib/jobs/analyze-notice";
 import { KNU_SCHEDULE_URL, parseKnuSchedule } from "@/lib/academic/knu-schedule";
 import type { FieldChange } from "@/lib/ai/change-detect";
-import { noticeImages } from "@/lib/types";
+import { AUTO_NOTICE_TITLE, noticeImages } from "@/lib/types";
 
 export type FormState = { error?: string; message?: string } | undefined;
 
@@ -21,13 +21,13 @@ const MAX_IMAGES = 6;
 /** 공지 등록 → 저장 즉시 응답하고, AI 분석은 응답 이후 백그라운드에서 실행 */
 export async function createNotice(_prev: FormState, formData: FormData): Promise<FormState> {
   const admin = await requireAdmin();
-  const title = String(formData.get("title") ?? "").trim();
+  // 제목은 선택: 비우면 AI가 분석하면서 공지 제목을 짓는다
+  const title = String(formData.get("title") ?? "").trim().slice(0, 200) || AUTO_NOTICE_TITLE;
   const body = String(formData.get("body") ?? "").trim();
   const postedAt = kstToIso(String(formData.get("posted_at") ?? ""));
   const images = formData.getAll("image").filter((f): f is File => f instanceof File && f.size > 0);
   const hasImage = images.length > 0;
 
-  if (!title) return { error: "제목을 입력하세요." };
   if (!body && !hasImage) return { error: "공지 본문이나 사진 중 하나는 있어야 합니다." };
   if (images.length > MAX_IMAGES) return { error: `사진은 ${MAX_IMAGES}장까지 올릴 수 있습니다.` };
   if (images.some((f) => !IMAGE_TYPES.includes(f.type))) return { error: "PNG, JPG, WEBP 이미지만 올릴 수 있습니다." };
@@ -254,4 +254,18 @@ export async function importAcademicSchedule(_prev: FormState, formData: FormDat
   if (error) return { error: `저장 실패: ${error.message}` };
   revalidatePath("/", "layout");
   return { message: `${year}년 학사일정 ${items.length}건을 반영했습니다.` };
+}
+
+/** 공지 제목 고치기 (AI가 지은 제목 포함) */
+export async function renameNotice(id: string, title: string): Promise<{ error?: string }> {
+  await requireAdmin();
+  const t = title.replace(/\s+/g, " ").trim();
+  if (!t) return { error: "제목을 입력하세요." };
+  if (t.length > 200) return { error: "제목은 200자까지 쓸 수 있어요." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("notices").update({ title: t }).eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/admin", "layout");
+  revalidatePath(`/notices/${id}`);
+  return {};
 }

@@ -1,11 +1,12 @@
 // 공지 → 일정 추출: 프롬프트, JSON 스키마, 결과 정규화 (순수 함수, 테스트 대상)
 import { z } from "zod";
 import { formatKst, kstDate, kstToIso } from "../datetime";
-import type { EventKind } from "../types";
+import { AUTO_NOTICE_TITLE, type EventKind } from "../types";
 
 export const EXTRACTION_JSON_SCHEMA = {
   type: "object",
   properties: {
+    notice_title: { type: "string", description: "공지 내용을 대표하는 짧은 제목 (30자 이내)" },
     events: {
       type: "array",
       items: {
@@ -31,7 +32,7 @@ export const EXTRACTION_JSON_SCHEMA = {
       },
     },
   },
-  required: ["events"],
+  required: ["notice_title", "events"],
   additionalProperties: false,
 } as const;
 
@@ -82,6 +83,7 @@ export function buildExtractionSystemPrompt(today: string) {
 9. 날짜가 전혀 없는 공지면 events는 빈 배열이다.
 10. 사용자 메시지에 "기존 일정 목록"이 주어진다. 추출한 일정이 그중 하나와 같은 행사·마감(일정 변경, 장소 변경, 재공지, 마감 연장 등)이면 existing_event_id에 그 id를 쓰고, 새 일정이면 null로 둔다. 목록에 없는 id를 만들지 마라.
 11. evidence에는 이 일정의 날짜·시각이 적힌 공지 원문 문장을 한 줄 그대로 인용한다(요약·수정 금지, 120자 이내). 포스터 이미지에서 읽었으면 포스터에 적힌 글자를 그대로 쓴다.
+12. notice_title에는 공지 전체를 대표하는 짧은 제목을 쓴다(30자 이내, 예: "새내기 배움터 안내", "현직자 초청 특강"). 일정이 여러 개여도 공지 하나의 제목이다.
 예) "MT 3/5(금) 강당 집결, 신청은 2/28까지" → [{title:"MT", kind:"event", start:"YYYY-03-05", location:"강당", missing_fields:["시간"]}, {title:"MT 신청 마감", kind:"deadline", start:"YYYY-02-28", location:null, missing_fields:["신청 방법"]}]`;
 }
 
@@ -92,7 +94,7 @@ export function buildExtractionUserText(
 ) {
   return [
     `공지 게시 시각: ${formatKst(notice.posted_at)}`,
-    `제목: ${notice.title}`,
+    notice.title && notice.title !== AUTO_NOTICE_TITLE ? `제목: ${notice.title}` : "제목: (없음, notice_title을 지어라)",
     notice.body ? `본문:\n${notice.body}` : "본문 없음 (첨부 사진을 모두 읽어라)",
     "",
     "기존 일정 목록 (id | 종류 | 날짜 | 제목 | 장소):",
@@ -115,9 +117,9 @@ export function normalizeExtraction(
   raw: unknown,
   knownEventIds: ReadonlySet<string> = new Set(),
   postedAt?: string,
-): { events: ExtractedEvent[]; dropped: string[] } {
+): { events: ExtractedEvent[]; dropped: string[]; noticeTitle: string | null } {
   const parsed = rawExtractionSchema.safeParse(raw);
-  if (!parsed.success) return { events: [], dropped: ["응답 형식이 올바르지 않음"] };
+  if (!parsed.success) return { events: [], dropped: ["응답 형식이 올바르지 않음"], noticeTitle: null };
 
   const events: ExtractedEvent[] = [];
   const dropped: string[] = [];
@@ -185,7 +187,9 @@ export function normalizeExtraction(
       evidence: e.evidence?.trim().slice(0, 200) || null,
     });
   }
-  return { events, dropped };
+  const t = (raw as { notice_title?: unknown }).notice_title;
+  const noticeTitle = typeof t === "string" && t.trim() ? t.replace(/\s+/g, " ").trim().slice(0, 60) : null;
+  return { events, dropped, noticeTitle };
 }
 
 /** 같은 일정인지 판단하기 위한 키 (변경 탐지에 사용) */
