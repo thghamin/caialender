@@ -16,9 +16,14 @@ export default async function EditEventPage({ params }: PageProps<"/admin/events
   return (
     <div className="max-w-2xl mx-auto flex flex-col gap-4">
       <div className="flex justify-between text-sm">
-        <Link href={event.notice_id ? `/admin/notices/${event.notice_id}` : "/admin"} className="text-zinc-500 hover:text-zinc-900">
-          ← {event.notice_id ? "원문 공지" : "관리 홈"}
-        </Link>
+        <span className="flex gap-4">
+          <Link href={event.calendar === "academic" ? "/academic" : "/"} className="text-zinc-500 hover:text-zinc-900">
+            ← {event.calendar === "academic" ? "학사" : "학과"} 캘린더로
+          </Link>
+          <Link href={event.notice_id ? `/admin/notices/${event.notice_id}` : "/admin"} className="text-zinc-500 hover:text-zinc-900">
+            {event.notice_id ? "원문 공지" : "관리 홈"}
+          </Link>
+        </span>
         <Link href={`/events/${event.id}`} className="text-zinc-500 hover:text-zinc-900">학생 화면으로 보기</Link>
       </div>
       <Card className="flex flex-col gap-4">

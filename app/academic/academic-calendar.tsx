@@ -4,7 +4,7 @@ import { useState } from "react";
 import { CalendarView, type CalendarItem } from "@/components/calendar-view";
 
 /** 학사 캘린더. 대학원 일정은 기본으로 숨기고 체크하면 보여준다 */
-export function AcademicCalendar({ items, loggedIn }: { items: CalendarItem[]; loggedIn: boolean }) {
+export function AcademicCalendar({ items, loggedIn, manage = false }: { items: CalendarItem[]; loggedIn: boolean; manage?: boolean }) {
   const [showGrad, setShowGrad] = useState(false);
   const isGrad = (i: CalendarItem) => i.target?.includes("대학원") ?? false;
   const gradCount = items.filter(isGrad).length;
@@ -15,7 +15,7 @@ export function AcademicCalendar({ items, loggedIn }: { items: CalendarItem[]; l
         <input type="checkbox" checked={showGrad} onChange={(e) => setShowGrad(e.target.checked)} className="accent-brand" />
         대학원 일정도 보기 ({gradCount})
       </label>
-      <CalendarView items={showGrad ? items : items.filter((i) => !isGrad(i))} loggedIn={loggedIn} />
+      <CalendarView items={showGrad ? items : items.filter((i) => !isGrad(i))} loggedIn={loggedIn} manage={manage ? { calendar: "academic" } : undefined} />
     </div>
   );
 }

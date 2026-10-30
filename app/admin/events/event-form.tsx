@@ -5,9 +5,10 @@ import { saveEvent } from "@/app/admin/actions";
 import { Alert, Button, Field } from "@/components/ui";
 import type { CalendarEvent } from "@/lib/types";
 
-export function EventForm({ event, values }: {
+export function EventForm({ event, values, defaultCalendar = "dept" }: {
   event?: CalendarEvent;
   values: { start: string; end: string };
+  defaultCalendar?: "dept" | "academic";
 }) {
   const [state, action, pending] = useActionState(saveEvent, undefined);
   const [allDay, setAllDay] = useState(event?.all_day ?? false);
@@ -20,7 +21,7 @@ export function EventForm({ event, values }: {
       <Field label="제목" name="title" defaultValue={event?.title} required maxLength={120} />
       <label className="flex flex-col gap-1 text-sm">
         <span className="font-medium text-zinc-700">캘린더</span>
-        <select name="calendar" defaultValue={event?.calendar ?? "dept"} className="rounded-md border border-zinc-300 bg-white px-3 py-2">
+        <select name="calendar" defaultValue={event?.calendar ?? defaultCalendar} className="rounded-md border border-zinc-300 bg-white px-3 py-2">
           <option value="dept">학과 캘린더 (학생회 일정)</option>
           <option value="academic">학사 캘린더 (학교 학사일정)</option>
         </select>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getCurrentUserId, requireUser } from "@/lib/auth";
+import { isAdminRole } from "@/lib/types";
 import { getInterestIds, getPublishedEvents } from "@/lib/data/events";
 import { toCalendarItem } from "@/lib/calendar-items";
 import { KNU_SCHEDULE_URL } from "@/lib/academic/knu-schedule";
@@ -14,7 +15,7 @@ export const metadata: Metadata = { title: "학사 캘린더 — C:AI:ender" };
 export default async function AcademicPage() {
   const userId = await getCurrentUserId();
   // 프로필(승인 확인)·일정·관심 일정을 병렬로 조회. 승인 전이면 requireUser가 안내 화면으로 보낸다
-  const [, events, interests] = await Promise.all([
+  const [user, events, interests] = await Promise.all([
     requireUser(),
     getPublishedEvents("academic"),
     userId ? getInterestIds(userId) : new Set<string>(),
@@ -43,7 +44,7 @@ export default async function AcademicPage() {
             <CalendarLegend keys={["academic", "dept-deadline", "academic-holiday"]} />
           </div>
           <Card className="p-3">
-            <AcademicCalendar items={events.map((e) => toCalendarItem(e, interests))} loggedIn />
+            <AcademicCalendar items={events.map((e) => toCalendarItem(e, interests))} loggedIn manage={isAdminRole(user.role)} />
           </Card>
         </section>
         <aside className="flex min-w-0 flex-col gap-4">

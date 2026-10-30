@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getCurrentUserId, requireUser } from "@/lib/auth";
+import { isAdminRole } from "@/lib/types";
 import { getInterestIds, getPublishedEvents } from "@/lib/data/events";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { toCalendarItem } from "@/lib/calendar-items";
@@ -15,11 +16,12 @@ export default async function Home() {
   }
   const userId = await getCurrentUserId();
   // 프로필(승인 확인)·일정·관심 일정을 병렬로 조회. 승인 전이면 requireUser가 안내 화면으로 보낸다
-  const [, events, interests] = await Promise.all([
+  const [user, events, interests] = await Promise.all([
     requireUser(),
     getPublishedEvents("dept"),
     userId ? getInterestIds(userId) : new Set<string>(),
   ]);
+  const admin = isAdminRole(user.role);
 
   return (
     // 학과 캘린더는 초록 테마 + 배경 K:AI 무늬 (학사 캘린더는 KNU 빨강 유지)
@@ -36,15 +38,22 @@ export default async function Home() {
         <Link href="/my" className="rounded-full px-4 py-1.5 text-sm font-semibold text-white ring-1 ring-white/50 hover:bg-white/10">
           내 캘린더 →
         </Link>
+        {admin && (
+          <Link href="/admin/events/new?cal=dept" className="rounded-full bg-zinc-900/80 px-4 py-1.5 text-sm font-semibold text-white hover:bg-zinc-900">
+            + 일정 추가
+          </Link>
+        )}
       </PageHero>
       <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
         <section className="flex min-w-0 flex-col gap-3">
           <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-zinc-500">일정을 누르면 내 캘린더에 바로 추가할 수 있어요.</p>
+            <p className="text-sm text-zinc-500">
+              {admin ? "관리자: 일정을 누르면 바로 수정, 빈 날짜를 누르면 그날로 일정 추가" : "일정을 누르면 내 캘린더에 바로 추가할 수 있어요."}
+            </p>
             <CalendarLegend keys={["dept-event", "dept-deadline", "dept-other"]} />
           </div>
           <Card className="p-3">
-            <CalendarView items={events.map((e) => toCalendarItem(e, interests))} loggedIn />
+            <CalendarView items={events.map((e) => toCalendarItem(e, interests))} loggedIn manage={admin ? { calendar: "dept" } : undefined} />
           </Card>
         </section>
         <aside className="flex min-w-0 flex-col gap-4">

@@ -6,6 +6,8 @@ import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/react/daygrid";
 import timeGridPlugin from "@fullcalendar/react/timegrid";
 import listPlugin from "@fullcalendar/react/list";
+import interactionPlugin from "@fullcalendar/react/interaction";
+import { useRouter } from "next/navigation";
 import classicThemePlugin from "@fullcalendar/react/themes/classic";
 import koLocale from "@fullcalendar/react/locales/ko";
 import "@fullcalendar/react/skeleton.css";
@@ -75,7 +77,11 @@ function useIsMobile() {
   );
 }
 
-export function CalendarView({ items, loggedIn = false }: { items: CalendarItem[]; loggedIn?: boolean }) {
+/** manage: 관리자에게만. 일정을 누르면 바로 수정·관리, 빈 날짜를 누르면 그날로 일정 추가 */
+export type CalendarManage = { calendar: CalendarKind };
+
+export function CalendarView({ items, loggedIn = false, manage }: { items: CalendarItem[]; loggedIn?: boolean; manage?: CalendarManage }) {
+  const router = useRouter();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = items.find((i) => i.id === selectedId) ?? null;
   const mobile = useIsMobile();
@@ -83,7 +89,9 @@ export function CalendarView({ items, loggedIn = false }: { items: CalendarItem[
   return (
     <div className="caialender-calendar">
       <FullCalendar
-        plugins={[dayGridPlugin, timeGridPlugin, listPlugin, classicThemePlugin]}
+        plugins={[dayGridPlugin, timeGridPlugin, listPlugin, classicThemePlugin, interactionPlugin]}
+        // 관리자: 빈 날짜를 누르면 그날로 일정 추가 화면
+        dateClick={manage ? (info) => router.push(`/admin/events/new?date=${info.dateStr.slice(0, 10)}&cal=${manage.calendar}`) : undefined}
         locale={koLocale}
         timeZone="Asia/Seoul"
         initialView="dayGridMonth"
@@ -122,12 +130,12 @@ export function CalendarView({ items, loggedIn = false }: { items: CalendarItem[
           setSelectedId(info.event.id);
         }}
       />
-      {selected && <EventPopup key={selected.id} item={selected} loggedIn={loggedIn} onClose={() => setSelectedId(null)} />}
+      {selected && <EventPopup key={selected.id} item={selected} loggedIn={loggedIn} manage={!!manage} onClose={() => setSelectedId(null)} />}
     </div>
   );
 }
 
-function EventPopup({ item, loggedIn, onClose }: { item: CalendarItem; loggedIn: boolean; onClose: () => void }) {
+function EventPopup({ item, loggedIn, manage, onClose }: { item: CalendarItem; loggedIn: boolean; manage: boolean; onClose: () => void }) {
   const [pending, start] = useTransition();
   const [interested, setInterested] = useState(!!item.interested);
   const color = COLORS[colorKey(item)];
@@ -202,6 +210,14 @@ function EventPopup({ item, loggedIn, onClose }: { item: CalendarItem; loggedIn:
               ) : (
                 <Link href={`/login?next=/events/${item.id}`} className="rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-dark">
                   로그인하고 내 캘린더에 추가
+                </Link>
+              )}
+              {manage && (
+                <Link
+                  href={`/admin/events/${item.id}`}
+                  className="rounded-full border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm font-semibold text-white hover:bg-zinc-700"
+                >
+                  ✏️ 수정·관리
                 </Link>
               )}
               {item.href && (

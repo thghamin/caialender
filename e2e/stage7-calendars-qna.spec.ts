@@ -245,3 +245,34 @@ test("카카오톡 안의 브라우저로 열면 Safari/크롬으로 열도록 �
   await expect(page.getByRole("dialog", { name: "앱 설치 안내" })).toHaveCount(0);
   await ctx.close();
 });
+
+test("관리자: 학과 캘린더에서 일정을 눌러 바로 수정하고, 빈 날짜를 눌러 그날로 일정을 추가한다", async ({ page }) => {
+  await loginViaUi(page, email("admin"));
+  await page.waitForURL("**/my");
+  await page.goto("/");
+  await page.locator(".caialender-calendar").getByText(`${T} 학과 MT`).first().click();
+  const popup = page.getByRole("dialog", { name: `${T} 학과 MT` });
+  await popup.getByRole("link", { name: "✏️ 수정·관리" }).click();
+  await expect(page.getByRole("heading", { name: "일정 검수·수정" })).toBeVisible();
+  await expect(page.getByLabel("제목")).toHaveValue(`${T} 학과 MT`);
+  await page.getByRole("link", { name: "← 학과 캘린더로" }).click();
+  await expect(page.getByRole("heading", { name: "학과 캘린더" })).toBeVisible();
+
+  // 빈 날짜를 누르면 그날 오전 10시로 채운 추가 화면 (테스트 일정이 있는 오늘 말고, 같은 달의 다른 날)
+  const kst = new Date(Date.now() + 9 * 3600_000);
+  const d = kst.getUTCDate() > 15 ? 3 : 25;
+  const empty = `${kst.toISOString().slice(0, 8)}${String(d).padStart(2, "0")}`;
+  await page.locator(`.caialender-calendar [data-date="${empty}"]`).first().click({ position: { x: 8, y: 50 } });
+  await expect(page).toHaveURL(new RegExp(`/admin/events/new\\?date=${empty}&cal=dept`));
+  await expect(page.getByLabel("시작")).toHaveValue(`${empty}T10:00`);
+  await expect(page.getByLabel("캘린더")).toHaveValue("dept");
+
+  // 학생에게는 수정 버튼이 없다
+  const student = await page.context().browser()!.newPage();
+  await loginViaUi(student, email("student"));
+  await student.waitForURL("**/my");
+  await student.goto("/");
+  await student.locator(".caialender-calendar").getByText(`${T} 학과 MT`).first().click();
+  await expect(student.getByRole("link", { name: "✏️ 수정·관리" })).toHaveCount(0);
+  await student.close();
+});
