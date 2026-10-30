@@ -70,6 +70,43 @@ body {
   cursor: pointer;
 }
 
+/* 일정 막대: 긴 제목은 월 보기에서 두 줄까지 줄바꿈하고 나머지는 … (전체 제목은 마우스를 올리거나 눌러서) */
+.cal-ev {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 1px 4px;
+  font-size: 12px;
+  line-height: 1.25;
+}
+.cal-ev-time {
+  font-size: 10.5px;
+  opacity: 0.9;
+}
+.cal-ev-title {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.cal-ev-clamp .cal-ev-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  white-space: normal;
+}
+@media (max-width: 767px) {
+  .cal-ev {
+    padding: 1px 2px;
+    font-size: 10.5px;
+  }
+  .cal-ev-time {
+    display: none;
+  }
+  .caialender-calendar h2 {
+    font-size: 1.1rem;
+  }
+}
+
 /* 학과 캘린더 배경: 옅은 초록 K:AI 무늬 */
 .dept-backdrop {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='140'%3E%3Ctext x='10' y='90' font-family='Arial Black,Arial,sans-serif' font-size='52' font-weight='900' fill='%2316a34a' fill-opacity='0.06' transform='rotate(-14 110 70)'%3EK:AI%3C/text%3E%3C/svg%3E");

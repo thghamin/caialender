@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useSyncExternalStore, useTransition } from "react";
 import Link from "next/link";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/react/daygrid";
@@ -58,9 +58,24 @@ function colorKey(i: Pick<CalendarItem, "kind" | "calendar">): ColorKey {
   return i.kind === "other" ? "dept-other" : "dept-event";
 }
 
+// 화면 폭이 768px 미만이면 모바일 배치 (PC 버전으로 보기를 고르면 viewport가 1280이라 PC 배치)
+const MOBILE_QUERY = "(max-width: 767px)";
+function useIsMobile() {
+  return useSyncExternalStore(
+    (cb) => {
+      const mq = window.matchMedia(MOBILE_QUERY);
+      mq.addEventListener("change", cb);
+      return () => mq.removeEventListener("change", cb);
+    },
+    () => window.matchMedia(MOBILE_QUERY).matches,
+    () => false,
+  );
+}
+
 export function CalendarView({ items, loggedIn = false }: { items: CalendarItem[]; loggedIn?: boolean }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = items.find((i) => i.id === selectedId) ?? null;
+  const mobile = useIsMobile();
 
   return (
     <div className="caialender-calendar">
@@ -69,9 +84,28 @@ export function CalendarView({ items, loggedIn = false }: { items: CalendarItem[
         locale={koLocale}
         timeZone="Asia/Seoul"
         initialView="dayGridMonth"
-        headerToolbar={{ start: "prev,next today", center: "title", end: "dayGridMonth,timeGridWeek,listMonth" }}
+        headerToolbar={
+          mobile
+            ? { start: "prev,next", center: "title", end: "today" }
+            : { start: "prev,next today", center: "title", end: "dayGridMonth,timeGridWeek,listMonth" }
+        }
+        footerToolbar={mobile ? { center: "dayGridMonth,listMonth" } : undefined}
         height="auto"
-        dayMaxEvents={3}
+        dayMaxEvents={mobile ? 2 : 3}
+        // 월 보기에서도 모든 일정을 색 막대로 그려서 긴 제목을 두 줄까지 보여준다
+        eventDisplay="block"
+        eventContent={(arg) => {
+          const grid = arg.view.type.startsWith("dayGrid");
+          return (
+            <div
+              className={`cal-ev ${grid ? "cal-ev-clamp" : ""}`}
+              title={arg.timeText ? `${arg.timeText} ${arg.event.title}` : arg.event.title}
+            >
+              {arg.timeText && !arg.event.allDay && <span className="cal-ev-time">{arg.timeText}</span>}
+              <span className="cal-ev-title">{arg.event.title}</span>
+            </div>
+          );
+        }}
         events={items.map((i) => ({
           id: i.id,
           title: `${i.kind === "deadline" ? "⏰ " : ""}${i.interested ? "★ " : ""}${i.title}`,

@@ -44,7 +44,7 @@ export default async function MyPage() {
       </PageHero>
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
       <section className="flex flex-col gap-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-zinc-500">학사·학과 캘린더에서 일정을 눌러 ☆를 누르면 여기에 담겨요.</p>
           <CalendarLegend keys={["dept-event", "dept-deadline", "academic", "academic-holiday", "personal"]} />
         </div>

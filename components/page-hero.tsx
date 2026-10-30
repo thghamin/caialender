@@ -19,7 +19,7 @@ export function PageHero({ title, subtitle, badge, tone = "custom", children }: 
 }) {
   return (
     <section
-      className="relative overflow-hidden rounded-3xl px-6 py-6 text-white shadow-lg shadow-zinc-300/60 transition-[background] duration-300 [text-shadow:0_1px_2px_rgb(0_0_0/0.25)] sm:px-8"
+      className="relative overflow-hidden rounded-2xl px-5 py-5 text-white sm:rounded-3xl sm:py-6 shadow-lg shadow-zinc-300/60 transition-[background] duration-300 [text-shadow:0_1px_2px_rgb(0_0_0/0.25)] sm:px-8"
       style={{ background: GRADIENT[tone] }}
     >
       {/* 장식: 흰 원과 아래 띠 */}
@@ -49,8 +49,8 @@ export function PageHero({ title, subtitle, badge, tone = "custom", children }: 
             {badge}
           </span>
         )}
-        <h1 className="text-3xl font-extrabold tracking-tight">{title}</h1>
-        <p className="text-sm text-white/85">{subtitle}</p>
+        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{title}</h1>
+        <p className="text-[13px] leading-5 text-white/85 sm:text-sm">{subtitle}</p>
         {children && <div className="mt-2 flex flex-wrap items-center gap-2">{children}</div>}
       </div>
     </section>

@@ -39,7 +39,7 @@ export default async function Home() {
       </PageHero>
       <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
         <section className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-zinc-500">일정을 누르면 내 캘린더에 바로 추가할 수 있어요.</p>
             <CalendarLegend keys={["dept-event", "dept-deadline", "dept-other"]} />
           </div>

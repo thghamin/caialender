@@ -180,3 +180,24 @@ test("학과 초록·학사 빨강 고정, 나머지는 무지개 중 고른 색
   // 선택된 '월' 버튼 글자는 흰색
   await expect(page.getByRole("tab", { name: "월", selected: true })).toHaveCSS("color", "rgb(255, 255, 255)");
 });
+
+test("휴대폰: 하단 탭 메뉴로 이동하고, PC 버전 ↔ 모바일 버전을 바꾼다", async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 3 });
+  const page = await ctx.newPage();
+  await loginViaUi(page, email("student"));
+  await page.waitForURL("**/my");
+  const tabs = page.getByRole("navigation", { name: "모바일 메뉴" });
+  await expect(tabs).toBeVisible();
+  await tabs.getByRole("link", { name: /학사/ }).click();
+  await expect(page.getByRole("heading", { name: "학사 캘린더" })).toBeVisible();
+
+  await Promise.all([page.waitForEvent("load"), page.getByRole("button", { name: /PC 버전으로 보기/ }).click()]);
+  await expect.poll(() => page.evaluate(() => window.innerWidth)).toBe(1280);
+  await expect(tabs).toBeHidden();
+  // PC 모드(화면 폭 1280을 휴대폰에 축소해 표시)에서는 Playwright 에뮬레이터의 좌표 계산이 맞지 않아
+  // 클릭 이벤트를 직접 보낸다. 실제 휴대폰 터치에는 문제가 없다.
+  await Promise.all([page.waitForEvent("load"), page.getByRole("button", { name: /모바일 버전으로 보기/ }).dispatchEvent("click")]);
+  await expect.poll(() => page.evaluate(() => window.innerWidth)).toBe(390);
+  await expect(tabs).toBeVisible();
+  await ctx.close();
+});

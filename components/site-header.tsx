@@ -4,6 +4,7 @@ import { logout } from "@/app/auth/actions";
 import { isAdminRole, ROLE_LABEL } from "@/lib/types";
 import { Hobanu } from "./hobanu";
 import { NavLink } from "./nav-link";
+import { MobileTabBar } from "./mobile-tab-bar";
 
 export async function SiteHeader() {
   const user = await getCurrentUser();
@@ -12,16 +13,18 @@ export async function SiteHeader() {
   const approved = user?.approval_status === "approved";
 
   return (
+    <>
     <header className="sticky top-0 z-30 border-b border-brand/15 bg-white/90 backdrop-blur">
       <div className="h-1 bg-gradient-to-r from-brand via-brand-dark to-knu-gold" />
-      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center gap-6">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 h-14 md:h-16 flex items-center gap-3 md:gap-6">
         <Link href="/" className="flex items-center gap-2 font-extrabold text-lg tracking-tight">
           <Hobanu className="size-9 drop-shadow-sm" title="" />
           <span>
             C<span className="text-brand">:AI:</span>ender
           </span>
         </Link>
-        <nav className="flex gap-1 text-sm">
+        {/* PC 메뉴. 휴대폰은 화면 아래 탭 메뉴(MobileTabBar) */}
+        <nav className="hidden gap-1 text-sm md:flex">
           {approved && <NavLink href="/">학과 캘린더</NavLink>}
           {approved && <NavLink href="/academic">학사 캘린더</NavLink>}
           {approved && <NavLink href="/my">내 캘린더</NavLink>}
@@ -29,12 +32,14 @@ export async function SiteHeader() {
           {approved && <NavLink href="/qna">질문</NavLink>}
           {admin && <NavLink href="/admin" strong>관리자</NavLink>}
         </nav>
-        <div className="ml-auto flex items-center gap-3 text-sm">
+        <div className="ml-auto flex items-center gap-2 text-sm md:gap-3">
           {user ? (
             <>
               <span className="text-zinc-500">
-                {user.name}
-                {user.grade ? ` · ${user.grade}학년` : ""}
+                <span className="hidden sm:inline">
+                  {user.name}
+                  {user.grade ? ` · ${user.grade}학년` : ""}
+                </span>
                 {user.role !== "student" && (
                   <span className="ml-1.5 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand">
                     {ROLE_LABEL[user.role]}
@@ -56,5 +61,8 @@ export async function SiteHeader() {
         </div>
       </div>
     </header>
+    {/* header의 backdrop-blur 안에 두면 fixed가 화면 기준이 아니게 되므로 밖에 둔다 */}
+    {approved && <MobileTabBar admin={admin} />}
+    </>
   );
 }
