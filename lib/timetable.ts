@@ -193,14 +193,20 @@ export function coursesFromBlocks(
   const sh = parsed.success ? parsed.data.start_hour : undefined;
   const startHour = typeof sh === "number" && Number.isInteger(sh) && sh >= 5 && sh <= 12 ? sh : null;
   const courses: TimetableCourse[] = [];
+  // AI가 빈칸을 "null", "없음" 같은 글자로 채우는 경우를 걸러낸다
+  const clean = (v: string | null | undefined, max: number) => {
+    const t = (v ?? "").replace(/\s+/g, " ").trim();
+    return !t || /^(null|none|n\/a|없음|-|unknown|\?+)$/i.test(t) ? null : t.slice(0, max);
+  };
   blocks.forEach((b, i) => {
     const t = texts.get(i + 1);
-    const name = t?.name.replace(/\s+/g, " ").trim().slice(0, 60) || "수업 (이름 확인 필요)";
-    const professor = t?.professor?.trim().slice(0, 40) || null;
-    const slot: TimetableSlot = { day: b.day, start_min: b.start_min, end_min: b.end_min, location: t?.location?.replace(/\s+/g, " ").trim().slice(0, 80) || null };
+    const read = clean(t?.name, 60);
+    const name = read ?? "수업 (이름 확인 필요)";
+    const professor = clean(t?.professor, 40);
+    const slot: TimetableSlot = { day: b.day, start_min: b.start_min, end_min: b.end_min, location: clean(t?.location, 80) };
     const same = courses.find((c) => c.name.replace(/\s/g, "") === name.replace(/\s/g, "") && c.professor === professor);
     const notes: string[] = [];
-    if (!t?.name.trim()) notes.push("이름을 읽지 못했어요");
+    if (!read) notes.push("이름을 읽지 못했어요");
     if (b.truncated) notes.push(`캡처 아래가 잘려 ${DAY_LABELS[b.day]}요일 끝나는 시각이 실제보다 이를 수 있어요`);
     if (same) {
       same.slots.push(slot);

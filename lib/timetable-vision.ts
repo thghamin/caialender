@@ -97,7 +97,50 @@ export function detectGrid(img: RawImage): GridInfo | null {
   while (colX[0] - cols.gap > W * 0.02) colX.unshift(Math.round(colX[0] - cols.gap));
   while (colX[colX.length - 1] + cols.gap < W - 1) colX.push(Math.round(colX[colX.length - 1] + cols.gap));
   if (W - colX[colX.length - 1] > cols.gap * 0.6) colX.push(W - 1);
-  return { lineY: rows.lines, colX, hourPx: rows.gap };
+
+  // 시간표 상자 아래(친구 검색창·친구 목록 등)까지 눈금으로 잡지 않도록, 요일 세로선이 실제로 보이는 높이까지만 쓴다.
+  // 세로선은 '가는 선'이라 바로 옆은 흰색이다 (넓은 회색 상자는 옆도 회색이라 제외된다)
+  const d = Math.max(3, Math.round(W * 0.006));
+  let cardBottom = top;
+  for (const cx of colX.slice(1, -1)) {
+    for (let y = top; y < H; y++) {
+      const thin = [cx - 1, cx, cx + 1].some((x) => x > d && x < W - d && isGridGray(pixel(img, x, y)) && isWhite(pixel(img, x - d, y)) && isWhite(pixel(img, x + d, y)));
+      if (thin && y > cardBottom) cardBottom = y;
+    }
+  }
+  let lineY = rows.lines.filter((y) => y <= cardBottom + Math.max(2, rows.gap * 0.08));
+  let hourPx = rows.gap;
+
+  // 확인용 기준: 왼쪽 시간 숫자(9, 10, 11 …)는 수업 칸에 가려지지 않는다. 숫자들의 간격 = 1시간 높이.
+  // 눈금선 간격이 이와 10% 넘게 다르면(선이 하나 걸러 보여 2배로 잡힌 경우 등) 숫자 간격으로 다시 맞춘다
+  const labelGap = hourLabelGap(img, colX[0], top, cardBottom);
+  if (labelGap && Math.abs(labelGap - hourPx) / labelGap > 0.1) {
+    hourPx = labelGap;
+    lineY = [];
+    for (let y = top; y <= cardBottom + 2; y += labelGap) lineY.push(Math.round(y));
+  }
+  if (lineY.length < 3) return null;
+  return { lineY, colX, hourPx };
+}
+
+/** 왼쪽 시간 숫자 칸에서 숫자 덩어리들의 세로 간격 (못 찾으면 null) */
+export function hourLabelGap(img: RawImage, timeColRight: number, top: number, bottom: number): number | null {
+  const x0 = Math.round(timeColRight * 0.1);
+  const x1 = Math.max(x0 + 2, timeColRight - 2);
+  const dark: boolean[] = [];
+  for (let y = top; y <= bottom; y++) {
+    let n = 0;
+    for (let x = x0; x < x1; x++) {
+      const [r, g, b] = pixel(img, x, y);
+      if (r + g + b < 3 * 185) n++;
+    }
+    dark.push(n > 0);
+  }
+  const tops: number[] = [];
+  for (let i = 0; i < dark.length; i++) if (dark[i] && (i === 0 || !dark[i - 1])) tops.push(top + i);
+  if (tops.length < 3) return null;
+  const fit = fitProgression(tops, img.width * 0.05, img.width * 0.25, img.height);
+  return fit && fit.lines.length >= 3 ? fit.gap : null;
 }
 
 const snap30 = (m: number) => Math.round(m / 30) * 30;
@@ -110,7 +153,9 @@ export function detectBlocks(img: RawImage, grid: GridInfo, startHour: number): 
   const { lineY, colX, hourPx } = grid;
   const top = lineY[0];
   const bottom = lineY[lineY.length - 1];
-  const onLine = (y: number) => lineY.some((l) => Math.abs(l - y) <= 1);
+  // 고해상도 캡처는 선이 2~3px로 두껍고, 숫자 간격으로 다시 맞춘 선은 몇 px 어긋날 수 있어 여유를 해상도에 비례시킨다
+  const lineTol = Math.max(1, Math.round(hourPx * 0.03));
+  const onLine = (y: number) => lineY.some((l) => Math.abs(l - y) <= lineTol);
   const blocks: DetectedBlock[] = [];
 
 
@@ -133,7 +178,7 @@ export function detectBlocks(img: RawImage, grid: GridInfo, startHour: number): 
       }
       cur = null;
     };
-    const SPLIT_ROWS = Math.max(3, Math.round(hourPx * 0.12));
+    const SPLIT_ROWS = Math.max(3, Math.round(hourPx * 0.3));
     for (let y = top; y <= bottom; y++) {
       // 칸 안을 지나는 시간 눈금선은 같은 칸으로 본다 (옅은 칸 색이 회색 눈금과 비슷하다)
       if (cur && onLine(y)) continue;
@@ -144,9 +189,10 @@ export function detectBlocks(img: RawImage, grid: GridInfo, startHour: number): 
         close(y);
         continue;
       }
-      // 바탕색 후보: 세 줄 중 가장 밝은 픽셀 (글자는 어둡다)
+      // 바탕색 후보: 세 지점이 모두 고르게 같은 옅은 색일 때만 칸 바탕으로 본다 (글자·글자 테두리가 섞인 줄은 무시)
       const bg = ps.reduce((a, b) => (a[0] + a[1] + a[2] >= b[0] + b[1] + b[2] ? a : b));
-      const isFill = Math.max(...bg) > 215 && !isWhite(bg);
+      const uniform = ps.every((p) => dist(p, ps[0]) <= 24);
+      const isFill = uniform && Math.max(...bg) > 215 && !isWhite(bg);
       if (!cur) {
         cur = { top: y, color: bg, samples: isFill ? [bg] : [], changeAt: null, newColor: null };
         continue;
@@ -171,6 +217,22 @@ export function detectBlocks(img: RawImage, grid: GridInfo, startHour: number): 
     }
     close(bottom);
   }
+  // 같은 요일에 맞닿은 같은 색 칸은 하나의 수업이다 (눈금선이나 글자 때문에 나뉜 경우 다시 붙인다)
+  blocks.sort((a, b) => a.day - b.day || a.top - b.top);
+  for (let i = blocks.length - 1; i > 0; i--) {
+    const a = blocks[i - 1];
+    const b = blocks[i];
+    if (a.day === b.day && b.top - a.bottom <= Math.max(3, hourPx * 0.08) && dist(a.color, b.color) <= 30) {
+      a.bottom = b.bottom;
+      a.end_min = b.end_min;
+      blocks.splice(i, 1);
+    }
+  }
+
+  // 여러 요일(4칸 이상)에 똑같은 높이·색으로 걸친 띠는 수업이 아니라 화면의 다른 요소(검색창 등)다
+  const bands = blocks.filter((b) => blocks.filter((o) => Math.abs(o.top - b.top) <= 3 && Math.abs(o.bottom - b.bottom) <= 3 && dist(o.color, b.color) <= 20).length >= 4);
+  for (const b of bands) blocks.splice(blocks.indexOf(b), 1);
+
   // 시간표가 상자 아래(또는 친구 목록 등)로 가려져 잘린 경우: 가장 아래까지 내려간 칸이
   // 가로 테두리(폭의 90% 이상이 흰색이 아닌 줄)에 닿아 있으면 끝 시각을 알 수 없다고 본다
   const lowest = Math.max(...blocks.map((b) => b.bottom), 0);

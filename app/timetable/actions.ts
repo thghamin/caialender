@@ -134,7 +134,8 @@ async function analyzeByBlocks(bytes: Buffer): Promise<{ courses: TimetableCours
 
   // 칸마다 잘라서 글자가 잘 보이게 키운다
   const crop = async (r: { left: number; top: number; width: number; height: number }) => {
-    const scale = Math.min(4, Math.max(2, 320 / r.width));
+    // 글자가 또렷하도록 가로 480px 이상으로 키운다 (작은 캡처는 최대 4배)
+    const scale = Math.min(4, Math.max(1.5, 480 / r.width));
     const png = await sharp(bytes)
       .extract(r)
       .resize({ width: Math.round(r.width * scale), kernel: "lanczos3" })
@@ -152,6 +153,8 @@ async function analyzeByBlocks(bytes: Buffer): Promise<{ courses: TimetableCours
     schemaName: "timetable_blocks",
     maxTokens: 3000,
     timeoutMs: 90_000,
+    // 글자를 정확히 읽는 큰 이미지 모델 (실패하면 기본 모델로 넘어간다)
+    model: process.env.AI_TIMETABLE_MODEL || undefined,
   });
   const { courses: read, startHour } = coursesFromBlocks(raw, blocks);
   // 맨 위 시각이 9시가 아니면 모든 칸을 옮긴다 (칸 시각은 9시 기준으로 잰 값)

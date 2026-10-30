@@ -31,8 +31,8 @@ describe("시간표 눈금 복원", () => {
 // 실제 에타 스크린샷(개인정보 포함, git 제외)이 있을 때만
 const FULL = "tests/fixtures/private/everytime-full.png";
 describe.skipIf(!existsSync(FULL))("실제 에타 스크린샷 픽셀 측정", () => {
-  it("모든 수업 칸의 요일·시각을 30분 단위로 정확히 잰다", async () => {
-    const { data, info } = await sharp(FULL).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  it.each([FULL, FULL.replace(".png", "-x4.png")].filter(existsSync))("모든 수업 칸의 요일·시각을 30분 단위로 정확히 잰다 (%s)", async (file) => {
+    const { data, info } = await sharp(file).removeAlpha().raw().toBuffer({ resolveWithObject: true });
     const img = { data, width: info.width, height: info.height, channels: info.channels };
     const grid = detectGrid(img)!;
     const blocks = detectBlocks(img, grid, 9).map((b) => `${b.day} ${b.start_min / 60}-${b.end_min / 60}${b.truncated ? " 잘림" : ""}`);
