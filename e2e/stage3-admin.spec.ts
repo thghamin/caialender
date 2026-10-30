@@ -49,11 +49,15 @@ async function becomeAdmin(page: Page) {
 }
 
 /** 공지 등록 후 AI 분석이 끝날 때까지 기다린다 (화면 자동 새로고침) */
-async function submitNotice(page: Page, title: string, body: string, image?: string) {
+async function submitNotice(page: Page, title: string, body: string, image?: string | string[]) {
   await page.goto("/admin/notices/new");
   await page.getByLabel("공지 제목").fill(title);
   await page.getByLabel("공지 본문").fill(body);
-  if (image) await page.getByLabel(/포스터 이미지/).setInputFiles(image);
+  if (image) {
+    await page.getByLabel(/포스터 이미지/).setInputFiles(image);
+    const n = Array.isArray(image) ? image.length : 1;
+    await expect(page.getByText(`${n}장 첨부됨`)).toBeVisible();
+  }
   const t0 = Date.now();
   await page.getByRole("button", { name: "등록하고 AI 분석 시작" }).click();
   await expect(page).toHaveURL(/\/admin\/notices\/[0-9a-f-]{36}$/);
@@ -126,8 +130,10 @@ test("포스터 이미지 공지 → AI가 이미지에서 일정 추출", async
   await page.getByRole("button", { name: "로그인" }).click();
   await expect(page).toHaveURL(/\/my$/);
 
-  await submitNotice(page, `${T} 특강 포스터 ${tag}`, "", path.resolve("tests/fixtures/poster-lecture.png"));
-  await expect(page.getByRole("img", { name: "공지 포스터" })).toBeVisible();
+  // 사진 여러 장 첨부 (같은 포스터 2장: 미리보기·전송·AI 분석·표시 확인)
+  await submitNotice(page, `${T} 특강 포스터 ${tag}`, "", [path.resolve("tests/fixtures/poster-lecture.png"), path.resolve("tests/fixtures/poster-lecture.png")]);
+  await expect(page.getByRole("img", { name: "공지 사진 1" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "공지 사진 2" })).toBeVisible();
   const s = service();
   const { data: notice } = await s.from("notices").select("id, posted_at").like("title", `${T} 특강%`).single();
   const { data: drafts } = await s.from("events").select("*").eq("notice_id", notice!.id);

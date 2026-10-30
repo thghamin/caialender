@@ -5,7 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import { formatKst } from "@/lib/datetime";
 import { KindBadge } from "@/components/upcoming-list";
 import { Card } from "@/components/ui";
-import type { CalendarEvent, Notice } from "@/lib/types";
+import { noticeImages, type CalendarEvent, type Notice } from "@/lib/types";
+import { NoticeImages } from "@/components/notice-images";
 
 export default async function NoticePage({ params }: PageProps<"/notices/[id]">) {
   await requireUser();
@@ -14,12 +15,7 @@ export default async function NoticePage({ params }: PageProps<"/notices/[id]">)
   const { data: notice } = await supabase.from("notices").select("*").eq("id", id).maybeSingle<Notice>();
   if (!notice) notFound();
 
-  const [{ data: events }, imageUrl] = await Promise.all([
-    supabase.from("events").select("*").eq("notice_id", id).eq("status", "published").order("start_at"),
-    notice.image_path
-      ? supabase.storage.from("posters").createSignedUrl(notice.image_path, 3600).then((r) => r.data?.signedUrl)
-      : Promise.resolve(undefined),
-  ]);
+  const { data: events } = await supabase.from("events").select("*").eq("notice_id", id).eq("status", "published").order("start_at");
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -29,10 +25,7 @@ export default async function NoticePage({ params }: PageProps<"/notices/[id]">)
           <p className="text-xs text-zinc-500">{formatKst(notice.posted_at)}</p>
           <h1 className="text-xl font-bold">{notice.title}</h1>
           {notice.body && <pre className="whitespace-pre-wrap font-sans text-sm leading-6 text-zinc-700">{notice.body}</pre>}
-          {imageUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={imageUrl} alt="공지 포스터" className="max-h-[700px] w-auto self-start rounded-md border" />
-          )}
+          <NoticeImages paths={noticeImages(notice)} />
         </Card>
         {events && events.length > 0 && (
           <Card>

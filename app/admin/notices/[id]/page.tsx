@@ -9,7 +9,8 @@ import { NoticeStatusBadge } from "../../status-badge";
 import { ChangeActions } from "../../change-actions";
 import { AutoRefresh } from "./auto-refresh";
 import { DeleteNoticeButton, PublishAllButton, ReanalyzeButton } from "./notice-actions";
-import type { CalendarEvent, Notice } from "@/lib/types";
+import { noticeImages, type CalendarEvent, type Notice } from "@/lib/types";
+import { NoticeImages } from "@/components/notice-images";
 import { EvidenceText } from "@/components/evidence-text";
 
 export default async function AdminNoticePage({ params }: PageProps<"/admin/notices/[id]">) {
@@ -19,12 +20,9 @@ export default async function AdminNoticePage({ params }: PageProps<"/admin/noti
   const { data: notice } = await supabase.from("notices").select("*").eq("id", id).maybeSingle<Notice>();
   if (!notice) notFound();
 
-  const [{ data: events }, { data: changes }, imageUrl] = await Promise.all([
+  const [{ data: events }, { data: changes }] = await Promise.all([
     supabase.from("events").select("*").eq("notice_id", id).order("start_at"),
     supabase.from("event_changes").select("id, summary, status").eq("notice_id", id),
-    notice.image_path
-      ? supabase.storage.from("posters").createSignedUrl(notice.image_path, 600).then((r) => r.data?.signedUrl)
-      : Promise.resolve(undefined),
   ]);
   const drafts = ((events ?? []) as CalendarEvent[]).filter((e) => e.status === "draft");
   const working = notice.status === "queued" || notice.status === "processing";
@@ -45,10 +43,7 @@ export default async function AdminNoticePage({ params }: PageProps<"/admin/noti
           {notice.body && events && events.some((e) => e.evidence) && (
             <p className="text-xs text-zinc-500"><mark className="rounded bg-amber-200/70 px-1">형광펜</mark> = AI가 일정을 뽑은 근거 문장</p>
           )}
-          {imageUrl && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={imageUrl} alt="공지 포스터" className="max-h-[600px] w-auto rounded-md border" />
-          )}
+          <NoticeImages paths={noticeImages(notice)} expiresIn={600} />
           <div className="flex gap-2 pt-2">
             {!working && <ReanalyzeButton id={notice.id} />}
             <DeleteNoticeButton id={notice.id} />

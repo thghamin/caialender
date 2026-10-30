@@ -51,6 +51,8 @@ export type Notice = {
   title: string;
   body: string;
   image_path: string | null;
+  /** 첨부 사진 전체 (최대 6장). 예전 공지는 image_path 한 장만 있을 수 있다 */
+  image_paths?: string[];
   posted_at: string;
   status: "queued" | "processing" | "analyzed" | "failed";
   attempts: number;
@@ -75,3 +77,7 @@ export const KIND_LABEL: Record<EventKind, string> = {
   deadline: "마감",
   other: "기타",
 };
+
+/** 공지의 첨부 사진 경로 목록 (예전 공지의 image_path도 포함) */
+export const noticeImages = (n: Pick<Notice, "image_path" | "image_paths">) =>
+  n.image_paths?.length ? n.image_paths : n.image_path ? [n.image_path] : [];

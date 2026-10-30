@@ -93,7 +93,7 @@ export function buildExtractionUserText(
   return [
     `공지 게시 시각: ${formatKst(notice.posted_at)}`,
     `제목: ${notice.title}`,
-    notice.body ? `본문:\n${notice.body}` : "본문 없음 (첨부 포스터 이미지를 읽어라)",
+    notice.body ? `본문:\n${notice.body}` : "본문 없음 (첨부 사진을 모두 읽어라)",
     "",
     "기존 일정 목록 (id | 종류 | 날짜 | 제목 | 장소):",
     existing.length

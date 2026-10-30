@@ -10,11 +10,13 @@ import { kstToIso } from "@/lib/datetime";
 import { analyzeNextNotice } from "@/lib/jobs/analyze-notice";
 import { KNU_SCHEDULE_URL, parseKnuSchedule } from "@/lib/academic/knu-schedule";
 import type { FieldChange } from "@/lib/ai/change-detect";
+import { noticeImages } from "@/lib/types";
 
 export type FormState = { error?: string; message?: string } | undefined;
 
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
 const IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
+const MAX_IMAGES = 6;
 
 /** 공지 등록 → 저장 즉시 응답하고, AI 분석은 응답 이후 백그라운드에서 실행 */
 export async function createNotice(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -22,22 +24,28 @@ export async function createNotice(_prev: FormState, formData: FormData): Promis
   const title = String(formData.get("title") ?? "").trim();
   const body = String(formData.get("body") ?? "").trim();
   const postedAt = kstToIso(String(formData.get("posted_at") ?? ""));
-  const image = formData.get("image");
-  const hasImage = image instanceof File && image.size > 0;
+  const images = formData.getAll("image").filter((f): f is File => f instanceof File && f.size > 0);
+  const hasImage = images.length > 0;
 
   if (!title) return { error: "제목을 입력하세요." };
-  if (!body && !hasImage) return { error: "공지 본문이나 포스터 이미지 중 하나는 있어야 합니다." };
-  if (hasImage && !IMAGE_TYPES.includes(image.type)) return { error: "PNG, JPG, WEBP 이미지만 올릴 수 있습니다." };
-  if (hasImage && image.size > MAX_IMAGE_BYTES) return { error: "이미지는 8MB 이하만 올릴 수 있습니다." };
+  if (!body && !hasImage) return { error: "공지 본문이나 사진 중 하나는 있어야 합니다." };
+  if (images.length > MAX_IMAGES) return { error: `사진은 ${MAX_IMAGES}장까지 올릴 수 있습니다.` };
+  if (images.some((f) => !IMAGE_TYPES.includes(f.type))) return { error: "PNG, JPG, WEBP 이미지만 올릴 수 있습니다." };
+  if (images.some((f) => f.size > MAX_IMAGE_BYTES)) return { error: "사진 한 장은 8MB 이하만 올릴 수 있습니다." };
 
   const supabase = await createClient();
-  let imagePath: string | null = null;
-  if (hasImage) {
+  const imagePaths: string[] = [];
+  for (const image of images) {
     const ext = image.type.split("/")[1].replace("jpeg", "jpg");
-    imagePath = `${new Date().toISOString().slice(0, 7)}/${crypto.randomUUID()}.${ext}`;
-    const { error } = await supabase.storage.from("posters").upload(imagePath, image, { contentType: image.type });
-    if (error) return { error: `이미지 업로드 실패: ${error.message}` };
+    const path = `${new Date().toISOString().slice(0, 7)}/${crypto.randomUUID()}.${ext}`;
+    const { error } = await supabase.storage.from("posters").upload(path, image, { contentType: image.type });
+    if (error) {
+      if (imagePaths.length) await supabase.storage.from("posters").remove(imagePaths);
+      return { error: `사진 업로드 실패: ${error.message}` };
+    }
+    imagePaths.push(path);
   }
+  const imagePath = imagePaths[0] ?? null;
 
   const { data, error } = await supabase
     .from("notices")
@@ -45,6 +53,7 @@ export async function createNotice(_prev: FormState, formData: FormData): Promis
       title,
       body,
       image_path: imagePath,
+      image_paths: imagePaths,
       posted_at: postedAt?.iso ?? new Date().toISOString(),
       created_by: admin.id,
     })
@@ -73,12 +82,15 @@ export async function reanalyzeNotice(id: string) {
 export async function deleteNotice(id: string) {
   await requireAdmin();
   const supabase = await createClient();
-  const { data: notice } = await supabase.from("notices").select("image_path").eq("id", id).single();
+  const { data: notice } = await supabase.from("notices").select("image_path, image_paths").eq("id", id).single();
   // 검수 전 초안만 함께 지우고, 이미 게시된 일정은 남긴다(notice_id는 null이 됨)
   await supabase.from("events").delete().eq("notice_id", id).eq("status", "draft");
   const { error } = await supabase.from("notices").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  if (notice?.image_path) await supabase.storage.from("posters").remove([notice.image_path]);
+  if (notice) {
+    const paths = noticeImages(notice);
+    if (paths.length) await supabase.storage.from("posters").remove(paths);
+  }
   revalidatePath("/admin");
   redirect("/admin");
 }

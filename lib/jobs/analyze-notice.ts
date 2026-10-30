@@ -13,7 +13,7 @@ import {
 } from "@/lib/ai/extract-schema";
 import { diffEvent, summarizeChanges } from "@/lib/ai/change-detect";
 import { kstDate } from "@/lib/datetime";
-import type { CalendarEvent, Notice } from "@/lib/types";
+import { noticeImages, type CalendarEvent, type Notice } from "@/lib/types";
 
 const MAX_ATTEMPTS = 3;
 
@@ -71,7 +71,8 @@ async function analyze(db: SupabaseClient, notice: Notice) {
   const known = new Set(existing.map((e) => e.id));
 
   const content: ContentPart[] = [{ type: "text", text: buildExtractionUserText(notice, existing) }];
-  if (notice.image_path) content.push({ type: "image_url", image_url: { url: await imageDataUrl(db, notice.image_path) } });
+  // 첨부 사진을 모두 함께 보낸다 (여러 장짜리 포스터·안내문)
+  for (const path of noticeImages(notice)) content.push({ type: "image_url", image_url: { url: await imageDataUrl(db, path) } });
 
   const messages = [
     { role: "system" as const, content: buildExtractionSystemPrompt(kstDate(notice.posted_at)) },
