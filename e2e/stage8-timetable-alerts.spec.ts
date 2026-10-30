@@ -105,11 +105,18 @@ test("시간표: 에타 스크린샷을 AI가 읽어 그대로 넣는다 (실제
   await sheet.getByLabel("에타 시간표 스크린샷").setInputFiles(SAMPLE);
   await sheet.getByRole("button", { name: "🤖 AI로 읽기" }).click();
   await expect(sheet.getByText(/AI가 읽은 수업 \d+개/)).toBeVisible({ timeout: 120_000 });
-  for (const name of ["로봇제어1", "이산수학", "모델링 및 시뮬레이션"]) await expect(sheet.getByText(name).first()).toBeVisible();
+  // 이름은 고칠 수 있는 입력칸에 들어 있다
+  const names = await sheet.getByLabel("수업명 고치기").evaluateAll((els) => els.map((e) => (e as HTMLInputElement).value));
+  for (const name of ["로봇제어1", "이산수학", "모델링 및 시뮬레이션"]) expect(names).toContain(name);
   // 시각은 픽셀로 잰 30분 단위 (로봇제어1: 화 9:00-10:30, 목 10:30-12:00)
-  await expect(sheet.getByText(/화 09:00-10:30 .*목 10:30-12:00/).first()).toBeVisible();
+  await expect(sheet.getByText("화 09:00-10:30").first()).toBeVisible();
+  await expect(sheet.getByText("목 10:30-12:00").first()).toBeVisible();
+  // 추가하기 전에 AI가 읽은 이름을 바로 고칠 수 있다
+  const first = sheet.getByTestId("import-course").first();
+  await first.getByLabel("수업명 고치기").fill("고친 수업명");
   await sheet.getByRole("button", { name: "추가" }).click();
   await expect(sheet).toBeHidden();
+  await expect(page.getByTestId("timetable-grid").getByText("고친 수업명").first()).toBeVisible();
   await expect(page.getByTestId("timetable-grid").getByText("로봇제어1").first()).toBeVisible();
   const { data } = await service().from("timetable_courses").select("name, source").eq("user_id", ids.student);
   expect(data!.length).toBeGreaterThanOrEqual(6);

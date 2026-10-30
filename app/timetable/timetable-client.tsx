@@ -338,7 +338,10 @@ function ImportSheet({ hasExisting, onClose }: { hasExisting: boolean; onClose: 
 
   const save = async () => {
     {
-      const list: TimetableCourse[] = (result ?? []).filter((c) => picked.has(c.key)).map((c) => ({ name: c.name, professor: c.professor, color: c.color, reminder: c.reminder, slots: c.slots }));
+      const list: TimetableCourse[] = (result ?? [])
+        .filter((c) => picked.has(c.key))
+        .map((c) => ({ name: c.name.trim(), professor: c.professor?.trim() || null, color: c.color, reminder: c.reminder, slots: c.slots }));
+      if (list.some((c) => !c.name)) return setError("수업명이 빈 수업이 있어요. 이름을 적거나 체크를 빼 주세요.");
       if (!list.length) return setError("추가할 수업을 하나 이상 골라 주세요.");
       setSaving(true);
       const r = await importCourses(list, replace);
@@ -437,12 +440,16 @@ function ImportSheet({ hasExisting, onClose }: { hasExisting: boolean; onClose: 
           <p className="text-sm font-semibold">AI가 읽은 수업 {result.length}개 — 넣을 수업을 고르세요</p>
           <TimetableGrid courses={result.filter((c) => picked.has(c.key))} compact />
           <ul className="flex flex-col divide-y divide-zinc-100 rounded-xl border border-zinc-200">
-            {result.map((c) => (
-              <li key={c.key}>
-                <label className="flex cursor-pointer items-start gap-3 px-3 py-2">
+            {result.map((c) => {
+              // AI가 읽은 글자를 추가하기 전에 바로 고칠 수 있다
+              const patch = (p: Partial<Keyed>) => setResult(result.map((x) => (x.key === c.key ? { ...x, ...p } : x)));
+              const field = "w-full rounded-lg border border-zinc-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-brand";
+              return (
+                <li key={c.key} className="flex items-start gap-3 px-3 py-2.5" data-testid="import-course">
                   <input
                     type="checkbox"
-                    className="mt-1 size-4 accent-brand"
+                    aria-label={`${c.name} 넣기`}
+                    className="mt-2 size-4 shrink-0 accent-brand"
                     checked={picked.has(c.key)}
                     onChange={(e) => {
                       const next = new Set(picked);
@@ -451,16 +458,38 @@ function ImportSheet({ hasExisting, onClose }: { hasExisting: boolean; onClose: 
                       setPicked(next);
                     }}
                   />
-                  <span className="min-w-0 text-sm">
-                    <b>{c.name}</b> {c.professor && <span className="text-zinc-500">· {c.professor}</span>}
-                    <span className="block text-xs text-zinc-500">
-                      {c.slots.map((s) => `${DAY_LABELS[s.day]} ${hhmm(s.start_min)}-${hhmm(s.end_min)}${s.location ? ` ${s.location}` : ""}`).join(" / ")}
-                    </span>
-                    {c.check && <span className="mt-0.5 block text-xs font-medium text-amber-700">⚠️ {c.check} — 추가한 뒤 칸을 눌러 고칠 수 있어요</span>}
-                  </span>
-                </label>
-              </li>
-            ))}
+                  <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                    <div className="grid grid-cols-[1fr_7rem] gap-1.5">
+                      <input aria-label="수업명 고치기" value={c.name} maxLength={60} onChange={(e) => patch({ name: e.target.value })} className={`${field} font-semibold`} />
+                      <input
+                        aria-label="교수명 고치기"
+                        placeholder="교수명"
+                        value={c.professor ?? ""}
+                        maxLength={40}
+                        onChange={(e) => patch({ professor: e.target.value || null })}
+                        className={field}
+                      />
+                    </div>
+                    {c.slots.map((sl, k) => (
+                      <div key={k} className="flex items-center gap-1.5 text-xs text-zinc-500">
+                        <span className="shrink-0 tabular-nums">
+                          {DAY_LABELS[sl.day]} {hhmm(sl.start_min)}-{hhmm(sl.end_min)}
+                        </span>
+                        <input
+                          aria-label="장소 고치기"
+                          placeholder="장소"
+                          value={sl.location ?? ""}
+                          maxLength={80}
+                          onChange={(e) => patch({ slots: c.slots.map((x, m) => (m === k ? { ...x, location: e.target.value || null } : x)) })}
+                          className={`${field} min-w-0 flex-1 py-1 text-xs`}
+                        />
+                      </div>
+                    ))}
+                    {c.check && <span className="text-xs font-medium text-amber-700">⚠️ {c.check} — 시간은 추가한 뒤 칸을 눌러 고칠 수 있어요</span>}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
           {hasExisting && (
             <label className="flex items-center gap-2 text-sm">
