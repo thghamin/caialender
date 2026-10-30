@@ -188,15 +188,28 @@ test("휴대폰: 하단 탭 메뉴로 이동하고, PC 버전 ↔ 모바일 버�
   await page.waitForURL("**/my");
   const tabs = page.getByRole("navigation", { name: "모바일 메뉴" });
   await expect(tabs).toBeVisible();
-  // 로그인하면 앱 설치를 권하고, [나중에]를 누르면 다시 묻지 않는다
+  // 로그인하면 앱 설치를 권한다. [닫기]는 이번 창에서만 숨기고, 새 창에서는 다시 묻는다
   const install = page.getByRole("dialog", { name: "앱 설치 안내" });
   await expect(install).toBeVisible();
   await expect(install.getByText("알림을 받을 수 있어요")).toBeVisible();
-  await install.getByRole("button", { name: "나중에" }).click();
+  await install.getByRole("button", { name: "닫기" }).click();
   await expect(install).toBeHidden();
   await page.reload();
   await page.waitForTimeout(1500);
   await expect(install).toBeHidden();
+  const again = await ctx.newPage();
+  await again.goto("/my");
+  const install2 = again.getByRole("dialog", { name: "앱 설치 안내" });
+  await expect(install2).toBeVisible();
+  // '오늘 하루 보지 않기'를 체크하고 닫으면 새 창에서도 오늘은 묻지 않는다
+  await install2.getByLabel("오늘 하루 보지 않기").check();
+  await install2.getByRole("button", { name: "닫기" }).click();
+  const third = await ctx.newPage();
+  await third.goto("/my");
+  await third.waitForTimeout(1800);
+  await expect(third.getByRole("dialog", { name: "앱 설치 안내" })).toHaveCount(0);
+  await again.close();
+  await third.close();
   await tabs.getByRole("link", { name: /학사/ }).click();
   await expect(page.getByRole("heading", { name: "학사 캘린더" })).toBeVisible();
 
@@ -208,5 +221,27 @@ test("휴대폰: 하단 탭 메뉴로 이동하고, PC 버전 ↔ 모바일 버�
   await Promise.all([page.waitForEvent("load"), page.getByRole("button", { name: /모바일 버전으로 보기/ }).dispatchEvent("click")]);
   await expect.poll(() => page.evaluate(() => window.innerWidth)).toBe(390);
   await expect(tabs).toBeVisible();
+  await ctx.close();
+});
+
+test("카카오톡 안의 브라우저로 열면 Safari/크롬으로 열도록 안내하고, 앱 설치 안내는 띄우지 않는다", async ({ browser }) => {
+  const ctx = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    isMobile: true,
+    hasTouch: true,
+    userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 KAKAOTALK 10.8.5",
+  });
+  const page = await ctx.newPage();
+  // 자동으로 바깥 브라우저를 여는 kakaotalk:// 이동은 테스트 브라우저가 처리하지 못하므로 막아 둔다
+  await page.route("kakaotalk://**", (r) => r.abort());
+  await page.goto("/login");
+  const banner = page.getByRole("alert", { name: "외부 브라우저 안내" });
+  await expect(banner).toBeVisible();
+  await expect(banner.getByText("카카오톡")).toBeVisible();
+  await expect(banner.getByRole("link", { name: "Safari로 열기" })).toHaveAttribute("href", /^kakaotalk:\/\/web\/openExternal\?url=/);
+  await loginViaUi(page, email("student"));
+  await page.waitForURL("**/my");
+  await page.waitForTimeout(1800);
+  await expect(page.getByRole("dialog", { name: "앱 설치 안내" })).toHaveCount(0);
   await ctx.close();
 });

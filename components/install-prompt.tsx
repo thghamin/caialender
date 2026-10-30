@@ -2,23 +2,32 @@
 
 import { useEffect, useState } from "react";
 import { Hobanu } from "./hobanu";
+import { detectInApp } from "@/lib/client/in-app";
 
 // 휴대폰에서 로그인하면 'C:AI:ender 앱 설치'를 권한다. 설치해야(특히 아이폰) 휴대폰 알림을 받을 수 있다.
 // - 안드로이드 크롬: beforeinstallprompt로 [앱 설치] 한 번에 설치
 // - 아이폰(Safari·크롬): 설치 API가 없어 '공유 → 홈 화면에 추가' 안내
-// [나중에]는 7일 동안 다시 묻지 않는다. 이미 앱으로 열었으면 묻지 않는다.
+// [닫기]는 지금 창(세션)에서만 숨기고, 창을 다시 열면 또 묻는다.
+// '오늘 하루 보지 않기'를 체크하고 닫으면 오늘 밤 12시(KST)까지 묻지 않는다. 이미 앱으로 열었으면 묻지 않는다.
 
 type InstallEvent = Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: "accepted" | "dismissed" }> };
 
-const DISMISS_KEY = "install_prompt_dismissed_at";
-const WEEK = 7 * 86400_000;
+const TODAY_KEY = "install_prompt_hide_until"; // localStorage: 이 시각(ms)까지 숨김
+const SESSION_KEY = "install_prompt_closed"; // sessionStorage: 이번 창에서 닫음
+
+/** 오늘 밤 12시(KST) */
+function endOfTodayKst() {
+  const kst = new Date(Date.now() + 9 * 3600_000);
+  return Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate() + 1) - 9 * 3600_000;
+}
 
 function shouldAsk() {
   if (!window.matchMedia("(max-width: 767px)").matches) return false; // 휴대폰 화면에서만
+  if (detectInApp(navigator.userAgent)) return false; // 카카오톡 등 앱 안의 브라우저는 설치가 안 된다 (InAppGuard가 안내)
   const standalone = window.matchMedia("(display-mode: standalone)").matches || (navigator as { standalone?: boolean }).standalone;
   if (standalone) return false;
-  const at = Number(localStorage.getItem(DISMISS_KEY) ?? 0);
-  return Date.now() - at > WEEK;
+  if (sessionStorage.getItem(SESSION_KEY)) return false;
+  return Date.now() >= Number(localStorage.getItem(TODAY_KEY) ?? 0);
 }
 
 export function InstallPrompt() {
@@ -26,6 +35,7 @@ export function InstallPrompt() {
   const [platform, setPlatform] = useState<"ios" | "android">("android");
   const [installEvent, setInstallEvent] = useState<InstallEvent | null>(null);
   const [done, setDone] = useState(false);
+  const [hideToday, setHideToday] = useState(false);
 
   useEffect(() => {
     if (!shouldAsk()) return;
@@ -49,8 +59,9 @@ export function InstallPrompt() {
   }, []);
 
   if (!open) return null;
-  const later = () => {
-    localStorage.setItem(DISMISS_KEY, String(Date.now()));
+  const close = () => {
+    sessionStorage.setItem(SESSION_KEY, "1");
+    if (hideToday) localStorage.setItem(TODAY_KEY, String(endOfTodayKst()));
     setOpen(false);
   };
 
@@ -84,9 +95,13 @@ export function InstallPrompt() {
           </p>
         )}
 
-        <div className="mt-3 flex justify-end gap-2">
-          <button onClick={later} className="rounded-full px-4 py-2 text-sm text-zinc-500">
-            {done || platform === "ios" ? "닫기" : "나중에"}
+        <div className="mt-3 flex items-center justify-end gap-2">
+          <label className="mr-auto flex items-center gap-1.5 text-sm text-zinc-500">
+            <input type="checkbox" checked={hideToday} onChange={(e) => setHideToday(e.target.checked)} className="size-4 accent-brand" />
+            오늘 하루 보지 않기
+          </label>
+          <button onClick={close} className="rounded-full px-4 py-2 text-sm text-zinc-500">
+            닫기
           </button>
           {!done && platform === "android" && installEvent && (
             <button

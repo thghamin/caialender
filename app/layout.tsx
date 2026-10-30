@@ -5,6 +5,7 @@ import { SiteHeader } from "@/components/site-header";
 import { isMyColor, MY_COLOR_COOKIE, userColorVars } from "@/lib/my-color";
 import { PC_VIEWPORT_WIDTH, VIEW_MODE_COOKIE } from "@/lib/view-mode";
 import { ViewModeToggle } from "@/components/view-mode-toggle";
+import { InAppGuard } from "@/components/in-app-guard";
 import "./globals.css";
 
 const geistMono = Geist_Mono({
@@ -44,6 +45,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         />
       </head>
       <body className="min-h-full flex flex-col bg-zinc-50 text-zinc-900">
+        {/* 카카오톡 등 앱 안의 브라우저면 Safari/크롬으로 열도록 (로그인 화면 포함 모든 화면) */}
+        <InAppGuard />
         <SiteHeader />
         {/* 휴대폰에서는 하단 탭 메뉴에 가리지 않도록 아래 여백 */}
         <main className="flex-1 w-full max-w-6xl mx-auto px-3 pt-4 pb-28 sm:px-4 md:py-6">{children}</main>
