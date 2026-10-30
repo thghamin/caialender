@@ -66,7 +66,7 @@ export function InstallPrompt() {
   };
 
   return (
-    <div className="fixed inset-x-0 bottom-[68px] z-40 px-3 pb-2 md:hidden" role="dialog" aria-label="앱 설치 안내">
+    <div className="fixed inset-x-0 bottom-[calc(68px+env(safe-area-inset-bottom))] z-40 px-3 pb-2 md:hidden" role="dialog" aria-label="앱 설치 안내">
       <div className="animate-pop-in rounded-2xl border border-brand/20 bg-white p-4 shadow-2xl shadow-black/20">
         <div className="flex items-start gap-3">
           <Hobanu className="size-12 shrink-0" title="" />
