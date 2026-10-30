@@ -237,3 +237,21 @@ export function sameEventTitle(a: string, b: string) {
   const gx = grams(x);
   return [...grams(y)].some((g) => gx.has(g));
 }
+
+/**
+ * 추출 결과 자체 점검: 공지에 마감·행사 정보가 있는데 해당 일정이 빠졌으면 다시 물어볼 말을 돌려준다 (없으면 null)
+ * text: 공지 본문 + AI가 쓴 설명·근거 (포스터는 본문이 없으므로 AI가 읽은 글자로 판단)
+ */
+export function extractionGap(events: Pick<ExtractedEvent, "kind" | "description" | "evidence">[], body: string): string | null {
+  if (!events.length) return null;
+  const text = [body, ...events.flatMap((e) => [e.description, e.evidence ?? ""])].join("\n");
+  const hasDeadline = events.some((e) => e.kind === "deadline");
+  const hasEvent = events.some((e) => e.kind !== "deadline");
+  if (!hasDeadline && /신청|접수|제출|마감|까지|선착순/.test(text)) {
+    return "위 결과에 신청·접수·제출 기한(마감) 일정이 빠졌다. 공지(포스터 포함)에 적힌 기한을 kind=\"deadline\" 일정으로 추가해서, 이미 찾은 일정과 함께 전체를 다시 답하라. 기한 날짜가 정말 없으면 그대로 답하라.";
+  }
+  if (!hasEvent && /일시|장소|집결|개최|진행|열립니다|행사/.test(text)) {
+    return "위 결과에 행사 본 일정(kind=\"event\")이 빠졌다. 마감 일정과 함께 행사 일정도 넣어 전체를 다시 답하라.";
+  }
+  return null;
+}

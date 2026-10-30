@@ -6,6 +6,7 @@ import {
   EXTRACTION_JSON_SCHEMA,
   buildExtractionSystemPrompt,
   buildExtractionUserText,
+  extractionGap,
   normalizeExtraction,
   sameEventTitle,
   type ExtractedEvent,
@@ -72,16 +73,33 @@ async function analyze(db: SupabaseClient, notice: Notice) {
   const content: ContentPart[] = [{ type: "text", text: buildExtractionUserText(notice, existing) }];
   if (notice.image_path) content.push({ type: "image_url", image_url: { url: await imageDataUrl(db, notice.image_path) } });
 
-  const { data: raw, model } = await generateJson({
-    schemaName: "notice_events",
-    schema: EXTRACTION_JSON_SCHEMA,
-    messages: [
-      { role: "system", content: buildExtractionSystemPrompt(kstDate(notice.posted_at)) },
-      { role: "user", content },
-    ],
-  });
+  const messages = [
+    { role: "system" as const, content: buildExtractionSystemPrompt(kstDate(notice.posted_at)) },
+    { role: "user" as const, content },
+  ];
+  const first = await generateJson({ schemaName: "notice_events", schema: EXTRACTION_JSON_SCHEMA, messages });
+  let raw = first.data;
+  const model = first.model;
+  let { events, dropped } = normalizeExtraction(raw, known, notice.posted_at);
 
-  const { events, dropped } = normalizeExtraction(raw, known, notice.posted_at);
+  // 자체 점검: 마감이나 행사 본 일정이 빠졌으면 한 번 더 묻고, 빠진 것이 채워진 경우에만 바꾼다
+  const gap = extractionGap(events, notice.body);
+  if (gap) {
+    try {
+      const retry = await generateJson({
+        schemaName: "notice_events",
+        schema: EXTRACTION_JSON_SCHEMA,
+        messages: [...messages, { role: "assistant" as const, content: JSON.stringify(raw) }, { role: "user" as const, content: gap }],
+      });
+      const second = normalizeExtraction(retry.data, known, notice.posted_at);
+      if (!extractionGap(second.events, notice.body) && second.events.length >= events.length) {
+        raw = retry.data;
+        ({ events, dropped } = second);
+      }
+    } catch (e) {
+      console.warn("[analyze] 자체 점검 재요청 실패, 첫 결과 사용:", e);
+    }
+  }
   const byId = new Map(existing.map((e) => [e.id, e]));
 
   // 같은 변경 제안이 이미 검토 대기 중이면 다시 만들지 않는다 (같은 공지가 여러 번 올라오는 경우)

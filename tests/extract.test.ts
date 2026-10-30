@@ -172,3 +172,14 @@ describe("기존 일정 연결 확인 (변경 탐지 오탐 방지)", () => {
     expect(sameEventTitle("중간고사 간식마차", "학과 체육대회")).toBe(false);
   });
 });
+
+describe("추출 결과 자체 점검", () => {
+  it("마감·행사 본 일정이 빠졌는지 알아챈다", async () => {
+    const { extractionGap } = await import("@/lib/ai/extract-schema");
+    const ev = (kind: "event" | "deadline", description = "") => ({ kind, description, evidence: null });
+    expect(extractionGap([ev("event", "QR로 3/15까지 신청")], "")).toContain("마감");
+    expect(extractionGap([ev("deadline")], "일시: 11/24 집결 IT-5호관")).toContain("행사 본 일정");
+    expect(extractionGap([ev("event"), ev("deadline")], "신청 ~3/15")).toBeNull();
+    expect(extractionGap([ev("event", "특강")], "3월 18일 특강")).toBeNull();
+  });
+});
