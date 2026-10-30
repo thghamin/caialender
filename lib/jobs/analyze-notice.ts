@@ -7,6 +7,7 @@ import {
   buildExtractionSystemPrompt,
   buildExtractionUserText,
   normalizeExtraction,
+  sameEventTitle,
   type ExtractedEvent,
 } from "@/lib/ai/extract-schema";
 import { diffEvent, summarizeChanges } from "@/lib/ai/change-detect";
@@ -94,7 +95,9 @@ async function analyze(db: SupabaseClient, notice: Notice) {
   const newEvents: ExtractedEvent[] = [];
   const changeRows: object[] = [];
   for (const ev of events) {
-    const target = ev.existing_event_id ? byId.get(ev.existing_event_id) : undefined;
+    // AI가 기존 일정과 연결했어도 제목이 전혀 다른 행사면 믿지 않고 새 일정으로 본다 (예: 배움터 ↔ MT)
+    const linked = ev.existing_event_id ? byId.get(ev.existing_event_id) : undefined;
+    const target = linked && sameEventTitle(linked.title, ev.title) ? linked : undefined;
     if (!target) {
       newEvents.push(ev);
       continue;

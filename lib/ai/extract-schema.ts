@@ -218,3 +218,22 @@ export function findEvidence(body: string, evidence: string | null): { start: nu
   if (at < 0) return null;
   return { start: map[at], end: map[at + target.length - 1] + 1 };
 }
+
+/**
+ * AI가 '기존 일정의 변경'이라고 연결했을 때 제목이 정말 같은 행사를 가리키는지 확인한다.
+ * 학기·연도·학과명 같은 흔한 말을 빼고, 한쪽이 다른 쪽을 포함하거나 두 글자 조각이 겹치면 같은 행사로 본다.
+ * (예: "MT 장소 변경" ↔ "26-2학기 MT" → 같음, "새내기 배움터" ↔ "26-2학기 MT" → 다름)
+ */
+export function sameEventTitle(a: string, b: string) {
+  const core = (t: string) =>
+    normalizeTitle(t)
+      .replace(/\d{2,4}(학년도|년)?|\d{1,2}-\d학기|[1-2]학기|학기|인공지능전공|ai전공|학과|학생회|안내|공지|변경|연기|취소|재공지|일정/g, "")
+      .replace(/(신청|접수|제출|연락)?마감$/, "");
+  const x = core(a);
+  const y = core(b);
+  if (!x || !y) return false;
+  if (x.includes(y) || y.includes(x)) return true;
+  const grams = (t: string) => new Set(Array.from({ length: Math.max(t.length - 1, 0) }, (_, i) => t.slice(i, i + 2)));
+  const gx = grams(x);
+  return [...grams(y)].some((g) => gx.has(g));
+}

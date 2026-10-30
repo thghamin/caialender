@@ -31,6 +31,9 @@ test.beforeAll(async () => {
 test.afterAll(async () => {
   const s = service();
   await s.from("events").delete().like("title", `${T}%`);
+  // 테스트 공지가 만든 변경 제안은 실제 일정에 걸려 있을 수 있으므로 공지보다 먼저 지운다
+  const { data: testNotices } = await s.from("notices").select("id").like("title", `${T}%`);
+  if (testNotices?.length) await s.from("event_changes").delete().in("notice_id", testNotices.map((n) => n.id));
   await s.from("notices").delete().like("title", `${T}%`);
   await deleteUsersByPrefix(prefix);
 });

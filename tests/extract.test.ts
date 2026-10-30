@@ -160,3 +160,15 @@ describe("AI 근거 문장", () => {
     expect(findEvidence(body, "없는 문장")).toBeNull();
   });
 });
+
+describe("기존 일정 연결 확인 (변경 탐지 오탐 방지)", () => {
+  it("같은 행사면 연결, 전혀 다른 행사면 연결하지 않는다", async () => {
+    const { sameEventTitle } = await import("@/lib/ai/extract-schema");
+    expect(sameEventTitle("26-2학기 MT", "MT 장소 변경")).toBe(true);
+    expect(sameEventTitle("2027 AI전공 현직자 초청 특강", "현직자 특강 일정 변경")).toBe(true);
+    expect(sameEventTitle("새내기 배움터", "새내기 배움터 신청 마감")).toBe(true);
+    expect(sameEventTitle("26-2학기 MT", "새내기 배움터")).toBe(false);
+    expect(sameEventTitle("26-2학기 MT", "E2E3-abc 새내기 배움터")).toBe(false);
+    expect(sameEventTitle("중간고사 간식마차", "학과 체육대회")).toBe(false);
+  });
+});
