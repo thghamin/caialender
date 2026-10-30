@@ -67,7 +67,7 @@ export default async function AdminPage() {
 
       {changes && changes.length > 0 && (
         <Card className="border-amber-300">
-          <h2 className="font-semibold mb-3">⚠️ AI가 감지한 일정 변경 ({changes.length})</h2>
+          <h2 className="mb-3 text-[1.05rem] font-bold">⚠️ AI가 감지한 일정 변경 ({changes.length})</h2>
           <ul className="flex flex-col gap-3">
             {changes.map((c) => (
               <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 text-sm">
@@ -85,7 +85,7 @@ export default async function AdminPage() {
       )}
 
       <Card>
-        <h2 className="font-semibold mb-3">검수 대기 일정 ({drafts?.length ?? 0})</h2>
+        <h2 className="mb-3 text-[1.05rem] font-bold">검수 대기 일정 ({drafts?.length ?? 0})</h2>
         {!drafts?.length ? (
           <p className="text-sm text-zinc-500">검수할 일정이 없습니다.</p>
         ) : (
@@ -108,7 +108,7 @@ export default async function AdminPage() {
 
       <Card className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="font-semibold">🎓 학사 캘린더</h2>
+          <h2 className="text-[1.05rem] font-bold">🎓 학사 캘린더</h2>
           <p className="text-sm text-zinc-500">
             경북대 홈페이지 학사일정을 불러와 학사 캘린더에 게시합니다. 현재 {academicCount ?? 0}건. 다시 불러와도 중복되지 않아요.
           </p>
@@ -118,7 +118,7 @@ export default async function AdminPage() {
 
       <Card>
         <div className="flex items-center justify-between mb-3">
-          <h2 className="font-semibold">최근 공지</h2>
+          <h2 className="text-[1.05rem] font-bold">최근 공지</h2>
           <Link href="/admin/events" className="text-sm text-zinc-500 hover:text-brand">전체 일정 관리 →</Link>
         </div>
         {!notices?.length ? (

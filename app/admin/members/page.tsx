@@ -46,7 +46,7 @@ export default async function MembersPage({ searchParams }: PageProps<"/admin/me
       </div>
 
       <Card className={waiting.length ? "border-amber-300" : ""}>
-        <h2 className="mb-3 font-semibold">⏳ 가입 승인 대기 ({waiting.length})</h2>
+        <h2 className="mb-3 text-[1.05rem] font-bold">⏳ 가입 승인 대기 ({waiting.length})</h2>
         {waiting.length === 0 ? (
           <p className="text-sm text-zinc-500">승인을 기다리는 회원이 없습니다.</p>
         ) : (
@@ -56,7 +56,7 @@ export default async function MembersPage({ searchParams }: PageProps<"/admin/me
 
       <Card className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="font-semibold">전체 회원 ({all.length})</h2>
+          <h2 className="text-[1.05rem] font-bold">전체 회원 ({all.length})</h2>
           <form className="flex gap-2">
             <input
               name="q"

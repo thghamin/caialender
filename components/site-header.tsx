@@ -43,13 +43,15 @@ export async function SiteHeader() {
                   {user.grade ? ` · ${user.grade}학년` : ""}
                 </span>
                 {user.role !== "student" && (
-                  <span className="ml-1.5 rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand">
-                    {ROLE_LABEL[user.role]}
+                  <span className="ml-1.5 whitespace-nowrap rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand">
+                    {/* 휴대폰은 짧게 */}
+                    <span className="sm:hidden">{user.role === "super_admin" ? "총관리" : "관리자"}</span>
+                    <span className="hidden sm:inline">{ROLE_LABEL[user.role]}</span>
                   </span>
                 )}
               </span>
               <form action={logout}>
-                <button className="rounded-full border border-zinc-300 px-3 py-1 hover:bg-zinc-100">로그아웃</button>
+                <button className="whitespace-nowrap rounded-full border border-zinc-300 px-3 py-1 text-sm hover:bg-zinc-100">로그아웃</button>
               </form>
             </>
           ) : (

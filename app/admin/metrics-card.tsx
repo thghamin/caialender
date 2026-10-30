@@ -19,7 +19,7 @@ export async function MetricsCard() {
   ];
   return (
     <Card>
-      <h2 className="mb-3 font-semibold">📊 AI·학생회 성과 <span className="text-xs font-normal text-zinc-500">(실제 기록 기준)</span></h2>
+      <h2 className="mb-3 text-[1.05rem] font-bold">📊 AI·학생회 성과 <span className="text-xs font-normal text-zinc-500">(실제 기록 기준)</span></h2>
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {tiles.map((t) => (
           <div key={t.label} className="rounded-xl bg-brand-soft/60 p-3">

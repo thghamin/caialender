@@ -36,7 +36,7 @@ export default async function TimetablePage() {
         <section className="min-w-0">
           <TimetableClient initial={courses} />
         </section>
-        <aside className="flex flex-col gap-4">
+        <aside className="flex min-w-0 flex-col gap-4">
           <Card>
             <PushSetup />
           </Card>

@@ -87,7 +87,7 @@ export default async function AdminNoticePage({ params }: PageProps<"/admin/noti
 
           <Card>
             <div className="flex items-center justify-between mb-3">
-              <h2 className="font-semibold">추출된 일정 ({events?.length ?? 0})</h2>
+              <h2 className="text-[1.05rem] font-bold">추출된 일정 ({events?.length ?? 0})</h2>
               {drafts.length > 0 && <PublishAllButton noticeId={notice.id} count={drafts.length} />}
             </div>
             {notice.status === "analyzed" && !events?.length && !changes?.length && (

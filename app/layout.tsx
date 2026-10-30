@@ -34,6 +34,15 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const colorVars = isMyColor(saved) ? userColorVars(saved) : undefined;
   return (
     <html lang="ko" className={`${geistMono.variable} h-full antialiased`} style={colorVars as React.CSSProperties}>
+      <head>
+        {/* Pretendard는 PC 화면에서만 받는다(media). 휴대폰은 기기 기본 글꼴이라 내려받지 않는다 */}
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          media="(min-width: 768px)"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-zinc-50 text-zinc-900">
         <SiteHeader />
         {/* 휴대폰에서는 하단 탭 메뉴에 가리지 않도록 아래 여백 */}

@@ -46,7 +46,7 @@ export default async function AcademicPage() {
             <AcademicCalendar items={events.map((e) => toCalendarItem(e, interests))} loggedIn />
           </Card>
         </section>
-        <aside className="flex flex-col gap-4">
+        <aside className="flex min-w-0 flex-col gap-4">
           <UpcomingList events={undergrad} title="다가오는 학사일정" />
         </aside>
       </div>

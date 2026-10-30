@@ -25,13 +25,16 @@ export function BriefingCard({ scope }: { scope: "all" | "me" }) {
 
   return (
     <div
-      className="rounded-2xl border p-5"
-      style={{
-        borderColor: "color-mix(in srgb, var(--brand) 30%, transparent)",
-        background: "linear-gradient(135deg, color-mix(in srgb, var(--brand) 8%, white), white)",
-      }}
+      data-testid="briefing-card"
+      className="relative overflow-hidden rounded-[22px] p-5 shadow-[0_10px_30px_-12px_rgb(0_0_0/0.15)] ring-1 ring-black/[0.04]"
+      style={{ background: "linear-gradient(150deg, color-mix(in srgb, var(--brand) 13%, white), white 70%)" }}
     >
-      <h2 className="font-semibold mb-2">✨ AI 주간 브리핑</h2>
+      <div className="mb-2 flex items-center gap-2.5">
+        <span className="grid size-8 place-items-center rounded-xl bg-brand text-base text-white shadow-sm" aria-hidden>
+          ✨
+        </span>
+        <h2 className="text-[1.05rem] font-bold">AI 주간 브리핑</h2>
+      </div>
       {state.status === "loading" && <p className="text-sm text-zinc-500 animate-pulse">이번 주 일정을 정리하고 있어요…</p>}
       {state.status === "error" && <p className="text-sm text-zinc-500">{state.message}</p>}
       {state.status === "ok" && (

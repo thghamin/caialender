@@ -2,7 +2,7 @@
 
 /* 경북대학교 UI관리지침 전용색상: KNU Red(C10 M100 Y100 K0), 회색(C5 M5 Y7 K50), 보조색상 Gold(PANTONE 877C) */
 @theme inline {
-  --font-sans: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+  --font-sans: var(--app-font);
   --font-mono: var(--font-geist-mono);
   --color-brand: var(--brand);
   --color-brand-dark: var(--brand-dark);
@@ -33,11 +33,30 @@ html:has(.theme-academic) {
   --brand-soft: color-mix(in srgb, var(--brand) 10%, white);
 }
 
-/* 휴대폰에서는 기본 글자를 18px로 키운다 (rem 단위 글자·여백이 함께 약 12% 커진다) */
+/*
+ * 글꼴: 웹(PC)은 Pretendard(정돈된 웹 글꼴, layout에서 PC 화면일 때만 불러온다),
+ * 휴대폰은 실제 앱처럼 기기 기본 글꼴(아이폰 Apple SD Gothic Neo, 안드로이드 기본 글꼴) → 내려받을 글꼴이 없어 빠르다.
+ */
+:root {
+  --app-font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", system-ui, sans-serif;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+/* 휴대폰: 기기 기본 글꼴, 기본 글자 18px (rem 단위 글자·여백이 함께 약 12% 커진다) */
 @media (max-width: 767px) {
+  :root {
+    --app-font: -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", Roboto, sans-serif;
+    letter-spacing: -0.015em;
+  }
   html {
     font-size: 18px;
   }
+}
+h1,
+h2,
+h3 {
+  letter-spacing: -0.025em;
 }
 
 body {
@@ -67,6 +86,20 @@ body {
   --fc-classic-border: #ece6e5;
   --fc-classic-highlight: color-mix(in srgb, var(--accent) 12%, transparent);
 }
+/* 달력 다듬기: 제목 굵게, 요일 머리는 작고 옅게, 일정 막대는 둥글게 */
+.caialender-calendar h2 {
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.caialender-calendar [role="columnheader"] {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #71717a;
+}
+.caialender-calendar .cal-ev {
+  border-radius: 6px;
+}
+
 /* 선택된 보기 버튼(월·주·일정)은 진한 테마색 배경이므로 글자를 흰색·굵게 */
 .caialender-calendar button[aria-pressed="true"],
 .caialender-calendar button[aria-selected="true"] {

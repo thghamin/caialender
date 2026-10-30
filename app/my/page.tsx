@@ -12,7 +12,7 @@ import { toCalendarItem } from "@/lib/calendar-items";
 import { PageHero } from "@/components/page-hero";
 import { UpcomingList } from "@/components/upcoming-list";
 import { BriefingCard } from "@/components/briefing-card";
-import { Card } from "@/components/ui";
+import { Card, CardTitle } from "@/components/ui";
 import { PersonalEventForm } from "./personal-form";
 import { DeletePersonalButton } from "./delete-personal";
 
@@ -72,14 +72,14 @@ export default async function MyPage() {
           />
         </Card>
       </section>
-      <aside className="flex flex-col gap-4">
+      <aside className="flex min-w-0 flex-col gap-4">
         <Card>
           <PushSetup />
         </Card>
         <BriefingCard scope="me" />
         <UpcomingList events={mine} title="나의 다가오는 일정" />
         <Card>
-          <h2 className="font-semibold mb-3">개인 일정 추가</h2>
+          <CardTitle icon="➕">개인 일정 추가</CardTitle>
           <PersonalEventForm nowIso={new Date(requestNow()).toISOString()} />
           {upcomingPersonal.length > 0 && (
             <ul className="mt-4 flex flex-col gap-2 border-t border-zinc-100 pt-3">

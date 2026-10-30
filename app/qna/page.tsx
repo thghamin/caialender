@@ -45,9 +45,9 @@ export default async function QnaPage({ searchParams }: PageProps<"/qna">) {
           </div>
           <QuestionList questions={questions} me={me} />
         </section>
-        <aside>
+        <aside className="min-w-0">
           <Card className="lg:sticky lg:top-24">
-            <h2 className="mb-3 font-semibold">✍️ 질문 남기기</h2>
+            <h2 className="mb-3 text-[1.05rem] font-bold">✍️ 질문 남기기</h2>
             <AskForm eventId={event?.id} eventTitle={event?.title} />
           </Card>
         </aside>

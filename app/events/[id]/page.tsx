@@ -126,7 +126,7 @@ export default async function EventPage({ params }: PageProps<"/events/[id]">) {
         </div>
       </Card>
       <Card className="flex flex-col gap-4">
-        <h2 className="font-semibold">💬 이 일정에 대한 질문 {questions.length > 0 && <span className="text-brand">{questions.length}</span>}</h2>
+        <h2 className="text-[1.05rem] font-bold">💬 이 일정에 대한 질문 {questions.length > 0 && <span className="text-brand">{questions.length}</span>}</h2>
         {user ? (
           <>
             <QuestionList questions={questions} me={user} showEvent={false} />

@@ -47,7 +47,7 @@ export default async function Home() {
             <CalendarView items={events.map((e) => toCalendarItem(e, interests))} loggedIn />
           </Card>
         </section>
-        <aside className="flex flex-col gap-4">
+        <aside className="flex min-w-0 flex-col gap-4">
           <BriefingCard scope="all" />
           <UpcomingList events={events} title="다가오는 학과 일정" />
         </aside>
