@@ -72,7 +72,8 @@ test("텍스트 공지 → AI 초안 → 검수·수정 → 게시 → 학생 �
 
   // AI가 만든 초안: 행사 + 신청 마감 이상
   const items = page.locator("li", { hasText: "검수 대기" });
-  expect(await items.count()).toBeGreaterThanOrEqual(2);
+  // 자동 새로고침으로 목록이 그려질 때까지 기다린다
+  await expect.poll(() => items.count(), { timeout: 15_000 }).toBeGreaterThanOrEqual(2);
   await expect(page.getByText(/배움터/).first()).toBeVisible();
 
   // 초안은 아직 학생에게 안 보인다

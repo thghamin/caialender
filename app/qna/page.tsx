@@ -31,7 +31,7 @@ export default async function QnaPage({ searchParams }: PageProps<"/qna">) {
         subtitle="일정이나 공지에서 궁금한 점을 남기면 학생회가 직접 답변해요. 답변은 모든 학생이 함께 볼 수 있어요."
       />
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-        <section className="flex flex-col gap-3">
+        <section className="flex min-w-0 flex-col gap-3">
           <div className="flex gap-2 text-sm">
             {TABS.map(([k, label]) => (
               <Link

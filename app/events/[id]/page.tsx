@@ -60,13 +60,13 @@ export default async function EventPage({ params }: PageProps<"/events/[id]">) {
       <Card className="flex flex-col gap-4">
         <div className="flex items-center gap-2">
           <span
-            className={`rounded-full px-2 py-0.5 text-[11px] font-semibold text-white ${event.calendar === "academic" ? "bg-zinc-600" : "bg-brand"}`}
+            className={`rounded-full px-2 py-0.5 text-[0.6875rem] font-semibold text-white ${event.calendar === "academic" ? "bg-zinc-600" : "bg-brand"}`}
           >
             {CALENDAR_LABEL[event.calendar]}
           </span>
           <KindBadge kind={event.kind} />
           {event.status !== "published" && (
-            <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[11px] font-medium text-amber-700">
+            <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[0.6875rem] font-medium text-amber-700">
               {event.status === "draft" ? "검수 대기" : "보관됨"}
             </span>
           )}

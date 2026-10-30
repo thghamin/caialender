@@ -78,14 +78,14 @@ export function PushSetup() {
     <div className="flex flex-col gap-2 text-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="font-semibold">
-          🔔 휴대폰 알림{" "}
+          🔔 알림{" "}
           <span className={status === "on" ? "text-emerald-700" : "text-zinc-500"}>
             {status === "on" ? "켜짐 (이 기기)" : status === "checking" ? "확인 중…" : "꺼짐"}
           </span>
         </span>
         {status === "off" && (
           <button onClick={enable} disabled={pending} className="rounded-full bg-brand px-3 py-1.5 text-xs font-semibold text-white disabled:opacity-50">
-            {pending ? "설정 중…" : "이 기기에서 알림 받기"}
+            {pending ? "설정 중…" : "알림 받기"}
           </button>
         )}
         {status === "on" && (
@@ -106,7 +106,7 @@ export function PushSetup() {
       )}
       {status === "denied" && (
         <p className="rounded-lg bg-amber-50 p-2 text-xs leading-5 text-amber-800">
-          알림이 차단되어 있어요. 휴대폰(브라우저) 설정에서 이 사이트의 알림을 허용한 뒤 다시 열어 주세요.
+          알림이 차단되어 있어요. 브라우저(또는 휴대폰) 설정에서 이 사이트의 알림을 허용한 뒤 다시 열어 주세요.
         </p>
       )}
       {status === "unsupported" && <p className="text-xs text-zinc-500">이 브라우저는 알림을 지원하지 않아요. Chrome·Safari 최신 버전에서 열어 주세요.</p>}

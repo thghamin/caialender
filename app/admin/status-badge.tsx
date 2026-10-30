@@ -9,5 +9,5 @@ const STYLE: Record<Notice["status"], [string, string]> = {
 
 export function NoticeStatusBadge({ status }: { status: Notice["status"] }) {
   const [label, style] = STYLE[status];
-  return <span className={`shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium ${style}`}>{label}</span>;
+  return <span className={`shrink-0 rounded px-1.5 py-0.5 text-[0.6875rem] font-medium ${style}`}>{label}</span>;
 }

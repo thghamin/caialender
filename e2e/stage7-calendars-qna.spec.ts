@@ -188,6 +188,15 @@ test("휴대폰: 하단 탭 메뉴로 이동하고, PC 버전 ↔ 모바일 버�
   await page.waitForURL("**/my");
   const tabs = page.getByRole("navigation", { name: "모바일 메뉴" });
   await expect(tabs).toBeVisible();
+  // 로그인하면 앱 설치를 권하고, [나중에]를 누르면 다시 묻지 않는다
+  const install = page.getByRole("dialog", { name: "앱 설치 안내" });
+  await expect(install).toBeVisible();
+  await expect(install.getByText("알림을 받을 수 있어요")).toBeVisible();
+  await install.getByRole("button", { name: "나중에" }).click();
+  await expect(install).toBeHidden();
+  await page.reload();
+  await page.waitForTimeout(1500);
+  await expect(install).toBeHidden();
   await tabs.getByRole("link", { name: /학사/ }).click();
   await expect(page.getByRole("heading", { name: "학사 캘린더" })).toBeVisible();
 

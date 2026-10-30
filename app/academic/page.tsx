@@ -38,7 +38,7 @@ export default async function AcademicPage() {
         }
       />
       <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
-        <section className="flex flex-col gap-3">
+        <section className="flex min-w-0 flex-col gap-3">
           <div className="flex items-center justify-end">
             <CalendarLegend keys={["academic", "dept-deadline", "academic-holiday"]} />
           </div>

@@ -40,10 +40,10 @@ export async function sendTestPush(): Promise<{ error?: string; sent?: number }>
   try {
     const sent = await sendPushToUser(user.id, {
       title: "🔔 C:AI:ender 알림 테스트",
-      body: "이 기기로 일정 하루 전 알림과 수업 10분 전 알림이 와요.",
+      body: "이제 이 기기로 일정 하루 전·수업 10분 전 알림이 와요.",
       url: "/my",
     });
-    return sent ? { sent } : { error: "알림을 받을 기기가 없습니다. 먼저 '이 기기에서 알림 받기'를 눌러 주세요." };
+    return sent ? { sent } : { error: "알림을 받을 기기가 없습니다. 먼저 '알림 받기'를 눌러 주세요." };
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
   }

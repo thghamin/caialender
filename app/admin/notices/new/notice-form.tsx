@@ -17,7 +17,7 @@ export function NoticeForm({ now }: { now: string }) {
         <textarea
           name="body"
           rows={12}
-          className="rounded-md border border-zinc-300 bg-white px-3 py-2 font-mono text-[13px] outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+          className="rounded-md border border-zinc-300 bg-white px-3 py-2 font-mono text-[0.8125rem] outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
         />
       </label>
       <PosterPicker />

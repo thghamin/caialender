@@ -37,7 +37,7 @@ export function UpcomingList({ events, title, limit = 8 }: { events: CalendarEve
 export function KindBadge({ kind }: { kind: CalendarEvent["kind"] }) {
   const style =
     kind === "deadline" ? "bg-red-50 text-red-700" : kind === "event" ? "bg-indigo-50 text-indigo-700" : "bg-cyan-50 text-cyan-700";
-  return <span className={`rounded px-1.5 py-0.5 text-[11px] font-medium ${style}`}>{KIND_LABEL[kind]}</span>;
+  return <span className={`rounded px-1.5 py-0.5 text-[0.6875rem] font-medium ${style}`}>{KIND_LABEL[kind]}</span>;
 }
 
 function DDay({ iso }: { iso: string }) {

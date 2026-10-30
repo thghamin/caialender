@@ -30,9 +30,13 @@ export function MobileTabBar({ admin }: { admin: boolean }) {
                 href={t.href}
                 prefetch
                 aria-current={active ? "page" : undefined}
-                className={`flex flex-col items-center gap-0.5 py-2 text-[11px] ${active ? "font-bold text-brand" : "text-zinc-500"}`}
+                className={`relative flex flex-col items-center gap-1 pb-2 pt-2.5 text-[13px] leading-none whitespace-nowrap tracking-tight ${
+                  active ? "font-bold text-brand" : "text-zinc-500"
+                }`}
               >
-                <span className={`text-lg leading-none ${active ? "" : "opacity-70 grayscale"}`}>{t.icon}</span>
+                {/* 선택된 탭 위쪽 막대 */}
+                {active && <span className="absolute inset-x-2 top-0 h-[3px] rounded-b-full bg-brand" />}
+                <span className={`text-[26px] leading-none ${active ? "" : "opacity-70 grayscale"}`}>{t.icon}</span>
                 {t.label}
               </Link>
             </li>

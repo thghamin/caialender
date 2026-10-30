@@ -225,7 +225,7 @@ function ReminderToggle({ id, type, initial }: { id: string; type: "event" | "pe
   return (
     <div className="flex items-center justify-between gap-2 rounded-xl bg-zinc-50 px-3 py-2 text-sm">
       <span>
-        🔔 하루 전 알림 <span className="text-xs text-zinc-500">(시작 24시간 전, 휴대폰으로)</span>
+        🔔 하루 전 알림 <span className="text-xs text-zinc-500">(시작 24시간 전)</span>
         {error && <span className="block text-xs text-red-600">{error}</span>}
       </span>
       <button

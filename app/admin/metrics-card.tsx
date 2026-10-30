@@ -25,7 +25,7 @@ export async function MetricsCard() {
           <div key={t.label} className="rounded-xl bg-brand-soft/60 p-3">
             <p className="text-xs text-zinc-600">{t.label}</p>
             <p className="text-xl font-extrabold text-brand">{t.value}</p>
-            <p className="text-[11px] leading-4 text-zinc-500">{t.sub}</p>
+            <p className="text-[0.6875rem] leading-4 text-zinc-500">{t.sub}</p>
           </div>
         ))}
       </div>

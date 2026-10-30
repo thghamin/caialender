@@ -37,7 +37,7 @@ export function BriefingCard({ scope }: { scope: "all" | "me" }) {
       {state.status === "ok" && (
         <>
           <p className="whitespace-pre-wrap text-sm leading-6 text-zinc-800">{state.content}</p>
-          <p className="mt-2 text-[11px] text-zinc-400">AI가 게시된 일정만으로 작성했어요{state.model ? ` · ${state.model}` : ""}</p>
+          <p className="mt-2 text-[0.6875rem] text-zinc-400">AI가 게시된 일정만으로 작성했어요{state.model ? ` · ${state.model}` : ""}</p>
         </>
       )}
     </div>

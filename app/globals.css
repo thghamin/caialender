@@ -33,6 +33,13 @@ html:has(.theme-academic) {
   --brand-soft: color-mix(in srgb, var(--brand) 10%, white);
 }
 
+/* 휴대폰에서는 기본 글자를 18px로 키운다 (rem 단위 글자·여백이 함께 약 12% 커진다) */
+@media (max-width: 767px) {
+  html {
+    font-size: 18px;
+  }
+}
+
 body {
   font-family: var(--font-sans);
   background-color: color-mix(in srgb, var(--brand) 3%, #fbfaf9);
@@ -97,7 +104,7 @@ body {
 @media (max-width: 767px) {
   .cal-ev {
     padding: 1px 2px;
-    font-size: 10.5px;
+    font-size: 11.5px;
   }
   .cal-ev-time {
     display: none;

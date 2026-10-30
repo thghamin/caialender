@@ -98,7 +98,7 @@ export default async function AdminNoticePage({ params }: PageProps<"/admin/noti
                 <li key={e.id} className="rounded-md border border-zinc-200 p-3 text-sm">
                   <div className="flex items-center gap-2">
                     <KindBadge kind={e.kind} />
-                    <span className={`text-[11px] ${e.status === "published" ? "text-green-700" : "text-amber-600"}`}>
+                    <span className={`text-[0.6875rem] ${e.status === "published" ? "text-green-700" : "text-amber-600"}`}>
                       {e.status === "published" ? "게시됨" : e.status === "draft" ? "검수 대기" : "보관"}
                     </span>
                     <Link href={`/admin/events/${e.id}`} className="ml-auto text-brand hover:underline">검수·수정</Link>

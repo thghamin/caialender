@@ -249,7 +249,7 @@ function CourseSheet({ draft, others, onClose }: { draft: Keyed; others: Keyed[]
           ))}
         </div>
         <label className="flex items-center justify-between py-2 text-sm">
-          <span>🔔 수업 10분 전 휴대폰 알림</span>
+          <span>🔔 수업 10분 전 알림</span>
           <input type="checkbox" checked={c.reminder} onChange={(e) => setC({ ...c, reminder: e.target.checked })} className="size-5 accent-brand" />
         </label>
         {error && <p className="py-2 text-sm text-red-600">{error}</p>}

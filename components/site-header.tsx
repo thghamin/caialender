@@ -5,6 +5,7 @@ import { isAdminRole, ROLE_LABEL } from "@/lib/types";
 import { Hobanu } from "./hobanu";
 import { NavLink } from "./nav-link";
 import { MobileTabBar } from "./mobile-tab-bar";
+import { InstallPrompt } from "./install-prompt";
 
 export async function SiteHeader() {
   const user = await getCurrentUser();
@@ -64,6 +65,8 @@ export async function SiteHeader() {
     </header>
     {/* header의 backdrop-blur 안에 두면 fixed가 화면 기준이 아니게 되므로 밖에 둔다 */}
     {approved && <MobileTabBar admin={admin} />}
+    {/* 로그인(승인)한 휴대폰 사용자에게 앱 설치 권유 */}
+    {approved && <InstallPrompt />}
     </>
   );
 }

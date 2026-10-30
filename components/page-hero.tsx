@@ -50,7 +50,7 @@ export function PageHero({ title, subtitle, badge, tone = "custom", children }: 
           </span>
         )}
         <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{title}</h1>
-        <p className="text-[13px] leading-5 text-white/85 sm:text-sm">{subtitle}</p>
+        <p className="text-[0.8125rem] leading-5 text-white/85 sm:text-sm">{subtitle}</p>
         {children && <div className="mt-2 flex flex-wrap items-center gap-2">{children}</div>}
       </div>
     </section>

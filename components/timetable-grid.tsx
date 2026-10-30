@@ -31,7 +31,7 @@ export function TimetableGrid({ courses, onSelect, highlight, compact = false }:
         {/* 시간 눈금: 에타처럼 12시 다음은 1, 2, 3 … */}
         <div>
           {hours.map((h) => (
-            <div key={h} className="border-b border-zinc-100 pr-1 pt-0.5 text-right text-[10px] text-zinc-400" style={{ height: rowH }}>
+            <div key={h} className="border-b border-zinc-100 pr-1 pt-0.5 text-right text-[0.625rem] text-zinc-400" style={{ height: rowH }}>
               {h % 12 === 0 ? 12 : h % 12}
             </div>
           ))}
@@ -58,10 +58,10 @@ export function TimetableGrid({ courses, onSelect, highlight, compact = false }:
                       }`}
                       style={{ top, height, background: COURSE_COLORS[c.color % COURSE_COLORS.length] }}
                     >
-                      <span className={`block font-semibold leading-tight ${compact ? "text-[10px]" : "text-[12px]"}`}>{c.name}</span>
-                      {!compact && c.professor && <span className="block truncate text-[10.5px] leading-tight text-zinc-600">{c.professor}</span>}
+                      <span className={`block font-semibold leading-tight ${compact ? "text-[0.625rem]" : "text-xs"}`}>{c.name}</span>
+                      {!compact && c.professor && <span className="block truncate text-[0.66rem] leading-tight text-zinc-600">{c.professor}</span>}
                       {s.location && (
-                        <span className={`block leading-tight text-zinc-600 ${compact ? "truncate text-[9px]" : "text-[10.5px]"}`}>{s.location}</span>
+                        <span className={`block leading-tight text-zinc-600 ${compact ? "truncate text-[0.5625rem]" : "text-[0.66rem]"}`}>{s.location}</span>
                       )}
                     </button>
                   );

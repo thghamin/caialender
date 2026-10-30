@@ -32,7 +32,8 @@ export default async function TimetablePage() {
         subtitle="수업을 직접 넣거나, 에브리타임 시간표를 캡처해서 올리면 AI가 그대로 옮겨 줘요. 수업마다 10분 전 알림을 켤 수 있어요."
       />
       <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
-        <section>
+        {/* min-w-0: 긴 수업 목록이 화면 폭을 넘겨 늘어나지 않게 */}
+        <section className="min-w-0">
           <TimetableClient initial={courses} />
         </section>
         <aside className="flex flex-col gap-4">

@@ -37,8 +37,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col bg-zinc-50 text-zinc-900">
         <SiteHeader />
         {/* 휴대폰에서는 하단 탭 메뉴에 가리지 않도록 아래 여백 */}
-        <main className="flex-1 w-full max-w-6xl mx-auto px-3 pt-4 pb-24 sm:px-4 md:py-6">{children}</main>
-        <footer className="flex justify-center pb-24 pt-2 md:pb-6">
+        <main className="flex-1 w-full max-w-6xl mx-auto px-3 pt-4 pb-28 sm:px-4 md:py-6">{children}</main>
+        <footer className="flex justify-center pb-28 pt-2 md:pb-6">
           <ViewModeToggle mode={viewMode} />
         </footer>
       </body>
