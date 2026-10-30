@@ -146,3 +146,17 @@ describe("diffEvent", () => {
     expect(diffEvent(before, { ...before, location: null })).toEqual([]);
   });
 });
+
+describe("AI 근거 문장", () => {
+  it("근거 문장을 저장하고, 공지 본문에서 위치를 찾는다 (줄바꿈·공백 차이 무시)", async () => {
+    const { normalizeExtraction, findEvidence } = await import("@/lib/ai/extract-schema");
+    const { events } = normalizeExtraction({
+      events: [{ title: "MT", kind: "event", start: "2027-03-05", end: null, location: null, target_grades: [], target_note: null, description: "", missing_fields: [], existing_event_id: null, evidence: "  MT는 3/5(금) 강당 집결  " }],
+    });
+    expect(events[0].evidence).toBe("MT는 3/5(금) 강당 집결");
+    const body = "안내드립니다.\nMT는 3/5(금)\n강당 집결입니다.";
+    const hit = findEvidence(body, events[0].evidence)!;
+    expect(body.slice(hit.start, hit.end)).toBe("MT는 3/5(금)\n강당 집결");
+    expect(findEvidence(body, "없는 문장")).toBeNull();
+  });
+});

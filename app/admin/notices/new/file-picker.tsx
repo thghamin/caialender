@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { shrinkImage } from "@/lib/client/shrink-image";
 
 const ACCEPT = ["image/png", "image/jpeg", "image/webp"];
 
@@ -33,10 +34,13 @@ export function PosterPicker() {
           setDrag(false);
           const f = e.dataTransfer.files[0];
           if (!f || !ACCEPT.includes(f.type) || !input.current) return;
-          const dt = new DataTransfer();
-          dt.items.add(f);
-          input.current.files = dt.files;
-          show(f);
+          const el = input.current;
+          shrinkImage(f).then((small) => {
+            const dt = new DataTransfer();
+            dt.items.add(small);
+            el.files = dt.files;
+            show(small);
+          });
         }}
         className={`flex flex-wrap items-center gap-3 rounded-xl border-2 border-dashed p-3 transition-colors ${
           drag ? "border-brand bg-brand-soft" : "border-zinc-300 bg-zinc-50"
@@ -51,7 +55,17 @@ export function PosterPicker() {
             accept={ACCEPT.join(",")}
             aria-label="포스터 이미지 파일"
             className="sr-only"
-            onChange={(e) => show(e.target.files?.[0])}
+            onChange={async (e) => {
+              const f = e.target.files?.[0];
+              const small = f ? await shrinkImage(f) : undefined;
+              if (small && small !== f && input.current) {
+                // 큰 사진은 줄인 파일로 바꿔서 올린다 (서버 요청 4.5MB 제한)
+                const dt = new DataTransfer();
+                dt.items.add(small);
+                input.current.files = dt.files;
+              }
+              show(small);
+            }}
           />
         </label>
         {file ? (

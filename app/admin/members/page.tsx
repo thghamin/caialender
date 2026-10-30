@@ -75,9 +75,47 @@ export default async function MembersPage({ searchParams }: PageProps<"/admin/me
 
 function MemberTable({ members, me, canApprove }: { members: Member[]; me: Profile; canApprove: (m: Member) => boolean }) {
   if (members.length === 0) return <p className="text-sm text-zinc-500">찾는 회원이 없습니다.</p>;
+  const actions = (m: Member) => (
+    <>
+      {canApprove(m) && <ApprovalButtons userId={m.id} status={m.approval_status} />}
+      {me.role === "super_admin" && m.role !== "super_admin" && m.approval_status === "approved" && <RoleButton userId={m.id} role={m.role} />}
+    </>
+  );
+  const badges = (m: Member) => (
+    <>
+      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${m.role === "student" ? "bg-zinc-100 text-zinc-600" : "bg-brand-soft text-brand"}`}>
+        {ROLE_LABEL[m.role]}
+      </span>
+      <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_STYLE[m.approval_status]}`}>{APPROVAL_LABEL[m.approval_status]}</span>
+    </>
+  );
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+    <>
+    {/* 휴대폰: 회원마다 카드 한 장 (표는 칸이 좁아 글자가 세로로 깨진다) */}
+    <ul className="flex flex-col gap-2 md:hidden">
+      {members.map((m) => (
+        <li key={m.id} className="rounded-xl border border-zinc-200 bg-white p-3" data-testid="member-card">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="font-semibold">{m.name || "-"}</span>
+            {badges(m)}
+          </div>
+          <dl className="mt-2 grid grid-cols-[44px_1fr] gap-y-0.5 text-sm">
+            <dt className="text-zinc-500">학번</dt>
+            <dd>{m.student_no ?? "-"}</dd>
+            <dt className="text-zinc-500">이메일</dt>
+            <dd className="break-all">{m.email}</dd>
+            <dt className="text-zinc-500">학과</dt>
+            <dd>
+              {m.department ?? "-"}
+              {m.grade ? ` · ${m.grade}학년` : ""}
+            </dd>
+          </dl>
+          <div className="mt-2 flex flex-wrap justify-end gap-2">{actions(m)}</div>
+        </li>
+      ))}
+    </ul>
+    <div className="hidden overflow-x-auto md:block">
+      <table className="w-full whitespace-nowrap text-sm">
         <thead className="border-b border-brand/15 text-left text-xs text-zinc-500">
           <tr>
             <th className="px-2 py-2 font-medium">이름</th>
@@ -121,6 +159,7 @@ function MemberTable({ members, me, canApprove }: { members: Member[]; me: Profi
         </tbody>
       </table>
     </div>
+    </>
   );
 }
 

@@ -4,7 +4,7 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 import type { CalendarEvent, CalendarKind, PersonalEvent, Profile } from "@/lib/types";
 
 const EVENT_COLUMNS =
-  "id, notice_id, calendar, title, description, kind, start_at, end_at, all_day, location, target_grades, target_note, missing_fields, status, created_at, updated_at";
+  "id, notice_id, calendar, title, description, kind, start_at, end_at, all_day, location, target_grades, target_note, missing_fields, evidence, status, created_at, updated_at";
 
 /** 게시된 일정 (비로그인도 조회 가능, AI 호출 없음). calendar를 주면 그 캘린더만 */
 export async function getPublishedEvents(calendar?: CalendarKind): Promise<CalendarEvent[]> {
@@ -56,4 +56,12 @@ export function pickMyEvents(events: CalendarEvent[], profile: Pick<Profile, "gr
     else if (e.target_grades.length === 0) mine.push({ ...e, reason: "all" });
   }
   return mine;
+}
+
+/** 하루 전 알림을 켠 일정 키 집합: "event:<id>" / "personal:<id>" */
+export async function getReminderKeys(userId: string): Promise<Set<string>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("event_reminders").select("target_type, target_id").eq("user_id", userId);
+  if (error) throw new Error(`알림 설정을 불러오지 못했습니다: ${error.message}`);
+  return new Set(data.map((r) => `${r.target_type}:${r.target_id}`));
 }

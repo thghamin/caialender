@@ -39,6 +39,8 @@ export type CalendarEvent = {
   target_grades: number[];
   target_note: string | null;
   missing_fields: string[];
+  /** AI가 이 일정을 뽑은 공지 원문 문장 */
+  evidence: string | null;
   status: EventStatus;
   created_at: string;
   updated_at: string;

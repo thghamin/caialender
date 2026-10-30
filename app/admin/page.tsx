@@ -8,6 +8,7 @@ import { NoticeStatusBadge } from "./status-badge";
 import { ChangeActions } from "./change-actions";
 import { AcademicImportForm } from "./academic-import";
 import { countPendingQuestions } from "@/lib/data/questions";
+import { MetricsCard } from "./metrics-card";
 import type { CalendarEvent, Notice } from "@/lib/types";
 
 export default async function AdminPage() {
@@ -52,6 +53,8 @@ export default async function AdminPage() {
         </div>
       </div>
 
+      <MetricsCard />
+
       <Link
         href="/qna?status=pending"
         className={`flex items-center justify-between rounded-2xl border p-4 text-sm shadow-sm ${
@@ -91,7 +94,7 @@ export default async function AdminPage() {
               <li key={e.id} className="py-2">
                 <Link href={`/admin/events/${e.id}`} className="flex flex-wrap items-center gap-2 text-sm hover:text-brand">
                   <KindBadge kind={e.kind} />
-                  <span className="text-zinc-500 w-36">{formatKst(e.start_at, !e.all_day)}</span>
+                  <span className="text-zinc-500 sm:w-36">{formatKst(e.start_at, !e.all_day)}</span>
                   <span className="font-medium">{e.title}</span>
                   {e.missing_fields.length > 0 && (
                     <span className="text-xs text-amber-600">누락: {e.missing_fields.join(", ")}</span>
@@ -124,9 +127,9 @@ export default async function AdminPage() {
           <ul className="divide-y divide-zinc-100">
             {(notices as Notice[]).map((n) => (
               <li key={n.id} className="py-2">
-                <Link href={`/admin/notices/${n.id}`} className="flex items-center gap-3 text-sm hover:text-brand">
+                <Link href={`/admin/notices/${n.id}`} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm hover:text-brand">
                   <NoticeStatusBadge status={n.status} />
-                  <span className="text-zinc-500 w-36">{formatKst(n.posted_at)}</span>
+                  <span className="text-zinc-500 sm:w-36">{formatKst(n.posted_at)}</span>
                   <span className="font-medium">{n.title}</span>
                   {n.image_path && <span title="포스터 첨부">🖼️</span>}
                 </Link>

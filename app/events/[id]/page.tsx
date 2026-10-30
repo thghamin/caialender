@@ -83,6 +83,12 @@ export default async function EventPage({ params }: PageProps<"/events/[id]">) {
           <dd>{targetLabel(event)}</dd>
         </dl>
         {event.description && <p className="whitespace-pre-wrap text-sm leading-6 text-zinc-700">{event.description}</p>}
+        {event.evidence && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm">
+            <p className="mb-1 text-xs font-semibold text-amber-800">🤖 AI가 이 일정을 뽑은 공지 문장</p>
+            <p className="text-zinc-800">“{event.evidence}”</p>
+          </div>
+        )}
         {event.missing_fields.length > 0 && (
           <Alert kind="info">공지에 다음 정보가 없습니다: {event.missing_fields.join(", ")}. 학생회에 문의하세요.</Alert>
         )}

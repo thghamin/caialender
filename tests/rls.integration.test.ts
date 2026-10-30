@@ -299,4 +299,37 @@ run("인증·RLS 통합 테스트", () => {
     const { data } = await service.from("profiles").select("role").eq("id", ids.hacker).single();
     expect(data?.role).toBe("student");
   });
+
+  it("시간표·알림 설정·알림 기기는 본인 것만, 보낸 알림 기록은 서버만", async () => {
+    const { data: course, error } = await student
+      .from("timetable_courses")
+      .insert({ user_id: ids.student, name: `RLS-${tag} 동역학`, professor: "교수" })
+      .select("id")
+      .single();
+    expect(error).toBeNull();
+    expect((await student.from("timetable_slots").insert({ course_id: course!.id, user_id: ids.student, day: 0, start_min: 540, end_min: 615 })).error).toBeNull();
+    // 남의 과목에 시간 칸을 끼워 넣을 수 없다
+    expect((await student2.from("timetable_slots").insert({ course_id: course!.id, user_id: ids.student2, day: 1, start_min: 540, end_min: 600 })).error).not.toBeNull();
+    expect((await student2.from("timetable_courses").select("id").eq("id", course!.id)).data).toEqual([]);
+    await student2.from("timetable_courses").update({ name: "hacked" }).eq("id", course!.id);
+    expect((await service.from("timetable_courses").select("name").eq("id", course!.id).single()).data?.name).toBe(`RLS-${tag} 동역학`);
+
+    expect((await student.from("event_reminders").insert({ user_id: ids.student, target_type: "event", target_id: ids.event })).error).toBeNull();
+    expect((await student2.from("event_reminders").select("*")).data).toEqual([]);
+    expect((await student.from("event_reminders").insert({ user_id: ids.student2, target_type: "event", target_id: ids.event })).error).not.toBeNull();
+
+    const endpoint = `https://push.example.test/${tag}`;
+    expect((await student.from("push_subscriptions").insert({ user_id: ids.student, endpoint, p256dh: "k", auth: "a" })).error).toBeNull();
+    expect((await student2.from("push_subscriptions").select("id").eq("endpoint", endpoint)).data).toEqual([]);
+
+    // 보낸 알림 기록은 학생이 읽거나 쓸 수 없다
+    expect((await student.from("notification_log").insert({ user_id: ids.student, key: "x" })).error).not.toBeNull();
+    expect((await student.from("notification_log").select("*")).data ?? []).toEqual([]);
+
+    // 승인 대기 회원은 시간표를 만들 수 없다 (hacker 계정은 승인 대기)
+    const hacker = await signIn(`rls-hacker-${tag}@caialender.test`);
+    expect((await hacker.from("timetable_courses").insert({ user_id: ids.hacker, name: "x" })).error).not.toBeNull();
+
+    await service.from("push_subscriptions").delete().eq("endpoint", endpoint);
+  });
 });

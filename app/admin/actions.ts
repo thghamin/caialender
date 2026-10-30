@@ -133,11 +133,31 @@ export async function saveEvent(_prev: FormState, formData: FormData): Promise<F
   const supabase = await createClient();
   if (id) {
     // 사람이 고친 항목은 더 이상 '누락'이 아니므로 누락 목록에서 정리
-    const { data: current } = await supabase.from("events").select("missing_fields").eq("id", id).single();
+    const { data: current } = await supabase
+      .from("events")
+      .select("missing_fields, notice_id, ai_edited, title, kind, start_at, end_at, all_day, location, target_grades")
+      .eq("id", id)
+      .single();
     const missing = (current?.missing_fields ?? []).filter(
       (f: string) => !((f === "장소" && parsed.row.location) || (f === "시간" && !parsed.row.all_day)),
     );
-    const { error } = await supabase.from("events").update({ ...parsed.row, missing_fields: missing }).eq("id", id);
+    // 성과 지표: AI 초안의 핵심 항목(제목·종류·일시·장소·대상)을 기획부가 고쳤는지 기록
+    const same = (a: unknown, b: unknown) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+    const sameTime = (a: string | null | undefined, b: string | null) => (a && b ? new Date(a).getTime() === new Date(b).getTime() : !a && !b);
+    const edited =
+      !!current?.notice_id &&
+      (current.ai_edited ||
+        !same(current.title, parsed.row.title) ||
+        !same(current.kind, parsed.row.kind) ||
+        !sameTime(current.start_at, parsed.row.start_at) ||
+        !sameTime(current.end_at, parsed.row.end_at) ||
+        !same(current.all_day, parsed.row.all_day) ||
+        !same(current.location, parsed.row.location) ||
+        !same([...(current.target_grades ?? [])].sort(), [...parsed.row.target_grades].sort()));
+    const { error } = await supabase
+      .from("events")
+      .update({ ...parsed.row, missing_fields: missing, ai_edited: edited })
+      .eq("id", id);
     if (error) return { error: `저장 실패: ${error.message}` };
   } else {
     const { data, error } = await supabase

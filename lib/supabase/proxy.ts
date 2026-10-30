@@ -2,8 +2,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { isSupabaseConfigured, supabaseEnv } from "./env";
 
-// 로그인 없이 열 수 있는 경로. /api/jobs는 예약 작업이 CRON_SECRET으로 호출한다
-const PUBLIC_PATHS = ["/login", "/signup", "/auth/", "/api/jobs/"];
+// 로그인 없이 열 수 있는 경로. /api/jobs는 예약 작업이 CRON_SECRET으로 호출한다.
+// manifest·서비스 워커·아이콘은 앱 설치와 알림에 필요하다
+const PUBLIC_PATHS = ["/login", "/signup", "/auth/", "/api/jobs/", "/manifest.webmanifest", "/sw.js", "/icons/"];
 
 const isPublic = (pathname: string) => PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p.endsWith("/") ? p : `${p}/`));
 

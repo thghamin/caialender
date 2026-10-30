@@ -83,12 +83,15 @@ export async function generateJson<T = unknown>(opts: {
   schemaName: string;
   maxTokens?: number;
   timeoutMs?: number;
+  /** 이 요청만 다른 모델을 먼저 쓴다 (실패하면 OpenRouter가 기본 모델로 넘어간다) */
+  model?: string;
 }): Promise<{ data: T; model: string }> {
   const config = requireConfig();
   const res = await post(
     config,
     {
-      model: config.model,
+      model: opts.model ?? config.model,
+      ...(opts.model && opts.model !== config.model ? { models: [opts.model, config.model] } : {}),
       messages: opts.messages,
       temperature: 0,
       max_tokens: opts.maxTokens ?? 2000,

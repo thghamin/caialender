@@ -21,10 +21,11 @@ export const EXTRACTION_JSON_SCHEMA = {
           description: { type: "string" },
           missing_fields: { type: "array", items: { type: "string" } },
           existing_event_id: { type: ["string", "null"] },
+          evidence: { type: ["string", "null"], description: "이 일정의 근거가 된 공지 원문 문장 (그대로 인용)" },
         },
         required: [
           "title", "kind", "start", "end", "location",
-          "target_grades", "target_note", "description", "missing_fields", "existing_event_id",
+          "target_grades", "target_note", "description", "missing_fields", "existing_event_id", "evidence",
         ],
         additionalProperties: false,
       },
@@ -45,6 +46,7 @@ const rawEventSchema = z.object({
   description: z.string().optional().default(""),
   missing_fields: z.array(z.string()).optional().default([]),
   existing_event_id: z.string().nullable().optional(),
+  evidence: z.string().nullable().optional(),
 });
 
 export const rawExtractionSchema = z.object({ events: z.array(z.unknown()) });
@@ -62,6 +64,8 @@ export type ExtractedEvent = {
   missing_fields: string[];
   /** 이 공지가 기존 일정의 변경·재공지라고 AI가 판단한 경우 그 일정 id */
   existing_event_id: string | null;
+  /** AI가 이 일정을 뽑은 공지 원문 문장 (검수·학생 화면에 근거로 보여준다) */
+  evidence: string | null;
 };
 
 export function buildExtractionSystemPrompt(today: string) {
@@ -77,6 +81,7 @@ export function buildExtractionSystemPrompt(today: string) {
 8. description에는 참가비, 준비물, 신청 링크 등 핵심 정보를 1~3문장으로 요약한다.
 9. 날짜가 전혀 없는 공지면 events는 빈 배열이다.
 10. 사용자 메시지에 "기존 일정 목록"이 주어진다. 추출한 일정이 그중 하나와 같은 행사·마감(일정 변경, 장소 변경, 재공지, 마감 연장 등)이면 existing_event_id에 그 id를 쓰고, 새 일정이면 null로 둔다. 목록에 없는 id를 만들지 마라.
+11. evidence에는 이 일정의 날짜·시각이 적힌 공지 원문 문장을 한 줄 그대로 인용한다(요약·수정 금지, 120자 이내). 포스터 이미지에서 읽었으면 포스터에 적힌 글자를 그대로 쓴다.
 예) "MT 3/5(금) 강당 집결, 신청은 2/28까지" → [{title:"MT", kind:"event", start:"YYYY-03-05", location:"강당", missing_fields:["시간"]}, {title:"MT 신청 마감", kind:"deadline", start:"YYYY-02-28", location:null, missing_fields:["신청 방법"]}]`;
 }
 
@@ -177,6 +182,7 @@ export function normalizeExtraction(
       missing_fields: [...missing],
       existing_event_id:
         e.existing_event_id && knownEventIds.has(e.existing_event_id) ? e.existing_event_id : null,
+      evidence: e.evidence?.trim().slice(0, 200) || null,
     });
   }
   return { events, dropped };
@@ -192,3 +198,23 @@ export function normalizeTitle(title: string) {
 }
 
 export { kstDate };
+
+/** 근거 문장이 공지 본문에 실제로 있는지 (공백 차이는 무시). 화면에서 원문 강조에 쓴다 */
+export function findEvidence(body: string, evidence: string | null): { start: number; end: number } | null {
+  if (!evidence || !body) return null;
+  const squash = (t: string) => t.replace(/\s+/g, "");
+  const target = squash(evidence);
+  if (target.length < 4) return null;
+  // 본문의 공백을 뺀 위치 ↔ 원래 위치 대응표
+  const map: number[] = [];
+  let flat = "";
+  for (let i = 0; i < body.length; i++) {
+    if (!/\s/.test(body[i])) {
+      map.push(i);
+      flat += body[i];
+    }
+  }
+  const at = flat.indexOf(target);
+  if (at < 0) return null;
+  return { start: map[at], end: map[at + target.length - 1] + 1 };
+}

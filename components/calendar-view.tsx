@@ -12,6 +12,7 @@ import "@fullcalendar/react/skeleton.css";
 import "@fullcalendar/react/themes/classic/theme.css";
 import "@fullcalendar/react/themes/classic/palette.css";
 import { toggleInterest } from "@/app/my/actions";
+import { toggleReminder } from "@/app/notifications/actions";
 import { formatKst } from "@/lib/datetime";
 import { CALENDAR_LABEL, KIND_LABEL, type CalendarKind, type EventKind } from "@/lib/types";
 
@@ -28,6 +29,8 @@ export type CalendarItem = {
   target?: string;
   /** 내 캘린더에 직접 추가한 일정인지 */
   interested?: boolean;
+  /** 내 캘린더에서만: 시작 24시간 전 휴대폰 알림 */
+  reminder?: { type: "event" | "personal"; on: boolean };
 };
 
 type ColorKey = "dept-event" | "dept-deadline" | "dept-other" | "academic" | "academic-holiday" | "personal";
@@ -176,6 +179,7 @@ function EventPopup({ item, loggedIn, onClose }: { item: CalendarItem; loggedIn:
               </>
             )}
           </dl>
+          {item.reminder && <ReminderToggle id={item.id} type={item.reminder.type} initial={item.reminder.on} />}
           {item.kind !== "personal" && (
             <div className="flex flex-wrap items-center gap-2 pt-1">
               {loggedIn ? (
@@ -209,6 +213,37 @@ function EventPopup({ item, loggedIn, onClose }: { item: CalendarItem; loggedIn:
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/** 일정 하루 전(24시간 전) 알림 켜기/끄기 */
+function ReminderToggle({ id, type, initial }: { id: string; type: "event" | "personal"; initial: boolean }) {
+  const [on, setOn] = useState(initial);
+  const [pending, start] = useTransition();
+  const [error, setError] = useState<string>();
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-xl bg-zinc-50 px-3 py-2 text-sm">
+      <span>
+        🔔 하루 전 알림 <span className="text-xs text-zinc-500">(시작 24시간 전, 휴대폰으로)</span>
+        {error && <span className="block text-xs text-red-600">{error}</span>}
+      </span>
+      <button
+        role="switch"
+        aria-checked={on}
+        aria-label="하루 전 알림"
+        disabled={pending}
+        onClick={() =>
+          start(async () => {
+            const r = await toggleReminder(type, id, !on);
+            if (r.error) setError(r.error);
+            else setOn(!on);
+          })
+        }
+        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-50 ${on ? "bg-brand" : "bg-zinc-300"}`}
+      >
+        <span className={`absolute top-0.5 size-5 rounded-full bg-white shadow transition-all ${on ? "left-[22px]" : "left-0.5"}`} />
+      </button>
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { ChangeActions } from "../../change-actions";
 import { AutoRefresh } from "./auto-refresh";
 import { DeleteNoticeButton, PublishAllButton, ReanalyzeButton } from "./notice-actions";
 import type { CalendarEvent, Notice } from "@/lib/types";
+import { EvidenceText } from "@/components/evidence-text";
 
 export default async function AdminNoticePage({ params }: PageProps<"/admin/notices/[id]">) {
   await requireAdmin();
@@ -40,7 +41,10 @@ export default async function AdminNoticePage({ params }: PageProps<"/admin/noti
             <span className="text-xs text-zinc-500">게시 {formatKst(notice.posted_at)}</span>
           </div>
           <h1 className="text-xl font-bold">{notice.title}</h1>
-          {notice.body && <pre className="whitespace-pre-wrap font-sans text-sm leading-6 text-zinc-700">{notice.body}</pre>}
+          {notice.body && <EvidenceText body={notice.body} evidences={((events ?? []) as CalendarEvent[]).map((e) => e.evidence)} />}
+          {notice.body && events && events.some((e) => e.evidence) && (
+            <p className="text-xs text-zinc-500"><mark className="rounded bg-amber-200/70 px-1">형광펜</mark> = AI가 일정을 뽑은 근거 문장</p>
+          )}
           {imageUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={imageUrl} alt="공지 포스터" className="max-h-[600px] w-auto rounded-md border" />
@@ -105,6 +109,9 @@ export default async function AdminNoticePage({ params }: PageProps<"/admin/noti
                     {e.end_at && ` ~ ${formatKst(e.end_at, !e.all_day)}`} · {e.location ?? "장소 없음"} ·{" "}
                     {e.target_grades.length ? `${e.target_grades.join("·")}학년` : "전체"}
                   </p>
+                  {e.evidence && (
+                    <p className="mt-1 rounded bg-amber-50 px-2 py-1 text-xs text-zinc-700">🤖 근거: “{e.evidence}”</p>
+                  )}
                   {e.missing_fields.length > 0 && (
                     <p className="text-xs text-amber-600 mt-1">⚠️ 공지에 없는 정보: {e.missing_fields.join(", ")}</p>
                   )}

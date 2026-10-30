@@ -7,6 +7,7 @@ const TABS = [
   { href: "/", icon: "🏫", label: "학과" },
   { href: "/academic", icon: "🎓", label: "학사" },
   { href: "/my", icon: "⭐", label: "내 캘린더" },
+  { href: "/timetable", icon: "🗓️", label: "시간표" },
   { href: "/notices", icon: "📄", label: "공지" },
   { href: "/qna", icon: "💬", label: "질문" },
 ] as const;

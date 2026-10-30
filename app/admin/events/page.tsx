@@ -57,9 +57,9 @@ export default async function AdminEventsPage({ searchParams }: PageProps<"/admi
           <ul className="divide-y divide-zinc-100">
             {(data as CalendarEvent[]).map((e) => (
               <li key={e.id} className="py-2">
-                <Link href={`/admin/events/${e.id}`} className="flex items-center gap-2 text-sm hover:text-brand">
+                <Link href={`/admin/events/${e.id}`} className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm hover:text-brand">
                   <KindBadge kind={e.kind} />
-                  <span className="w-40 text-zinc-500">{formatKst(e.start_at, !e.all_day)}</span>
+                  <span className="text-zinc-500 sm:w-40">{formatKst(e.start_at, !e.all_day)}</span>
                   <span className="font-medium">{e.title}</span>
                   <span className="ml-auto text-xs text-zinc-400">
                     {e.target_grades.length ? `${e.target_grades.join("·")}학년` : "전체"}

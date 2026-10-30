@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "C:AI:ender — 인공지능전공 학과 캘린더",
   description: "학과 공지방에 흩어진 일정을 AI로 정리한 공용 캘린더",
+  // 아이폰 홈 화면에 추가했을 때 앱처럼 열리게 (아이폰은 이렇게 설치해야 알림을 받을 수 있다)
+  appleWebApp: { capable: true, title: "C:AI:ender", statusBarStyle: "default" },
+  icons: { apple: "/icons/apple-touch-icon.png" },
 };
 
 /** 휴대폰에서 'PC 버전'을 고르면 화면 폭을 1280으로 잡아 PC 배치로 보여준다. 기본은 기기 폭(모바일 배치) */

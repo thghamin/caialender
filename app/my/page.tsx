@@ -3,7 +3,9 @@ import { cookies } from "next/headers";
 import { isMyColor, MY_COLOR_COOKIE } from "@/lib/my-color";
 import { MyColorPicker } from "./color-picker";
 import { getCurrentUserId, requireUser } from "@/lib/auth";
-import { getInterestIds, getPersonalEvents, getPublishedEvents, pickMyEvents } from "@/lib/data/events";
+import { getInterestIds, getPersonalEvents, getPublishedEvents, getReminderKeys, pickMyEvents } from "@/lib/data/events";
+import { PushSetup } from "@/components/push-setup";
+import { ReminderBell } from "./reminder-bell";
 import { formatKst, requestNow } from "@/lib/datetime";
 import { CalendarLegend, CalendarView } from "@/components/calendar-view";
 import { toCalendarItem } from "@/lib/calendar-items";
@@ -18,12 +20,13 @@ export default async function MyPage() {
   const userId = await getCurrentUserId();
   if (!userId) redirect("/login");
   // 프로필(승인 확인)·일정·관심 일정·개인 일정을 병렬로 조회
-  const [user, events, interests, personal, cookieStore] = await Promise.all([
+  const [user, events, interests, personal, cookieStore, reminders] = await Promise.all([
     requireUser(),
     getPublishedEvents(),
     getInterestIds(userId),
     getPersonalEvents(userId),
     cookies(),
+    getReminderKeys(userId),
   ]);
   const saved = cookieStore.get(MY_COLOR_COOKIE)?.value;
   const color = isMyColor(saved) ? saved : "red";
@@ -52,7 +55,10 @@ export default async function MyPage() {
           <CalendarView
             loggedIn
             items={[
-              ...mine.map((e) => toCalendarItem(e, interests)),
+              ...mine.map((e) => ({
+                ...toCalendarItem(e, interests),
+                reminder: { type: "event" as const, on: reminders.has(`event:${e.id}`) },
+              })),
               ...personal.map((p) => ({
                 id: p.id,
                 title: p.title,
@@ -60,12 +66,16 @@ export default async function MyPage() {
                 end: p.end_at,
                 allDay: false,
                 kind: "personal" as const,
+                reminder: { type: "personal" as const, on: reminders.has(`personal:${p.id}`) },
               })),
             ]}
           />
         </Card>
       </section>
       <aside className="flex flex-col gap-4">
+        <Card>
+          <PushSetup />
+        </Card>
         <BriefingCard scope="me" />
         <UpcomingList events={mine} title="나의 다가오는 일정" />
         <Card>
@@ -78,7 +88,10 @@ export default async function MyPage() {
                   <span>
                     <span className="text-zinc-500">{formatKst(p.start_at)}</span> {p.title}
                   </span>
-                  <DeletePersonalButton id={p.id} />
+                  <span className="flex items-center gap-1">
+                    <ReminderBell type="personal" id={p.id} initial={reminders.has(`personal:${p.id}`)} />
+                    <DeletePersonalButton id={p.id} />
+                  </span>
                 </li>
               ))}
             </ul>
