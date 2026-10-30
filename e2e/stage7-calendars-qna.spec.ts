@@ -110,6 +110,10 @@ test("질문 게시판: 학생이 질문하고 관리자가 답한다", async ({
 
   await student.reload();
   await expect(student.getByText("1인 3만원이고, 학생회 계좌로 입금하면 됩니다.")).toBeVisible();
+  // 처음 답변이 달리면 질문한 학생에게 알림을 보낸다 (보낸 알림 기록으로 확인)
+  await expect
+    .poll(async () => (await service().from("notification_log").select("key").eq("user_id", ids.student)).data?.some((r) => r.key.startsWith("answer:")))
+    .toBe(true);
   await student.goto("/qna?status=answered");
   await expect(student.getByText(`Q. ${T} MT 회비는 얼마인가요?`)).toBeVisible();
   await student.close();
@@ -234,7 +238,8 @@ test("카카오톡 안의 브라우저로 열면 Safari/크롬으로 열도록 �
   const page = await ctx.newPage();
   // 자동으로 바깥 브라우저를 여는 kakaotalk:// 이동은 테스트 브라우저가 처리하지 못하므로 막아 둔다
   await page.route("kakaotalk://**", (r) => r.abort());
-  await page.goto("/login");
+  // 페이지가 다 뜨기 전에 바깥 브라우저 열기(kakaotalk://)가 일어날 수 있어 load를 기다리지 않는다
+  await page.goto("/login", { waitUntil: "commit" });
   const banner = page.getByRole("alert", { name: "외부 브라우저 안내" });
   await expect(banner).toBeVisible();
   await expect(banner.getByText("카카오톡")).toBeVisible();
@@ -275,4 +280,24 @@ test("관리자: 학과 캘린더에서 일정을 눌러 바로 수정하고, �
   await student.locator(".caialender-calendar").getByText(`${T} 학과 MT`).first().click();
   await expect(student.getByRole("link", { name: "✏️ 수정·관리" })).toHaveCount(0);
   await student.close();
+});
+
+test("검색: 일정·질문을 한 번에 찾고, 내 캘린더 일정은 하루 전·1시간 전 알림을 따로 켠다", async ({ page }) => {
+  await loginViaUi(page, email("student"));
+  await page.waitForURL("**/my");
+  await page.getByRole("link", { name: "검색" }).click();
+  await page.getByLabel("검색어").fill(`${T} 학과`);
+  await page.getByRole("button", { name: "검색" }).click();
+  await expect(page.getByText(/검색 결과 \d+개/)).toBeVisible();
+  await expect(page.getByRole("link", { name: new RegExp(`${T} 학과 MT`) })).toBeVisible();
+
+  await page.goto("/my");
+  await page.locator(".caialender-calendar").getByText(`${T} 학과 MT`).first().click();
+  const popup = page.getByRole("dialog", { name: `${T} 학과 MT` });
+  await popup.getByRole("switch", { name: "1시간 전 알림" }).click();
+  await expect(popup.getByRole("switch", { name: "1시간 전 알림" })).toHaveAttribute("aria-checked", "true");
+  await expect(popup.getByRole("switch", { name: "하루 전 알림" })).toHaveAttribute("aria-checked", "false");
+  await expect
+    .poll(async () => (await service().from("event_reminders").select("lead_minutes").eq("user_id", ids.student).eq("target_id", ids.dept)).data?.map((r) => r.lead_minutes))
+    .toEqual([60]);
 });

@@ -57,7 +57,7 @@ export default async function MyPage() {
             items={[
               ...mine.map((e) => ({
                 ...toCalendarItem(e, interests),
-                reminder: { type: "event" as const, on: reminders.has(`event:${e.id}`) },
+                reminder: { type: "event" as const, day: reminders.has(`event:${e.id}:1440`), hour: reminders.has(`event:${e.id}:60`) },
               })),
               ...personal.map((p) => ({
                 id: p.id,
@@ -66,7 +66,7 @@ export default async function MyPage() {
                 end: p.end_at,
                 allDay: false,
                 kind: "personal" as const,
-                reminder: { type: "personal" as const, on: reminders.has(`personal:${p.id}`) },
+                reminder: { type: "personal" as const, day: reminders.has(`personal:${p.id}:1440`), hour: reminders.has(`personal:${p.id}:60`) },
               })),
             ]}
           />
@@ -89,7 +89,8 @@ export default async function MyPage() {
                     <span className="text-zinc-500">{formatKst(p.start_at)}</span> {p.title}
                   </span>
                   <span className="flex items-center gap-1">
-                    <ReminderBell type="personal" id={p.id} initial={reminders.has(`personal:${p.id}`)} />
+                    <ReminderBell type="personal" id={p.id} lead={1440} initial={reminders.has(`personal:${p.id}:1440`)} />
+                    <ReminderBell type="personal" id={p.id} lead={60} initial={reminders.has(`personal:${p.id}:60`)} />
                     <DeletePersonalButton id={p.id} />
                   </span>
                 </li>

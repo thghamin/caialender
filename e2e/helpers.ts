@@ -28,7 +28,7 @@ export async function approveByEmail(email: string) {
  */
 export async function signupViaUi(
   page: Page,
-  u: { name: string; studentNo: string; grade: number; email: string; department?: string; passwordConfirm?: string },
+  u: { name: string; studentNo: string; grade: number; email: string; passwordConfirm?: string },
   opts: { approve?: boolean; exactStudentNo?: boolean } = {},
 ) {
   const { approve = true, exactStudentNo = false } = opts;
@@ -39,7 +39,7 @@ export async function signupViaUi(
   await page.getByLabel("이메일").fill(u.email);
   await page.getByLabel("비밀번호 (8자 이상)").fill(PASSWORD);
   await page.getByLabel("비밀번호 확인").fill(u.passwordConfirm ?? PASSWORD);
-  await page.getByLabel("학과").fill(u.department ?? "인공지능전공");
+  await page.getByLabel(/전자공학부 인공지능전공 학생입니다/).check();
   await page.getByLabel("학년").selectOption(String(u.grade));
   await page.getByRole("button", { name: "가입하기" }).click();
   if (!approve) return studentNo;

@@ -11,6 +11,8 @@ export type TimetableCourse = {
   color: number;
   reminder: boolean;
   slots: TimetableSlot[];
+  /** 가져오기 결과에서만: 사람이 확인해야 할 점 (예: 화면 아래가 잘려 끝 시각 추정) */
+  check?: string;
 };
 
 // 에브리타임처럼 옅은 파스텔 칸 색 (글자는 진한 회색이라 어떤 색에서도 잘 보인다)
@@ -58,6 +60,7 @@ export function gridRange(courses: Pick<TimetableCourse, "slots">[]) {
 export const TIMETABLE_JSON_SCHEMA = {
   type: "object",
   properties: {
+    grid_start_hour: { type: "integer", description: "시간표 왼쪽 세로 숫자 중 맨 위 숫자를 24시간제로 (보통 9)" },
     courses: {
       type: "array",
       items: {
@@ -85,7 +88,7 @@ export const TIMETABLE_JSON_SCHEMA = {
       },
     },
   },
-  required: ["courses"],
+  required: ["grid_start_hour", "courses"],
   additionalProperties: false,
 } as const;
 
@@ -96,6 +99,7 @@ export const TIMETABLE_SYSTEM_PROMPT = `너는 대학생 시간표 앱 '에브�
 3. 요일은 칸의 가로 위치로 정한다. 칸의 왼쪽·오른쪽 끝을 맨 위 요일 머리와 세로로 맞춰 보고, 바로 위 칸의 요일을 따라 하지 마라.
 4. 칸의 위쪽 끝이 시작 시각, 아래쪽 끝이 종료 시각이다. 시간 눈금 한 칸(1시간) 높이를 기준으로 칸 아래 끝이 눈금 사이 어디쯤인지 보고 5분 단위로 맞춘다(1/4 지점=15분, 절반=30분, 3/4=45분). 대학 수업은 75분(1시간 15분)·50분·2시간짜리가 많다. "HH:mm" 24시간제로 쓴다.
 5. 화면 아래나 옆에서 잘려 끝이 보이지 않는 칸은 보이는 시작 시각부터 1시간으로 둔다.
+8. grid_start_hour에는 왼쪽 시간 숫자 중 맨 위 숫자를 24시간제로 쓴다(예: 9, 8). 수업은 모두 30분 단위로 시작·끝난다.
 6. 같은 과목명·교수명이 여러 요일이나 여러 칸에 있으면 과목 하나에 slots를 여러 개 둔다.
 7. 보이지 않는 수업을 지어내지 마라. 교수명이나 강의실이 없으면 null.`;
 
@@ -103,10 +107,12 @@ const aiSlot = z.object({ day: z.string(), start: z.string(), end: z.string(), l
 const aiCourse = z.object({ name: z.string(), professor: z.string().nullable().optional(), slots: z.array(z.unknown()) });
 
 /** AI 결과를 검증·정규화. 이상한 칸은 버린다 */
-export function normalizeTimetable(raw: unknown): { courses: TimetableCourse[]; dropped: string[] } {
+export function normalizeTimetable(raw: unknown): { courses: TimetableCourse[]; dropped: string[]; startHour: number | null } {
   const dropped: string[] = [];
   const list = z.object({ courses: z.array(z.unknown()) }).safeParse(raw);
-  if (!list.success) return { courses: [], dropped: ["응답 형식이 올바르지 않음"] };
+  if (!list.success) return { courses: [], dropped: ["응답 형식이 올바르지 않음"], startHour: null };
+  const sh = (raw as { grid_start_hour?: unknown }).grid_start_hour;
+  const startHour = typeof sh === "number" && Number.isInteger(sh) && sh >= 5 && sh <= 12 ? sh : null;
 
   const courses: TimetableCourse[] = [];
   for (const item of list.data.courses) {
@@ -119,8 +125,10 @@ export function normalizeTimetable(raw: unknown): { courses: TimetableCourse[]; 
     for (const s of c.data.slots) {
       const p = aiSlot.safeParse(s);
       const day = p.success ? DAY_LABELS.indexOf(p.data.day.trim().slice(0, 1) as (typeof DAY_LABELS)[number]) : -1;
-      const start = p.success ? parseHhmm(p.data.start) : null;
-      const end = p.success ? parseHhmm(p.data.end) : null;
+      // 수업은 모두 30분 단위로 시작·끝나므로 AI가 읽은 시각도 30분 단위로 맞춘다
+      const r30 = (m: number | null) => (m === null ? null : Math.round(m / 30) * 30);
+      const start = p.success ? r30(parseHhmm(p.data.start)) : null;
+      const end = p.success ? r30(parseHhmm(p.data.end)) : null;
       if (!p.success || day < 0 || start === null || end === null || end <= start) {
         dropped.push(`${c.data.name}: 시간 해석 실패`);
         continue;
@@ -135,5 +143,71 @@ export function normalizeTimetable(raw: unknown): { courses: TimetableCourse[]; 
     if (same) same.slots.push(...slots);
     else courses.push({ name, professor, color: courses.length % COURSE_COLORS.length, reminder: false, slots });
   }
-  return { courses, dropped };
+  return { courses, dropped, startHour };
+}
+
+// ───────── 칸별 글자 읽기: 칸마다 잘라 크게 키운 이미지를 AI에게 순서대로 준다 ─────────
+export const BLOCK_TEXT_JSON_SCHEMA = {
+  type: "object",
+  properties: {
+    start_hour: { type: "integer", description: "1번 이미지의 시간 숫자 (24시간제)" },
+    blocks: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          index: { type: "integer" },
+          name: { type: "string" },
+          professor: { type: ["string", "null"] },
+          location: { type: ["string", "null"] },
+        },
+        required: ["index", "name", "professor", "location"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["start_hour", "blocks"],
+  additionalProperties: false,
+} as const;
+
+export const BLOCK_TEXT_SYSTEM_PROMPT = `너는 에브리타임 시간표의 '수업 칸' 사진들에서 글자를 읽는다.
+- 1번 이미지는 시간표 왼쪽 시간 숫자 칸의 맨 위 한 칸이다. 보이는 숫자를 start_hour에 24시간제로 쓴다(9 → 9, 1 → 13).
+- 2번 이미지부터는 수업 칸 하나씩이다. index는 2번 이미지를 1로 시작해 차례대로 붙인다.
+- 각 칸의 글자는 위에서부터 과목명, 교수명, 강의실(장소)이다. 과목명이 두 줄이면 이어 붙인다(예: "로봇운영체제" + "실습" → "로봇운영체제실습").
+- 강의실은 "산격동 캠퍼스 복현회관-308"처럼 여러 줄이면 이어 붙이고, 칸 끝에서 잘린 글자는 보이는 만큼만 쓴다.
+- 없는 정보는 null. 글자를 지어내지 마라.`;
+
+const aiBlock = z.object({ index: z.number(), name: z.string(), professor: z.string().nullable().optional(), location: z.string().nullable().optional() });
+
+/** 칸별로 읽은 글자 + 칸 시각 → 과목 목록 (같은 과목명·교수명은 하나로 묶는다) */
+export function coursesFromBlocks(
+  raw: unknown,
+  blocks: { day: number; start_min: number; end_min: number; truncated?: boolean }[],
+): { courses: TimetableCourse[]; startHour: number | null } {
+  const parsed = z.object({ start_hour: z.number().optional(), blocks: z.array(z.unknown()) }).safeParse(raw);
+  const texts = new Map<number, z.infer<typeof aiBlock>>();
+  for (const b of parsed.success ? parsed.data.blocks : []) {
+    const r = aiBlock.safeParse(b);
+    if (r.success) texts.set(r.data.index, r.data);
+  }
+  const sh = parsed.success ? parsed.data.start_hour : undefined;
+  const startHour = typeof sh === "number" && Number.isInteger(sh) && sh >= 5 && sh <= 12 ? sh : null;
+  const courses: TimetableCourse[] = [];
+  blocks.forEach((b, i) => {
+    const t = texts.get(i + 1);
+    const name = t?.name.replace(/\s+/g, " ").trim().slice(0, 60) || "수업 (이름 확인 필요)";
+    const professor = t?.professor?.trim().slice(0, 40) || null;
+    const slot: TimetableSlot = { day: b.day, start_min: b.start_min, end_min: b.end_min, location: t?.location?.replace(/\s+/g, " ").trim().slice(0, 80) || null };
+    const same = courses.find((c) => c.name.replace(/\s/g, "") === name.replace(/\s/g, "") && c.professor === professor);
+    const notes: string[] = [];
+    if (!t?.name.trim()) notes.push("이름을 읽지 못했어요");
+    if (b.truncated) notes.push(`캡처 아래가 잘려 ${DAY_LABELS[b.day]}요일 끝나는 시각이 실제보다 이를 수 있어요`);
+    if (same) {
+      same.slots.push(slot);
+      if (notes.length) same.check = [same.check, ...notes].filter(Boolean).join(" / ");
+    } else {
+      courses.push({ name, professor, color: courses.length % COURSE_COLORS.length, reminder: false, slots: [slot], check: notes.join(" / ") || undefined });
+    }
+  });
+  return { courses, startHour };
 }

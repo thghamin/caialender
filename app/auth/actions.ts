@@ -5,6 +5,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
 
+/** 이 서비스는 경북대 전자공학부 인공지능전공 전용 */
+const DEPARTMENT = "전자공학부 인공지능전공";
+
 export type AuthState = { error?: string; message?: string } | undefined;
 
 const loginSchema = z.object({
@@ -22,7 +25,7 @@ const signupSchema = z
     email: z.email("이메일 형식이 올바르지 않습니다."),
     password: z.string().min(8, "비밀번호는 8자 이상이어야 합니다."),
     password_confirm: z.string(),
-    department: z.string().trim().min(1, "학과를 입력하세요.").max(50),
+    major_confirm: z.literal("on", { error: "전자공학부 인공지능전공 학생만 가입할 수 있어요." }),
     grade: z.coerce.number().int().min(1, "학년을 선택하세요.").max(4),
   })
   .refine((d) => d.password === d.password_confirm, { message: "비밀번호 확인이 일치하지 않습니다.", path: ["password_confirm"] });
@@ -54,7 +57,8 @@ export async function signup(_prev: AuthState, formData: FormData): Promise<Auth
   const parsed = signupSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
 
-  const { name, student_no, department, grade, email, password } = parsed.data;
+  const { name, student_no, grade, email, password } = parsed.data;
+  const department = DEPARTMENT;
   const meta = { name, student_no, department, grade };
 
   // 학번 중복 확인 (DB unique 인덱스가 최종적으로 막고, 여기서는 알기 쉬운 안내를 위해 먼저 확인)

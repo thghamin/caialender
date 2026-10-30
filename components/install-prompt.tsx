@@ -73,7 +73,7 @@ export function InstallPrompt() {
           <div className="min-w-0 flex-1">
             <p className="font-bold">C:AI:ender 앱으로 설치할까요?</p>
             <p className="mt-0.5 text-sm leading-5 text-zinc-600">
-              {done ? "설치했어요! 홈 화면의 앱을 열고 내 캘린더에서 🔔 알림을 켜 주세요." : "앱으로 설치하면 일정 하루 전·수업 10분 전 알림을 받을 수 있어요."}
+              {done ? "설치했어요! 홈 화면의 앱을 열고 내 캘린더에서 🔔 알림을 켜 주세요." : "앱으로 설치하면 일정·수업 알림과 질문 답변 알림을 받을 수 있어요."}
             </p>
           </div>
         </div>

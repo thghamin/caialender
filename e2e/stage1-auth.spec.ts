@@ -41,7 +41,7 @@ test("회원가입 → 승인 대기(서비스 차단) → 관리자 승인 → 
   await signupViaUi(page, { name: "김새내", studentNo: "2027012345", grade: 1, email: studentEmail }, { approve: false });
   await expect(page).toHaveURL(/\/pending$/);
   await expect(page.getByRole("heading", { name: "가입 승인을 기다리고 있어요" })).toBeVisible();
-  expect(await profileOf(studentEmail)).toEqual({ role: "student", approval_status: "pending", department: "인공지능전공", grade: 1 });
+  expect(await profileOf(studentEmail)).toEqual({ role: "student", approval_status: "pending", department: "전자공학부 인공지능전공", grade: 1 });
 
   // 승인 전에는 다른 화면과 API에 접근할 수 없다
   for (const path of ["/", "/my", "/academic", "/qna", "/notices", "/admin"]) {
@@ -65,7 +65,7 @@ test("회원가입 → 승인 대기(서비스 차단) → 관리자 승인 → 
   await admin.getByRole("link", { name: /회원 관리/ }).click();
   // 첫 번째 표가 '가입 승인 대기' 목록
   const row = admin.getByRole("row").filter({ hasText: studentEmail }).first();
-  await expect(row.getByText("인공지능전공")).toBeVisible();
+  await expect(row.getByText("전자공학부 인공지능전공")).toBeVisible();
   await expect(row.getByText("승인 대기")).toBeVisible();
   await row.getByRole("button", { name: "승인" }).click();
   await expect(admin.getByRole("row").filter({ hasText: studentEmail }).getByText("승인됨")).toBeVisible();

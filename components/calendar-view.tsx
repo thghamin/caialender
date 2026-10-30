@@ -31,8 +31,8 @@ export type CalendarItem = {
   target?: string;
   /** 내 캘린더에 직접 추가한 일정인지 */
   interested?: boolean;
-  /** 내 캘린더에서만: 시작 24시간 전 휴대폰 알림 */
-  reminder?: { type: "event" | "personal"; on: boolean };
+  /** 내 캘린더에서만: 하루 전·1시간 전 알림을 켰는지 */
+  reminder?: { type: "event" | "personal"; day: boolean; hour: boolean };
 };
 
 type ColorKey = "dept-event" | "dept-deadline" | "dept-other" | "academic" | "academic-holiday" | "personal";
@@ -187,7 +187,12 @@ function EventPopup({ item, loggedIn, manage, onClose }: { item: CalendarItem; l
               </>
             )}
           </dl>
-          {item.reminder && <ReminderToggle id={item.id} type={item.reminder.type} initial={item.reminder.on} />}
+          {item.reminder && (
+            <div className="flex flex-col gap-1.5 rounded-xl bg-zinc-50 px-3 py-2">
+              <ReminderToggle id={item.id} type={item.reminder.type} lead={1440} initial={item.reminder.day} />
+              <ReminderToggle id={item.id} type={item.reminder.type} lead={60} initial={item.reminder.hour} />
+            </div>
+          )}
           {item.kind !== "personal" && (
             <div className="flex flex-wrap items-center gap-2 pt-1">
               {loggedIn ? (
@@ -233,25 +238,26 @@ function EventPopup({ item, loggedIn, manage, onClose }: { item: CalendarItem; l
   );
 }
 
-/** 일정 하루 전(24시간 전) 알림 켜기/끄기 */
-function ReminderToggle({ id, type, initial }: { id: string; type: "event" | "personal"; initial: boolean }) {
+/** 일정 알림 켜기/끄기: 하루 전(24시간 전) / 1시간 전 */
+function ReminderToggle({ id, type, lead, initial }: { id: string; type: "event" | "personal"; lead: 60 | 1440; initial: boolean }) {
   const [on, setOn] = useState(initial);
   const [pending, start] = useTransition();
   const [error, setError] = useState<string>();
+  const label = lead === 1440 ? "하루 전 알림" : "1시간 전 알림";
   return (
-    <div className="flex items-center justify-between gap-2 rounded-xl bg-zinc-50 px-3 py-2 text-sm">
+    <div className="flex items-center justify-between gap-2 text-sm">
       <span>
-        🔔 하루 전 알림 <span className="text-xs text-zinc-500">(시작 24시간 전)</span>
+        🔔 {label} <span className="text-xs text-zinc-500">({lead === 1440 ? "시작 24시간 전" : "시작 1시간 전"})</span>
         {error && <span className="block text-xs text-red-600">{error}</span>}
       </span>
       <button
         role="switch"
         aria-checked={on}
-        aria-label="하루 전 알림"
+        aria-label={label}
         disabled={pending}
         onClick={() =>
           start(async () => {
-            const r = await toggleReminder(type, id, !on);
+            const r = await toggleReminder(type, id, !on, lead);
             if (r.error) setError(r.error);
             else setOn(!on);
           })

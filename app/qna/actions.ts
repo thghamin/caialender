@@ -1,9 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 import { requireAdmin, requireUser } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { pushConfigured, sendPushToUser } from "@/lib/push";
+import { answerMessage } from "@/lib/reminders";
 
 export type QnaState = { error?: string; savedAt?: number } | undefined;
 
@@ -35,11 +38,21 @@ export async function answerQuestion(_prev: QnaState, formData: FormData): Promi
   const parsed = answerSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0].message };
   const supabase = await createClient();
+  const { data: before } = await supabase.from("questions").select("id, user_id, body, event_id, answered_at").eq("id", parsed.data.id).single();
   const { error } = await supabase
     .from("questions")
     .update({ answer: parsed.data.answer, answered_by: admin.id, answered_at: new Date().toISOString() })
     .eq("id", parsed.data.id);
   if (error) return { error: `답변을 저장하지 못했습니다: ${error.message}` };
+  // 처음 답변이면 질문한 학생에게 알림 (응답을 늦추지 않도록 저장 후에 보낸다)
+  if (before && !before.answered_at && before.user_id !== admin.id && pushConfigured()) {
+    const msg = answerMessage(before, parsed.data.answer);
+    after(async () => {
+      const db = createServiceClient();
+      const { error: dup } = await db.from("notification_log").insert({ user_id: before.user_id, key: msg.key });
+      if (!dup) await sendPushToUser(before.user_id, { title: msg.title, body: msg.body, url: msg.url, tag: msg.key }).catch(() => {});
+    });
+  }
   revalidatePath("/", "layout");
   return { savedAt: Date.now() };
 }

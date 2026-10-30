@@ -9,7 +9,7 @@ const prefix = `e2e8-${tag}`;
 const T = `E2E8-${tag}`;
 const email = (k: string) => `${prefix}-${k}@caialender-test.dev`;
 const ids: Record<string, string> = {};
-const SAMPLE = path.join(__dirname, "../tests/fixtures/private/everytime-sample.png");
+const SAMPLE = path.join(__dirname, "../tests/fixtures/private/everytime-full.png");
 
 test.describe.configure({ mode: "serial" });
 
@@ -105,12 +105,14 @@ test("시간표: 에타 스크린샷을 AI가 읽어 그대로 넣는다 (실제
   await sheet.getByLabel("에타 시간표 스크린샷").setInputFiles(SAMPLE);
   await sheet.getByRole("button", { name: "🤖 AI로 읽기" }).click();
   await expect(sheet.getByText(/AI가 읽은 수업 \d+개/)).toBeVisible({ timeout: 120_000 });
-  for (const name of ["동역학", "로봇제어1", "브레인웍스"]) await expect(sheet.getByText(name).first()).toBeVisible();
+  for (const name of ["로봇제어1", "이산수학", "모델링 및 시뮬레이션"]) await expect(sheet.getByText(name).first()).toBeVisible();
+  // 시각은 픽셀로 잰 30분 단위 (로봇제어1: 화 9:00-10:30, 목 10:30-12:00)
+  await expect(sheet.getByText(/화 09:00-10:30 .*목 10:30-12:00/).first()).toBeVisible();
   await sheet.getByRole("button", { name: "추가" }).click();
   await expect(sheet).toBeHidden();
-  await expect(page.getByTestId("timetable-grid").getByText("동역학").first()).toBeVisible();
+  await expect(page.getByTestId("timetable-grid").getByText("로봇제어1").first()).toBeVisible();
   const { data } = await service().from("timetable_courses").select("name, source").eq("user_id", ids.student);
-  expect(data!.length).toBeGreaterThanOrEqual(5);
+  expect(data!.length).toBeGreaterThanOrEqual(6);
   expect(data!.every((c) => c.source === "ai")).toBe(true);
 });
 

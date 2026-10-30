@@ -428,7 +428,7 @@ function ImportSheet({ hasExisting, onClose }: { hasExisting: boolean; onClose: 
         disabled={analyzing || !preview}
         className="mt-3 w-full rounded-xl bg-brand py-2.5 text-sm font-bold text-white disabled:opacity-50"
       >
-        {analyzing ? "🤖 AI가 시간표를 읽고 있어요… (20~40초)" : "🤖 AI로 읽기"}
+        {analyzing ? "🤖 AI가 글자를 읽고, 칸 위치로 시각을 재고 있어요… (20~40초)" : "🤖 AI로 읽기"}
       </button>
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
 
@@ -456,6 +456,7 @@ function ImportSheet({ hasExisting, onClose }: { hasExisting: boolean; onClose: 
                     <span className="block text-xs text-zinc-500">
                       {c.slots.map((s) => `${DAY_LABELS[s.day]} ${hhmm(s.start_min)}-${hhmm(s.end_min)}${s.location ? ` ${s.location}` : ""}`).join(" / ")}
                     </span>
+                    {c.check && <span className="mt-0.5 block text-xs font-medium text-amber-700">⚠️ {c.check} — 추가한 뒤 칸을 눌러 고칠 수 있어요</span>}
                   </span>
                 </label>
               </li>

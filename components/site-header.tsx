@@ -37,6 +37,11 @@ export async function SiteHeader() {
         <div className="ml-auto flex items-center gap-2 text-sm md:gap-3">
           {user ? (
             <>
+              {approved && (
+                <Link href="/search" aria-label="검색" title="검색" className="grid size-9 place-items-center rounded-full text-lg hover:bg-brand-soft">
+                  🔍
+                </Link>
+              )}
               <span className="text-zinc-500">
                 <span className="hidden sm:inline">
                   {user.name}

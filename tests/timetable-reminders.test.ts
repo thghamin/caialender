@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { gridRange, normalizeTimetable, parseHhmm } from "@/lib/timetable";
-import { eventMessage, eventRemindAt, isDue, slotMessage, slotRemindAt } from "@/lib/reminders";
+import { answerMessage, eventMessage, eventRemindAt, isDue, slotMessage, slotRemindAt } from "@/lib/reminders";
 
 const kst = (s: string) => new Date(`${s}+09:00`).getTime();
 
@@ -15,11 +15,12 @@ describe("시간표 AI 결과 정규화", () => {
       ],
     });
     expect(courses).toHaveLength(2);
+    // 수업은 30분 단위로 끝나므로 10:15 → 10:30, 9:02 → 9:00
     expect(courses[0].slots.map((s) => [s.day, s.start_min, s.end_min])).toEqual([
-      [0, 540, 615],
-      [2, 540, 615],
+      [0, 540, 630],
+      [2, 540, 630],
     ]);
-    expect(courses[1].slots[0].start_min).toBe(540); // 9:02 → 5분 단위 반올림
+    expect(courses[1].slots[0].start_min).toBe(540);
     expect(dropped).toEqual(["이상한칸: 시간 해석 실패"]);
   });
 
@@ -41,6 +42,14 @@ describe("알림 시각", () => {
     expect(eventRemindAt(ev)).toBe(kst("2026-11-04T18:00"));
     const allDay = { ...ev, start_at: new Date(kst("2026-11-05T00:00")).toISOString(), all_day: true };
     expect(eventRemindAt(allDay)).toBe(kst("2026-11-04T09:00"));
+  });
+
+  it("1시간 전 알림 (종일 일정은 당일 오전 8시), 문구와 키가 하루 전과 다르다", () => {
+    expect(eventRemindAt(ev, 60)).toBe(kst("2026-11-05T17:00"));
+    const allDay = { ...ev, start_at: new Date(kst("2026-11-05T00:00")).toISOString(), all_day: true };
+    expect(eventRemindAt(allDay, 60)).toBe(kst("2026-11-05T08:00"));
+    expect(eventMessage(ev, "event", 60).title).toBe("⏰ 1시간 뒤 일정: MT");
+    expect(eventMessage(ev, "event", 60).key).not.toBe(eventMessage(ev, "event", 1440).key);
   });
 
   it("알림 시각이 지난 직후(10분 이내)에만 보낸다", () => {
@@ -66,5 +75,11 @@ describe("알림 시각", () => {
   it("알림 문구", () => {
     expect(eventMessage(ev, "event")).toMatchObject({ title: "⏰ 내일 일정: MT", url: "/events/e1" });
     expect(eventMessage(ev, "personal").body).toContain("(내 개인 일정)");
+  });
+
+  it("질문 답변 알림", () => {
+    const m = answerMessage({ id: "q1", body: "MT 회비는 얼마인가요?", event_id: "e1" }, "3만원입니다.");
+    expect(m).toMatchObject({ title: "💬 학생회가 질문에 답했어요", url: "/events/e1", key: "answer:q1" });
+    expect(m.body).toContain("A. 3만원입니다.");
   });
 });

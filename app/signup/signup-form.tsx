@@ -15,7 +15,13 @@ export function SignupForm() {
       <Field label="이메일" name="email" type="email" autoComplete="email" required />
       <Field label="비밀번호 (8자 이상)" name="password" type="password" autoComplete="new-password" minLength={8} required />
       <Field label="비밀번호 확인" name="password_confirm" type="password" autoComplete="new-password" minLength={8} required />
-      <Field label="학과" name="department" placeholder="예: 인공지능전공" required maxLength={50} />
+      {/* 이 서비스는 전자공학부 인공지능전공 전용이라 학과는 확인만 받는다 */}
+      <label className="flex items-start gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-sm">
+        <input type="checkbox" name="major_confirm" required className="mt-0.5 size-4 accent-brand" />
+        <span>
+          <b>경북대학교 전자공학부 인공지능전공</b> 학생입니다
+        </span>
+      </label>
       <label className="flex flex-col gap-1 text-sm">
         <span className="font-medium text-zinc-700">학년</span>
         <select name="grade" defaultValue="" required className="rounded-md border border-zinc-300 bg-white px-3 py-2">

@@ -49,14 +49,25 @@ export async function sendTestPush(): Promise<{ error?: string; sent?: number }>
   }
 }
 
-/** 내 캘린더 일정의 '하루 전 알림' 켜기/끄기 */
-export async function toggleReminder(targetType: "event" | "personal", targetId: string, on: boolean): Promise<{ error?: string }> {
+/** 내 캘린더 일정 알림 켜기/끄기. lead: 1440(하루 전) 또는 60(1시간 전) */
+export async function toggleReminder(
+  targetType: "event" | "personal",
+  targetId: string,
+  on: boolean,
+  lead: 60 | 1440 = 1440,
+): Promise<{ error?: string }> {
   const user = await requireUser();
-  if (!z.uuid().safeParse(targetId).success) return { error: "잘못된 일정입니다." };
+  if (!z.uuid().safeParse(targetId).success || (lead !== 60 && lead !== 1440)) return { error: "잘못된 일정입니다." };
   const supabase = await createClient();
   const { error } = on
-    ? await supabase.from("event_reminders").upsert({ user_id: user.id, target_type: targetType, target_id: targetId })
-    : await supabase.from("event_reminders").delete().eq("user_id", user.id).eq("target_type", targetType).eq("target_id", targetId);
+    ? await supabase.from("event_reminders").upsert({ user_id: user.id, target_type: targetType, target_id: targetId, lead_minutes: lead })
+    : await supabase
+        .from("event_reminders")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("target_type", targetType)
+        .eq("target_id", targetId)
+        .eq("lead_minutes", lead);
   if (error) return { error: error.message };
   revalidatePath("/my");
   return {};

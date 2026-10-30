@@ -1,13 +1,13 @@
 import "server-only";
 import { createServiceClient } from "@/lib/supabase/server";
 import { sendPushToUser, pushConfigured } from "@/lib/push";
-import { CATCH_UP_MS, eventMessage, eventRemindAt, isDue, slotMessage, slotRemindAt, type ReminderEvent } from "@/lib/reminders";
+import { CATCH_UP_MS, eventMessage, eventRemindAt, isDue, slotMessage, slotRemindAt, type LeadMinutes, type ReminderEvent } from "@/lib/reminders";
 
 const DAY = 86400_000;
 
 /**
  * 지금 보낼 알림을 찾아 휴대폰으로 보낸다. 예약 작업(pg_cron)이 1분마다 호출한다.
- * - 켜 둔 내 캘린더 일정: 시작 24시간 전 (종일은 전날 오전 9시)
+ * - 켜 둔 내 캘린더 일정: 시작 24시간 전·1시간 전 (각각 따로 켠다)
  * - 알림을 켠 시간표 수업: 시작 10분 전
  * notification_log로 같은 알림을 두 번 보내지 않는다.
  */
@@ -17,7 +17,7 @@ export async function sendDueReminders(now = Date.now()) {
   const due: { userId: string; msg: ReturnType<typeof eventMessage> }[] = [];
 
   // 1) 일정 알림: 알림 시각이 [now-따라잡기, now] 안인 일정 = 시작이 대략 now+24h 근처
-  const { data: reminders } = await db.from("event_reminders").select("user_id, target_type, target_id");
+  const { data: reminders } = await db.from("event_reminders").select("user_id, target_type, target_id, lead_minutes");
   const eventIds = [...new Set((reminders ?? []).filter((r) => r.target_type === "event").map((r) => r.target_id))];
   const personalIds = [...new Set((reminders ?? []).filter((r) => r.target_type === "personal").map((r) => r.target_id))];
   const windowFrom = new Date(now - CATCH_UP_MS).toISOString();
@@ -35,7 +35,8 @@ export async function sendDueReminders(now = Date.now()) {
   for (const p of personal ?? []) byId.set(`personal:${p.id}`, { e: { ...p, all_day: false, location: null }, kind: "personal" });
   for (const r of reminders ?? []) {
     const hit = byId.get(`${r.target_type}:${r.target_id}`);
-    if (hit && isDue(eventRemindAt(hit.e), now)) due.push({ userId: r.user_id, msg: eventMessage(hit.e, hit.kind) });
+    const lead = (r.lead_minutes === 60 ? 60 : 1440) as LeadMinutes;
+    if (hit && isDue(eventRemindAt(hit.e, lead), now)) due.push({ userId: r.user_id, msg: eventMessage(hit.e, hit.kind, lead) });
   }
 
   // 2) 시간표 수업 알림

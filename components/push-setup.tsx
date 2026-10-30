@@ -110,7 +110,11 @@ export function PushSetup() {
         </p>
       )}
       {status === "unsupported" && <p className="text-xs text-zinc-500">이 브라우저는 알림을 지원하지 않아요. Chrome·Safari 최신 버전에서 열어 주세요.</p>}
-      <p className="text-xs text-zinc-500">일정마다 🔔를 켜면 시작 24시간 전에, 시간표 수업은 10분 전에 알려 드려요.</p>
+      <ul className="list-disc space-y-0.5 pl-4 text-xs text-zinc-500">
+        <li>내 캘린더 일정: 🔔 켠 일정마다 하루 전·1시간 전</li>
+        <li>내 시간표: 수업 10분 전</li>
+        <li>질문 게시판: 내 질문에 학생회가 답하면 바로</li>
+      </ul>
       {msg && <p className="text-xs text-brand">{msg}</p>}
     </div>
   );

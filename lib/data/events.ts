@@ -58,10 +58,10 @@ export function pickMyEvents(events: CalendarEvent[], profile: Pick<Profile, "gr
   return mine;
 }
 
-/** 하루 전 알림을 켠 일정 키 집합: "event:<id>" / "personal:<id>" */
+/** 알림을 켠 일정 키 집합: "event:<id>:1440"(하루 전) / "personal:<id>:60"(1시간 전) … */
 export async function getReminderKeys(userId: string): Promise<Set<string>> {
   const supabase = await createClient();
-  const { data, error } = await supabase.from("event_reminders").select("target_type, target_id").eq("user_id", userId);
+  const { data, error } = await supabase.from("event_reminders").select("target_type, target_id, lead_minutes").eq("user_id", userId);
   if (error) throw new Error(`알림 설정을 불러오지 못했습니다: ${error.message}`);
-  return new Set(data.map((r) => `${r.target_type}:${r.target_id}`));
+  return new Set(data.map((r) => `${r.target_type}:${r.target_id}:${r.lead_minutes}`));
 }
