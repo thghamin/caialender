@@ -44,7 +44,7 @@ export default async function EventPage({ params }: PageProps<"/events/[id]">) {
       getPublishedEvents(),
     ]);
     interested = interests.has(id);
-    conflicts = findConflicts(event, [...pickMyEvents(events, user, interests), ...personal]);
+    conflicts = findConflicts(event, [...pickMyEvents(events, interests), ...personal]);
   }
 
   const when = event.end_at

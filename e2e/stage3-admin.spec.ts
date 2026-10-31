@@ -128,8 +128,8 @@ test("텍스트 공지 → AI 초안 → 검수·수정 → 게시 → 학생 �
   await expect(page.getByText("검수 대기", { exact: true })).toHaveCount(0, { timeout: 15_000 });
   await expect(page.getByText("게시됨", { exact: true }).first()).toBeVisible();
 
-  // 학생 캘린더에 반영
-  await student.goto("/my");
+  // 학생의 학과 캘린더에 반영 (내 캘린더에는 학생이 ☆로 담아야 들어간다)
+  await student.goto("/");
   await expect(student.locator("aside").getByText(`새터 신청 마감 ${tag}`)).toBeVisible();
   await expect(student.locator("aside").getByText(main!.title)).toBeVisible();
   await studentCtx.close();

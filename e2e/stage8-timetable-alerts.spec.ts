@@ -145,6 +145,8 @@ test("알림: 내 캘린더 일정 하루 전 알림을 켜면, 1분 작업이 2
     .select("id")
     .single();
   ids.event = ev!.id;
+  // 학과 캘린더에서 ☆로 담은 일정 (담은 일정만 내 캘린더에 들어간다)
+  await s.from("user_events").insert({ user_id: ids.student, event_id: ids.event });
   await login(page, "student");
   // 내 캘린더에서 일정을 눌러 하루 전 알림 켜기
   // 달력은 그달 주만 보여주므로, 일정(내일)이 다음 달이면 다음 달로 넘긴다

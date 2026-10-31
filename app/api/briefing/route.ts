@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { getBriefing } from "@/lib/briefing";
-import { getInterestIds, getPublishedEvents, pickMyEvents } from "@/lib/data/events";
+import { getInterestIds, getPublishedEvents, pickRelevantEvents } from "@/lib/data/events";
 
 export const maxDuration = 60;
 
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(await getBriefing({ userId: null, scopeLabel: "인공지능전공 학과 캘린더", events }));
     }
     const events = await getPublishedEvents();
-    const mine = pickMyEvents(events, user, await getInterestIds(user.id));
+    const mine = pickRelevantEvents(events, user, await getInterestIds(user.id));
     return NextResponse.json(
       await getBriefing({ userId: user.id, scopeLabel: `${user.grade ?? ""}학년 학생 ${user.name}의 내 캘린더`, events: mine }),
     );

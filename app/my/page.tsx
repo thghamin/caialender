@@ -30,7 +30,7 @@ export default async function MyPage() {
   ]);
   const saved = cookieStore.get(MY_COLOR_COOKIE)?.value;
   const color = isMyColor(saved) ? saved : "red";
-  const mine = pickMyEvents(events, user, interests);
+  const mine = pickMyEvents(events, interests);
   const upcomingPersonal = personal.filter((p) => new Date(p.end_at).getTime() >= requestNow());
 
   const academicCount = mine.filter((e) => e.calendar === "academic").length;
@@ -41,7 +41,7 @@ export default async function MyPage() {
         tone="custom"
         badge={user.grade ? `${user.grade}학년 ${user.name}` : user.name}
         title="내 캘린더"
-        subtitle={`내 학년·전체 대상 학과 일정 + 직접 담은 일정 ${interests.size}개(학사일정 ${academicCount}개) + 개인 일정 ${personal.length}개`}
+        subtitle={`학과·학사 캘린더에서 ☆로 담은 일정 ${mine.length}개(학사 ${academicCount}개) + 개인 일정 ${personal.length}개`}
       >
         <MyColorPicker initial={color} />
       </PageHero>

@@ -53,33 +53,40 @@ test("학과 캘린더에 게시된 일정만 보이고 초안은 안 보인다"
   await expect(page.getByText(`${T} 검수 전 초안`)).toHaveCount(0);
 });
 
-test("1학년: 내 캘린더에 1학년·전체 대상만, 관심 추가하면 2학년 일정도", async ({ page }) => {
+test("내 캘린더는 처음엔 비어 있고, ☆로 담은 일정만 들어간다", async ({ page }) => {
   await signupViaUi(page, { name: "이일학", studentNo: "2027000001", grade: 1, email: `${prefix}-g1@caialender-test.dev` });
   await expect(page).toHaveURL(/\/my$/);
   const side = page.locator("aside");
-  await expect(side.getByText(`${T} 새내기 배움터`)).toBeVisible();
-  await expect(side.getByText(`${T} 학과 총회`)).toBeVisible();
-  await expect(side.getByText(`${T} 장학금 신청 마감`)).toBeVisible();
-  await expect(side.getByText(`${T} 2학년 전공 설명회`)).toHaveCount(0);
+  // 내 학년·전체 대상 일정이라도 담기 전에는 들어가지 않는다
+  await expect(page.getByText(`${T} 새내기 배움터`)).toHaveCount(0);
+  await expect(page.getByText(`${T} 학과 총회`)).toHaveCount(0);
 
-  // 일정 상세에서 관심 일정 추가
+  // 일정 상세에서 담기
   await page.goto(`/events/${ids.g2}`);
   await expect(page.getByRole("heading", { name: `${T} 2학년 전공 설명회` })).toBeVisible();
   await page.getByRole("button", { name: "☆ 내 캘린더에 추가" }).click();
   await expect(page.getByRole("button", { name: "★ 내 캘린더에서 빼기" })).toBeVisible();
 
   await page.goto("/my");
-  await expect(page.locator("aside").getByText(`${T} 2학년 전공 설명회`)).toBeVisible();
+  await expect(side.getByText(`${T} 2학년 전공 설명회`)).toBeVisible();
+  await expect(page.getByText(`${T} 학과 총회`)).toHaveCount(0);
 
   // 빼기
   await page.goto(`/events/${ids.g2}`);
   await page.getByRole("button", { name: "★ 내 캘린더에서 빼기" }).click();
   await expect(page.getByRole("button", { name: "☆ 내 캘린더에 추가" })).toBeVisible();
+  await page.goto("/my");
+  await expect(page.getByText(`${T} 2학년 전공 설명회`)).toHaveCount(0);
 });
 
-test("개인 일정: 학과 일정과 겹치면 경고, 확인 후 저장, 상세에도 충돌 표시", async ({ page }) => {
+test("개인 일정: 내 캘린더에 담은 학과 일정과 겹치면 경고, 확인 후 저장, 상세에도 충돌 표시", async ({ page }) => {
   await signupViaUi(page, { name: "최충돌", studentNo: "2027000002", grade: 1, email: `${prefix}-c@caialender-test.dev` });
   await expect(page).toHaveURL(/\/my$/);
+  // 새내기 배움터를 내 캘린더에 담는다 (담은 일정만 충돌 확인 대상)
+  await page.goto(`/events/${ids.g1}`);
+  await page.getByRole("button", { name: "☆ 내 캘린더에 추가" }).click();
+  await expect(page.getByRole("button", { name: "★ 내 캘린더에서 빼기" })).toBeVisible();
+  await page.goto("/my");
 
   const ymd = (iso: string) => new Date(new Date(iso).getTime() + 9 * 3600_000).toISOString().slice(0, 10);
   // 오전/오후 → 시 → 분 버튼으로 고른다
@@ -127,6 +134,6 @@ test("개인 일정: 학과 일정과 겹치면 경고, 확인 후 저장, 상�
   await expect(page.getByRole("heading", { name: "로그인" })).toBeVisible();
   await signupViaUi(page, { name: "타학생", studentNo: "2027000003", grade: 1, email: `${prefix}-other@caialender-test.dev` });
   await expect(page).toHaveURL(/\/my$/);
-  await expect(page.getByText(`${T} 새내기 배움터`).first()).toBeVisible();
+  await expect(page.getByRole("heading", { name: "내 캘린더" })).toBeVisible();
   await expect(page.getByText("편의점 알바")).toHaveCount(0);
 });

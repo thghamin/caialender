@@ -43,11 +43,16 @@ export async function getPersonalEvents(userId: string): Promise<PersonalEvent[]
 
 export type MyEvent = CalendarEvent & { reason: "grade" | "all" | "interest" };
 
+/** 내 캘린더 = 내가 ☆로 직접 담은 일정만 (학과·학사). 아무것도 담지 않으면 비어 있다 */
+export function pickMyEvents(events: CalendarEvent[], interests: Set<string>): MyEvent[] {
+  return events.filter((e) => interests.has(e.id)).map((e) => ({ ...e, reason: "interest" as const }));
+}
+
 /**
- * 내 캘린더 = 학과 일정 중 내 학년·전체 대상 + 직접 추가한 일정(학사·학과)
- * 학사일정은 양이 많아서 직접 추가한 것만 넣는다.
+ * 나와 관련 있는 일정 (AI 개인 브리핑용): 직접 담은 일정 + 내 학년·전체 대상 학과 일정.
+ * 내 캘린더에 자동으로 넣지는 않고, 브리핑이 '놓치기 쉬운 내 학년 일정'까지 알려 주는 데만 쓴다.
  */
-export function pickMyEvents(events: CalendarEvent[], profile: Pick<Profile, "grade">, interests: Set<string>): MyEvent[] {
+export function pickRelevantEvents(events: CalendarEvent[], profile: Pick<Profile, "grade">, interests: Set<string>): MyEvent[] {
   const mine: MyEvent[] = [];
   for (const e of events) {
     if (interests.has(e.id)) mine.push({ ...e, reason: "interest" });

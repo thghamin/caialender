@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { findConflicts, overlaps } from "@/lib/conflicts";
-import { pickMyEvents } from "@/lib/data/events";
+import { pickMyEvents, pickRelevantEvents } from "@/lib/data/events";
 import type { CalendarEvent } from "@/lib/types";
 
 const t = (h: number, m = 0) => new Date(Date.UTC(2027, 2, 18, h - 9, m)).toISOString();
@@ -41,8 +41,16 @@ describe("내 캘린더 선별", () => {
     ev("academic-picked", [], "academic"),
   ];
 
-  it("학과 일정은 내 학년 + 전체 대상, 학사일정은 직접 담은 것만", () => {
-    const mine = pickMyEvents(events, { grade: 2 }, new Set(["g4", "academic-picked"]));
+  it("내 캘린더는 직접 담은 일정만 (아무것도 안 담으면 비어 있다)", () => {
+    expect(pickMyEvents(events, new Set())).toEqual([]);
+    expect(pickMyEvents(events, new Set(["g4", "academic-picked"])).map((e) => [e.id, e.reason])).toEqual([
+      ["g4", "interest"],
+      ["academic-picked", "interest"],
+    ]);
+  });
+
+  it("AI 개인 브리핑은 담은 일정 + 내 학년·전체 대상 학과 일정", () => {
+    const mine = pickRelevantEvents(events, { grade: 2 }, new Set(["g4", "academic-picked"]));
     expect(mine.map((e) => [e.id, e.reason])).toEqual([
       ["g23", "grade"],
       ["all", "all"],

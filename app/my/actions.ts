@@ -59,7 +59,7 @@ export async function addPersonalEvent(_prev: PersonalState, formData: FormData)
       getInterestIds(user.id),
       getPersonalEvents(user.id),
     ]);
-    const conflicts = findConflicts(candidate, [...pickMyEvents(events, user, interests), ...personal]);
+    const conflicts = findConflicts(candidate, [...pickMyEvents(events, interests), ...personal]);
     if (conflicts.length) {
       return { conflicts: conflicts.map((c) => ({ title: c.title, start_at: c.start_at })), values };
     }

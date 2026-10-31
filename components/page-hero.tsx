@@ -41,7 +41,15 @@ export function PageHero({ title, subtitle, badge, tone = "custom", children }: 
           />
         </>
       ) : (
-        <Hobanu className="pointer-events-none absolute -bottom-3 right-4 hidden size-36 drop-shadow-xl sm:block" title="" />
+        <>
+          {/* 학사 캘린더: 학과 캘린더의 K:AI처럼 희미한 KNU */}
+          {tone === "knu" && (
+            <span className="pointer-events-none absolute -bottom-6 left-1/3 select-none text-[120px] font-black leading-none tracking-tighter text-white/10 sm:text-[150px]">
+              KNU
+            </span>
+          )}
+          <Hobanu className="pointer-events-none absolute -bottom-3 right-4 hidden size-36 drop-shadow-xl sm:block" title="" />
+        </>
       )}
       <div className="relative flex flex-col gap-1.5 sm:gap-2 sm:pr-40">
         {badge && (

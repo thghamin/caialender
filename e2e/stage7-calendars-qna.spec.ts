@@ -298,6 +298,8 @@ test("검색: 일정·질문을 한 번에 찾고, 내 캘린더 일정은 하�
   await expect(page.getByText(/검색 결과 \d+개/)).toBeVisible();
   await expect(page.getByRole("link", { name: new RegExp(`${T} 학과 MT`) })).toBeVisible();
 
+  // 내 캘린더에 담은 일정에서 알림을 켠다
+  await service().from("user_events").upsert({ user_id: ids.student, event_id: ids.dept });
   await page.goto("/my");
   await page.locator(".caialender-calendar").getByText(`${T} 학과 MT`).first().click();
   const popup = page.getByRole("dialog", { name: `${T} 학과 MT` });
