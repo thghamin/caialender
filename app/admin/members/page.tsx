@@ -99,7 +99,7 @@ function MemberTable({ members, me, canApprove }: { members: Member[]; me: Profi
             <span className="font-semibold">{m.name || "-"}</span>
             {badges(m)}
           </div>
-          <dl className="mt-2 grid grid-cols-[44px_1fr] gap-y-0.5 text-sm">
+          <dl className="mt-2 grid grid-cols-[52px_1fr] gap-y-0.5 text-[13px]">
             <dt className="text-zinc-500">학번</dt>
             <dd>{m.student_no ?? "-"}</dd>
             <dt className="text-zinc-500">이메일</dt>

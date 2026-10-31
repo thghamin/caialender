@@ -17,9 +17,9 @@ export async function SiteHeader() {
     <>
     <header className="sticky top-0 z-30 border-b border-brand/15 bg-white/90 backdrop-blur">
       <div className="h-1 bg-gradient-to-r from-brand via-brand-dark to-knu-gold" />
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 h-14 md:h-16 flex items-center gap-3 md:gap-6">
-        <Link href="/" className="flex items-center gap-2 font-extrabold text-lg tracking-tight">
-          <Hobanu className="size-9 drop-shadow-sm" title="" />
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 h-14 md:h-16 flex items-center gap-2 md:gap-6">
+        <Link href="/" className="flex shrink-0 items-center gap-1.5 font-extrabold text-[17px] tracking-tight md:gap-2 md:text-lg">
+          <Hobanu className="size-8 drop-shadow-sm md:size-9" title="" />
           <span>
             C<span className="text-brand">:AI:</span>ender
           </span>
@@ -35,11 +35,11 @@ export async function SiteHeader() {
           {approved && <NavLink href="/qna">질문</NavLink>}
           {admin && <NavLink href="/admin" strong>관리자</NavLink>}
         </nav>
-        <div className="ml-auto flex items-center gap-2 text-sm md:gap-3">
+        <div className="ml-auto flex min-w-0 items-center gap-1.5 text-sm md:gap-3">
           {user ? (
             <>
               {approved && (
-                <Link href="/search" aria-label="검색" title="검색" data-tour="search" className="grid size-9 place-items-center rounded-full text-lg hover:bg-brand-soft">
+                <Link href="/search" aria-label="검색" title="검색" data-tour="search" className="grid size-8 place-items-center rounded-full text-base hover:bg-brand-soft md:size-9 md:text-lg">
                   🔍
                 </Link>
               )}
@@ -49,7 +49,7 @@ export async function SiteHeader() {
                   {user.grade ? ` · ${user.grade}학년` : ""}
                 </span>
                 {user.role !== "student" && (
-                  <span className="ml-1.5 whitespace-nowrap rounded-full bg-brand-soft px-2 py-0.5 text-xs font-semibold text-brand">
+                  <span className="whitespace-nowrap rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-semibold text-brand sm:ml-1.5 md:text-xs">
                     {/* 휴대폰은 짧게 */}
                     <span className="sm:hidden">{user.role === "super_admin" ? "총관리" : "관리자"}</span>
                     <span className="hidden sm:inline">{ROLE_LABEL[user.role]}</span>
@@ -57,7 +57,7 @@ export async function SiteHeader() {
                 )}
               </span>
               <form action={logout}>
-                <button className="whitespace-nowrap rounded-full border border-zinc-300 px-3 py-1 text-sm hover:bg-zinc-100">로그아웃</button>
+                <button className="whitespace-nowrap rounded-full border border-zinc-300 px-2.5 py-1 text-[13px] hover:bg-zinc-100 md:px-3 md:text-sm">로그아웃</button>
               </form>
             </>
           ) : (

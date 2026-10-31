@@ -35,22 +35,22 @@ export default async function AdminPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="text-2xl font-bold">학생회 관리</h1>
-          <p className="text-sm text-zinc-500">공지 문구나 포스터 사진을 올리면 AI가 일정 초안을 만들고, 검수 후 학과 캘린더에 게시합니다.</p>
+          <p className="text-[13px] text-zinc-500 md:text-sm">공지 문구나 포스터 사진을 올리면 AI가 일정 초안을 만들고, 검수 후 학과 캘린더에 게시합니다.</p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link href="/admin/members" className="rounded-md border border-brand/40 bg-white px-4 py-2 text-sm font-medium text-brand hover:bg-brand-soft">
+        <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap">
+          <Link href="/admin/members" className="rounded-md border border-brand/40 bg-white px-4 py-2 font-medium text-brand hover:bg-brand-soft text-center text-[13px] md:text-sm">
             👥 회원 관리{pendingMembers ? ` (승인 대기 ${pendingMembers})` : ""}
           </Link>
-          <Link href="/chat/members" className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm hover:bg-zinc-100">
+          <Link href="/chat/members" className="rounded-md border border-zinc-300 bg-white px-4 py-2 hover:bg-zinc-100 text-center text-[13px] md:text-sm">
             👥 소통방 멤버 관리
           </Link>
-          <Link href="/admin/events/new" className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm hover:bg-zinc-100">
+          <Link href="/admin/events/new" className="rounded-md border border-zinc-300 bg-white px-4 py-2 hover:bg-zinc-100 text-center text-[13px] md:text-sm">
             일정 직접 추가
           </Link>
-          <Link href="/admin/notices/new" className="rounded-md bg-brand px-4 py-2 text-sm font-medium text-white hover:opacity-90">
+          <Link href="/admin/notices/new" className="rounded-md bg-brand px-4 py-2 font-medium text-white hover:opacity-90 text-center text-[13px] md:text-sm">
             + 공지 등록
           </Link>
         </div>

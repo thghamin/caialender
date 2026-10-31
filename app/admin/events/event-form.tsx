@@ -40,7 +40,8 @@ export function EventForm({ event, values, defaultCalendar = "dept" }: {
           <span>종일 (시각 없음)</span>
         </label>
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      {/* 휴대폰에서는 날짜·시각이 잘리지 않게 위아래로 */}
+      <div className="grid gap-3 sm:grid-cols-2">
         <Field key={`s-${inputType}`} label="시작" name="start" type={inputType} defaultValue={cut(values.start)} required />
         <Field key={`e-${inputType}`} label="종료 (선택)" name="end" type={inputType} defaultValue={values.end ? cut(values.end) : ""} />
       </div>

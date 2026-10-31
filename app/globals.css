@@ -198,3 +198,12 @@ body {
 .animate-pop-in {
   animation: pop-in 0.18s ease-out;
 }
+
+/* 휴대폰: 입력칸 글자가 16px보다 작으면 아이폰이 누를 때마다 화면을 확대한다 → 입력칸은 16px로 */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
