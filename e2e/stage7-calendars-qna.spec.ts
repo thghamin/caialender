@@ -312,3 +312,23 @@ test("검색: 일정·질문을 한 번에 찾고, 내 캘린더 일정은 하�
     .poll(async () => (await service().from("event_reminders").select("lead_minutes").eq("user_id", ids.student).eq("target_id", ids.dept)).data?.map((r) => r.lead_minutes))
     .toEqual([60]);
 });
+
+test("아이폰 인스타그램 안의 브라우저로 열면 Safari로 옮기는 순서를 크게 안내하고, 링크 복사·이대로 보기를 준다", async ({ browser }) => {
+  const ctx = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 330.0.0",
+  });
+  const page = await ctx.newPage();
+  await page.goto("/login");
+  const guide = page.getByRole("dialog", { name: "Safari로 여는 방법" });
+  await expect(guide).toBeVisible();
+  await expect(guide).toContainText("인스타그램");
+  await expect(guide).toContainText("오른쪽 위 ··· 버튼을 눌러요");
+  await expect(guide).toContainText("외부 브라우저에서 열기");
+  await expect(guide.getByRole("button", { name: "링크 복사" })).toBeVisible();
+  await guide.getByRole("button", { name: "이대로 볼게요" }).click();
+  await expect(guide).toBeHidden();
+  // 닫아도 위쪽에 짧은 안내는 남는다
+  await expect(page.getByRole("alert", { name: "외부 브라우저 안내" })).toBeVisible();
+  await ctx.close();
+});
