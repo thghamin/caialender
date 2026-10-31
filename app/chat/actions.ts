@@ -23,6 +23,8 @@ import {
 } from "@/lib/chat";
 
 type Result = { error?: string };
+/** 방에 들어갈 때·이전 대화 더 보기 한 번에 받는 메시지 수 */
+const CHAT_PAGE = 50;
 
 /** 내 소통방 정보 (닉네임 없으면 null). 한 화면을 그리는 동안은 한 번만 조회한다 */
 const myChatMember = cache(async (): Promise<ChatMember | null> => {
@@ -78,16 +80,18 @@ const toReply = (r: ReplyRow) =>
   r ? { id: r.id, nickname: r.author.nickname, body: r.deleted_at ? "" : r.body, deleted: !!r.deleted_at } : null;
 
 /**
- * 방의 메시지. afterId를 주면 그 뒤에 온 것만(새 메시지 확인용), 아니면 최근 100개.
- * 관리자에게는 닉네임의 실제 회원(이름·학번·학년·경고 수)을 함께 준다.
+ * 방의 메시지. afterId를 주면 그 뒤에 온 것만(새 메시지 확인용), beforeId를 주면 그 앞의 50개(이전 대화 더 보기),
+ * 아니면 최근 50개. 관리자에게는 닉네임의 실제 회원(이름·학번·학년·경고 수)을 함께 준다.
  */
-export async function getChatMessages(roomRaw: number, afterId?: number): Promise<ChatMessage[]> {
+export async function getChatMessages(roomRaw: number, afterId?: number, beforeId?: number): Promise<ChatMessage[]> {
   const me = await requireUser();
   const room = parseRoom(roomRaw);
   if (!room) return [];
   const supabase = await createClient();
   let q = supabase.from("chat_messages").select(SELECT).eq("room", room);
-  q = afterId ? q.gt("id", afterId).order("id").limit(200) : q.order("id", { ascending: false }).limit(100);
+  if (afterId) q = q.gt("id", afterId).order("id").limit(200);
+  else if (beforeId) q = q.lt("id", beforeId).order("id", { ascending: false }).limit(CHAT_PAGE);
+  else q = q.order("id", { ascending: false }).limit(CHAT_PAGE);
   const { data } = await q;
   const rows = ((data ?? []) as unknown as Row[]).sort((a, b) => a.id - b.id);
 
@@ -358,4 +362,30 @@ export async function handleChatReport(messageId: number, action: "warn" | "dele
   const { error } = await supabase.rpc("chat_handle_reports", { p_message: messageId, p_status: action === "dismiss" ? "dismissed" : "resolved" });
   revalidatePath("/chat/reports");
   return error ? { error: "처리 상태를 저장하지 못했어요." } : {};
+}
+
+/** 아직 확인하지 않은 내 경고 (확인한 마지막 경고 번호는 로그인 계정 정보에 저장 → 다른 기기에서도 다시 안 뜬다) */
+export async function getUnseenWarnings(): Promise<{ total: number; items: { id: number; reason: string; created_at: string }[] }> {
+  const member = await getMyChatMember();
+  if (!member || member.warnings === 0) return { total: member?.warnings ?? 0, items: [] };
+  const supabase = await createClient();
+  // 경고가 있을 때만 오는 드문 호출이라, 방금 확인한 기록까지 정확히 보도록 로그인 서버에서 최신 계정 정보를 읽는다
+  const { data: u } = await supabase.auth.getUser();
+  const seen = Number((u.user?.user_metadata as { chat_warn_seen?: number } | undefined)?.chat_warn_seen ?? 0);
+  const { data } = await supabase
+    .from("chat_warnings")
+    .select("id, reason, created_at")
+    .eq("member_id", member.id)
+    .gt("id", seen)
+    .order("id", { ascending: false })
+    .limit(5);
+  return { total: member.warnings, items: data ?? [] };
+}
+
+/** 경고 팝업 '확인': 이 번호까지 봤다고 계정에 기록 */
+export async function ackWarnings(lastId: number): Promise<void> {
+  await requireUser();
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ data: { chat_warn_seen: lastId } });
+  if (!error) await supabase.auth.refreshSession();
 }

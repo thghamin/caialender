@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { CHAT_BAN_WARNINGS, CHAT_MAX_LENGTH, isBanned, REPORT_REASONS, type ChatMember, type ChatMessage, type ChatRoom } from "@/lib/chat";
 import { deleteChatMessage, deleteOwnChatMessage, getChatMessages, reportChatMessage, resetChatWarnings, sendChatMessage, warnChatAuthor } from "../actions";
 
@@ -48,22 +48,53 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
     if (document.visibilityState !== "visible") return;
     poll.current++;
     if (poll.current % FULL_SYNC_EVERY === 0) {
-      setMessages(await getChatMessages(room));
+      // 최근 메시지를 다시 받아 삭제·변경을 반영한다 (불러온 이전 대화는 그대로 둔다)
+      const fresh = await getChatMessages(room);
+      const byId = new Map(fresh.map((m) => [m.id, m]));
+      setMessages((p) => {
+        const merged = p.map((m) => byId.get(m.id) ?? m);
+        return [...merged, ...fresh.filter((m) => !p.some((x) => x.id === m.id))];
+      });
       return;
     }
     const more = await getChatMessages(room, latestId.current);
     if (more.length) setMessages((p) => [...p, ...more.filter((m) => !p.some((x) => x.id === m.id))]);
   }, [room]);
   useEffect(() => {
+    // 들어오자마자 한 번 (잠깐 저장된 화면으로 들어왔어도 바로 최신으로), 그 뒤로는 3초마다
+    refresh();
     const t = setInterval(refresh, POLL_MS);
     return () => clearInterval(t);
   }, [refresh]);
 
-  // 아래쪽을 보고 있었으면 새 메시지가 오면 따라 내려간다
-  useEffect(() => {
+  // 아래쪽을 보고 있었으면 새 메시지가 오면 따라 내려간다. 그리기 전에 맞춰서 위→아래로 튀지 않게
+  const keepOffset = useRef<number | null>(null);
+  useLayoutEffect(() => {
     const el = list.current;
-    if (el && nearBottom.current) el.scrollTop = el.scrollHeight;
+    if (!el) return;
+    if (keepOffset.current !== null) {
+      // 이전 대화를 위에 붙였을 때는 보던 위치를 유지
+      el.scrollTop = el.scrollHeight - keepOffset.current;
+      keepOffset.current = null;
+    } else if (nearBottom.current) el.scrollTop = el.scrollHeight;
   }, [messages]);
+
+  // 이전 대화 더 보기 (한 번에 50개)
+  const [hasOlder, setHasOlder] = useState(initial.length >= 50);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const loadOlder = async () => {
+    const first = messages[0]?.id;
+    if (!first || loadingOlder) return;
+    setLoadingOlder(true);
+    const older = await getChatMessages(room, undefined, first);
+    setLoadingOlder(false);
+    if (older.length < 50) setHasOlder(false);
+    if (!older.length) return;
+    const el = list.current;
+    keepOffset.current = el ? el.scrollHeight - el.scrollTop : null;
+    nearBottom.current = false;
+    setMessages((p) => [...older.filter((m) => !p.some((x) => x.id === m.id)), ...p]);
+  };
 
   const send = async () => {
     const body = text.trim();
@@ -94,6 +125,11 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
         aria-label={`${room}학년 소통방 메시지`}
         aria-live="polite"
       >
+        {hasOlder && messages.length > 0 && (
+          <button onClick={loadOlder} disabled={loadingOlder} className="mx-auto mb-1 rounded-full bg-white px-4 py-1.5 text-[13px] font-semibold text-zinc-500 ring-1 ring-zinc-200 disabled:opacity-50">
+            {loadingOlder ? "불러오는 중…" : "이전 대화 더 보기"}
+          </button>
+        )}
         {messages.length === 0 && (
           <div className="m-auto max-w-xs text-center text-sm text-zinc-400">
             <p className="mb-1 text-2xl">💬</p>

@@ -7,6 +7,7 @@ import { isAdminRole } from "@/lib/types";
 import { Card } from "@/components/ui";
 import { getChatMessages, getMyChatMember, getMyRoomAlerts, getMyWarnings } from "../actions";
 import { RoomAlertToggle } from "../room-alert-toggle";
+import { WarningPopup } from "../warning-popup";
 import { BanNotice } from "../ban-notice";
 import { NicknameForm } from "../nickname-form";
 import { ChatRoomView } from "./chat-room";
@@ -19,7 +20,13 @@ export default async function ChatRoomPage({ params }: PageProps<"/chat/[room]">
   const me = await requireUser();
   const [member, messages, alerts] = await Promise.all([getMyChatMember(), getChatMessages(room), getMyRoomAlerts()]);
   // 경고 3회 누적: 방에 들어올 수 없다 (메시지도 DB 권한에서 막혀 있다)
-  if (isBanned(member) && !isAdminRole(me.role)) return <BanNotice warnings={await getMyWarnings()} />;
+  if (isBanned(member) && !isAdminRole(me.role))
+    return (
+      <>
+        <WarningPopup />
+        <BanNotice warnings={await getMyWarnings()} />
+      </>
+    );
 
   return (
     <div className="flex flex-col gap-3">
@@ -47,6 +54,7 @@ export default async function ChatRoomPage({ params }: PageProps<"/chat/[room]">
         <p className="min-w-0 flex-1 truncate text-[12.5px] text-zinc-500">📚 휴강·시험 범위·과제·진도 자유롭게 공유</p>
         <RoomAlertToggle room={room} initialOn={alerts.includes(room)} compact />
       </div>
+      {!isAdminRole(me.role) && <WarningPopup pollMs={15_000} />}
       {member ? (
         <ChatRoomView room={room} initial={messages} member={member} admin={isAdminRole(me.role)} />
       ) : (

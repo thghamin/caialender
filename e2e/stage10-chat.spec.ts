@@ -40,6 +40,15 @@ async function enter(page: Page, k: string, room: number) {
   await expect(page.getByLabel("메시지", { exact: true })).toBeVisible();
 }
 
+/** 확인 안 한 경고 팝업이 뜨면 확인을 눌러 닫는다 (뜨면 true) */
+async function dismissWarning(page: Page) {
+  const popup = page.getByRole("alertdialog", { name: "소통방 경고" });
+  if (!(await popup.waitFor({ timeout: 2500 }).then(() => true, () => false))) return false;
+  await popup.getByRole("button", { name: "확인" }).click();
+  await expect(popup).toBeHidden();
+  return true;
+}
+
 async function send(page: Page, text: string) {
   await page.getByLabel("메시지", { exact: true }).fill(text);
   await page.getByRole("button", { name: "보내기" }).click();
@@ -99,9 +108,18 @@ test("관리자: 닉네임의 실제 회원을 보고, 삭제·경고한다. 경
   await expect(dialog).toBeHidden();
   await expect(admin.getByText("관리자가 삭제한 메시지예요").first()).toBeVisible();
 
-  // 학생 화면: 경고 횟수·사유
+  // 학생 화면: 경고 팝업(횟수·사유) → 확인하면 다시 안 뜬다, 입력칸 아래 경고 횟수
   const a = await browser.newPage();
   await enter(a, "a", 2);
+  const popup = a.getByRole("alertdialog", { name: "소통방 경고" });
+  await expect(popup).toContainText("경고 1/3");
+  await expect(popup).toContainText("도배");
+  await popup.getByRole("button", { name: "확인" }).click();
+  await expect(popup).toBeHidden();
+  await a.reload();
+  await expect(a.getByLabel("메시지", { exact: true })).toBeVisible();
+  await a.waitForTimeout(1500);
+  await expect(popup).toHaveCount(0);
   await expect(a.getByText(/받은 경고 1\/3/)).toBeVisible();
   await a.goto("/chat");
   await expect(a.getByText("도배").first()).toBeVisible();
@@ -109,14 +127,17 @@ test("관리자: 닉네임의 실제 회원을 보고, 삭제·경고한다. 경
   // 경고 2, 3 → 글쓰기 제한
   for (let i = 2; i <= 3; i++) {
     await a.goto("/chat/2");
+    await dismissWarning(a);
     await send(a, `${tag} 경고${i}`);
     await admin.reload();
     await admin.getByTestId("chat-message").filter({ hasText: `${tag} 경고${i}` }).getByRole("button", { name: "경고" }).click();
     await admin.getByRole("dialog", { name: "경고 주기" }).getByRole("button", { name: "경고하고 삭제" }).click();
     await expect(admin.getByRole("dialog", { name: "경고 주기" })).toBeHidden();
   }
-  // 경고 3회 누적: 방에 들어올 수 없고, 목록에서도 이용 제한 안내만
+  // 경고 3회 누적: 팝업(이용 제한 안내), 방에 들어올 수 없고, 목록에서도 이용 제한 안내만
   await a.goto("/chat/2");
+  await expect(popup).toContainText("더 이상 이용할 수 없어요");
+  await popup.getByRole("button", { name: "확인" }).click();
   await expect(a.getByTestId("chat-banned")).toContainText("소통방을 이용할 수 없어요");
   await expect(a.getByLabel("메시지", { exact: true })).toHaveCount(0);
   await expect(a.getByText(`${tag} 3장까지요`)).toHaveCount(0);
@@ -232,6 +253,7 @@ test("답장: 메시지에 답장하면 원래 메시지가 인용된다. 방 �
   await loginViaUi(c, email("c"));
   await c.waitForURL("**/my");
   await c.goto("/chat/3");
+  await dismissWarning(c);
   const q = c.getByTestId("chat-message").filter({ hasText: `${tag} 시험 범위 어디까지?` });
   await expect(q).toBeVisible();
   await q.getByRole("button", { name: "답장" }).click();

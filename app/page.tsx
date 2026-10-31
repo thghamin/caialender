@@ -10,6 +10,7 @@ import { BriefingCard } from "@/components/briefing-card";
 import { PageHero } from "@/components/page-hero";
 import { Alert, Card } from "@/components/ui";
 import { OnboardingTour } from "@/components/onboarding-tour";
+import { WarningPopup } from "@/app/chat/warning-popup";
 import { Suspense } from "react";
 
 export default async function Home() {
@@ -66,6 +67,8 @@ export default async function Home() {
           <UpcomingList events={events} title="다가오는 학과 일정" />
         </aside>
       </div>
+      {/* 확인 안 한 소통방 경고가 있으면 알림 */}
+      {!admin && <WarningPopup />}
       {/* 처음 들어온 학생에게 화면 소개 (?tour=1 이면 다시 보기) */}
       <Suspense>
         <OnboardingTour accountDone={tourDone} />

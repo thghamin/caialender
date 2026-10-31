@@ -8,6 +8,7 @@ import { PageHero } from "@/components/page-hero";
 import { Card } from "@/components/ui";
 import { getMyChatMember, getMyRoomAlerts, getMyWarnings, getOpenReportCount } from "./actions";
 import { RoomAlertToggle } from "./room-alert-toggle";
+import { WarningPopup } from "./warning-popup";
 import { NicknameForm } from "./nickname-form";
 import { BanNotice } from "./ban-notice";
 import { isAdminRole } from "@/lib/types";
@@ -40,10 +41,17 @@ export default async function ChatHome() {
   ]);
 
   // 경고 3회 누적: 방 목록 대신 이용 제한 안내만
-  if (isBanned(member) && !isAdminRole(me.role)) return <BanNotice warnings={warnings} />;
+  if (isBanned(member) && !isAdminRole(me.role))
+    return (
+      <>
+        <WarningPopup />
+        <BanNotice warnings={warnings} />
+      </>
+    );
 
   return (
     <div className="flex flex-col gap-6">
+      {!isAdminRole(me.role) && <WarningPopup />}
       <PageHero
         badge="닉네임으로 편하게"
         title="학년별 소통방"
