@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 // 앱 하단 탭은 5개 이하가 누르기 편하다(탭 하나 폭 ≈ 화면의 1/5).
 // 자주 쓰는 4개 + '더보기'(공지·소통방·질문·검색·관리)
@@ -25,7 +25,10 @@ const isActive = (pathname: string, href: string) => (href === "/" ? pathname ==
 /** 휴대폰 하단 탭 메뉴 (768px 미만에서만 보인다) */
 export function MobileTabBar({ admin }: { admin: boolean }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  // 누른 탭을 화면이 바뀌기 전에 바로 칠한다 (기다리는 느낌을 없앤다)
+  const [pressed, setPressed] = useState<string | null>(null);
   const more = admin ? [...MORE, { href: "/admin", icon: "🛠️", label: "관리" } as const] : MORE;
   const moreActive = more.some((m) => isActive(pathname, m.href));
 
@@ -34,7 +37,13 @@ export function MobileTabBar({ admin }: { admin: boolean }) {
   if (lastPath !== pathname) {
     setLastPath(pathname);
     setOpen(false);
+    setPressed(null);
   }
+  // 더보기 안의 화면도 미리 받아 둔다 (창을 열자마자 눌러도 바로 뜨게)
+  useEffect(() => {
+    for (const m of MORE) router.prefetch(m.href);
+    if (admin) router.prefetch("/admin");
+  }, [router, admin]);
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
@@ -83,10 +92,10 @@ export function MobileTabBar({ admin }: { admin: boolean }) {
       >
         <ul className="flex h-[68px]" data-tour="tabs">
           {MAIN.map((t) => {
-            const active = isActive(pathname, t.href) && !open;
+            const active = pressed ? pressed === t.href : isActive(pathname, t.href) && !open;
             return (
               <li key={t.href} className="flex-1" data-tour={t.href === "/timetable" ? "tab-timetable" : undefined}>
-                <Link href={t.href} prefetch aria-current={active ? "page" : undefined} className={tab(active)}>
+                <Link href={t.href} prefetch onClick={() => t.href !== pathname && setPressed(t.href)} aria-current={active ? "page" : undefined} className={tab(active)}>
                   {/* 선택된 탭 위쪽 막대 */}
                   {active && <span className="absolute inset-x-4 top-0 h-[3px] rounded-b-full bg-brand" />}
                   <span className={`text-[28px] leading-none ${active ? "" : "opacity-70 grayscale"}`}>{t.icon}</span>

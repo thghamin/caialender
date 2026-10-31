@@ -19,7 +19,7 @@ export function PageHero({ title, subtitle, badge, tone = "custom", children }: 
 }) {
   return (
     <section
-      className="relative overflow-hidden rounded-2xl px-5 py-5 text-white sm:rounded-3xl sm:py-6 shadow-lg shadow-zinc-300/60 transition-[background] duration-300 [text-shadow:0_1px_2px_rgb(0_0_0/0.25)] sm:px-8"
+      className="relative overflow-hidden rounded-2xl px-4 py-4 text-white sm:rounded-3xl sm:px-8 sm:py-6 shadow-lg shadow-zinc-300/60 transition-[background] duration-300 [text-shadow:0_1px_2px_rgb(0_0_0/0.25)]"
       style={{ background: GRADIENT[tone] }}
     >
       {/* 장식: 흰 원과 아래 띠 */}
@@ -43,15 +43,15 @@ export function PageHero({ title, subtitle, badge, tone = "custom", children }: 
       ) : (
         <Hobanu className="pointer-events-none absolute -bottom-3 right-4 hidden size-36 drop-shadow-xl sm:block" title="" />
       )}
-      <div className="relative flex flex-col gap-2 sm:pr-40">
+      <div className="relative flex flex-col gap-1.5 sm:gap-2 sm:pr-40">
         {badge && (
-          <span className="w-fit rounded-full bg-white/15 px-3 py-0.5 text-xs font-semibold tracking-wide ring-1 ring-white/30">
+          <span className="w-fit rounded-full bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold tracking-wide ring-1 ring-white/30 sm:px-3 sm:text-xs">
             {badge}
           </span>
         )}
-        <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{title}</h1>
-        <p className="text-[0.8125rem] leading-5 text-white/85 sm:text-sm">{subtitle}</p>
-        {children && <div className="mt-2 flex flex-wrap items-center gap-2">{children}</div>}
+        <h1 className="text-[22px] font-extrabold leading-tight tracking-tight sm:text-3xl">{title}</h1>
+        <p className="text-[12.5px] leading-[1.45] text-white/85 sm:text-sm sm:leading-5">{subtitle}</p>
+        {children && <div className="mt-1.5 flex flex-wrap items-center gap-2 sm:mt-2">{children}</div>}
       </div>
     </section>
   );

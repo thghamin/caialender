@@ -207,3 +207,45 @@ body {
     font-size: 16px;
   }
 }
+
+/* ── 앱처럼: 누를 때 회색 번쩍임 없애기, 두 번 눌러 확대 지연 없애기, 누르는 느낌, 화면 바뀔 때 살짝 나타나기 ── */
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior-x: none;
+}
+a,
+button,
+[role="button"],
+[role="switch"],
+label,
+summary,
+select {
+  touch-action: manipulation;
+}
+@media (hover: none) {
+  a:active,
+  button:not(:disabled):active,
+  [role="button"]:active {
+    opacity: 0.72;
+    transition: opacity 0s;
+  }
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+main > * {
+  animation: page-in 0.18s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  main > * {
+    animation: none;
+  }
+}
