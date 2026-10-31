@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getCurrentUserId, requireUser } from "@/lib/auth";
+import { getCurrentUserId, getTourDone, requireUser } from "@/lib/auth";
 import { isAdminRole } from "@/lib/types";
 import { getInterestIds, getPublishedEvents } from "@/lib/data/events";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
@@ -18,10 +18,11 @@ export default async function Home() {
   }
   const userId = await getCurrentUserId();
   // 프로필(승인 확인)·일정·관심 일정을 병렬로 조회. 승인 전이면 requireUser가 안내 화면으로 보낸다
-  const [user, events, interests] = await Promise.all([
+  const [user, events, interests, tourDone] = await Promise.all([
     requireUser(),
     getPublishedEvents("dept"),
     userId ? getInterestIds(userId) : new Set<string>(),
+    getTourDone(),
   ]);
   const admin = isAdminRole(user.role);
 
@@ -67,7 +68,7 @@ export default async function Home() {
       </div>
       {/* 처음 들어온 학생에게 화면 소개 (?tour=1 이면 다시 보기) */}
       <Suspense>
-        <OnboardingTour />
+        <OnboardingTour accountDone={tourDone} />
       </Suspense>
     </div>
   );

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { deleteUsersByPrefix, signupViaUi } from "./helpers";
+import { deleteUsersByPrefix, loginViaUi, service, signupViaUi } from "./helpers";
 
 // 처음 둘러보기: 화면 요소를 하나씩 비추며 소개, 그만 보기·✕·시작하기로 끝내면 다시 안 뜬다
 const prefix = `e2e9-${Date.now().toString(36)}`;
@@ -36,3 +36,34 @@ for (const [name, viewport] of [["휴대폰", { width: 390, height: 844 }], ["PC
     await page.close();
   });
 }
+
+test("둘러보기는 계정 기준: 처음 계정엔 뜨고, 그만 보기 하면 다른 기기(브라우저)에서도 다시 안 뜬다", async ({ browser }) => {
+  const email = `${prefix}-acct@caialender-test.dev`;
+  const a = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  await signupViaUi(a, { name: "계정기준", studentNo: "2027000000", grade: 1, email });
+  await a.goto("/?tour=auto");
+  const tourA = a.getByRole("dialog", { name: "서비스 둘러보기" });
+  await expect(tourA).toBeVisible();
+  await tourA.getByRole("button", { name: "그만 보기" }).click();
+  await expect(tourA).toBeHidden();
+  // 계정(로그인 정보)에 기록된다
+  await expect
+    .poll(async () => {
+      const { data } = await service().auth.admin.listUsers({ perPage: 1000 });
+      return data.users.find((u) => u.email === email)?.user_metadata?.tour_done;
+    })
+    .toBe(true);
+  await a.close();
+
+  // 다른 기기: 저장된 기록이 없는 새 브라우저로 로그인해도 뜨지 않는다
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+  const b = await ctx.newPage();
+  await loginViaUi(b, email);
+  await b.waitForURL((u) => !u.pathname.startsWith("/login"));
+  await b.goto("/?tour=auto");
+  await b.locator(".caialender-calendar").waitFor();
+  await b.waitForTimeout(1200);
+  await expect(b.getByRole("dialog", { name: "서비스 둘러보기" })).toHaveCount(0);
+  await ctx.close();
+});
+

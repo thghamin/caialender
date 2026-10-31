@@ -16,6 +16,14 @@ export const getCurrentUserId = cache(async (): Promise<string | null> => {
   return data?.claims.sub ?? null;
 });
 
+/** 처음 둘러보기를 이 계정으로 이미 봤는지(끝냈거나 그만 보기) — 로그인 정보(user_metadata)에 저장, JWT에 들어 있어 왕복 없음 */
+export const getTourDone = cache(async (): Promise<boolean> => {
+  if (!isSupabaseConfigured()) return true;
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  return !!(data?.claims.user_metadata as { tour_done?: boolean } | undefined)?.tour_done;
+});
+
 /** 현재 로그인 사용자와 프로필. 비로그인이면 null */
 export const getCurrentUser = cache(async (): Promise<Profile | null> => {
   const userId = await getCurrentUserId();

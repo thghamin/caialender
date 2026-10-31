@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Hobanu } from "./hobanu";
+import { markTourDone } from "@/app/tour/actions";
 
 // 처음 들어온 학생에게 화면 요소를 하나씩 비추며 소개하는 둘러보기 (학과 캘린더 첫 화면에서).
-// - 한 번 끝내거나 '그만 보기'·✕를 누르면 이 기기에서는 다시 띄우지 않는다
+// - 한 번 끝내거나 '그만 보기'·✕를 누르면 이 계정으로는 어느 기기에서도 다시 띄우지 않는다 (계정에 기록)
 // - 아래쪽 '사용법 다시 보기'(/?tour=1)로 언제든 다시 볼 수 있다
 // - 휴대폰은 하단 탭, PC는 위쪽 메뉴를 비춘다 (보이는 요소만 골라서)
 
@@ -51,17 +52,24 @@ function findVisible(selector: string): HTMLElement | null {
   return null;
 }
 
-export function OnboardingTour() {
+/** accountDone: 이 계정이 이미 둘러보기를 봤는지 (서버가 로그인 정보로 알려 준다) */
+export function OnboardingTour({ accountDone }: { accountDone: boolean }) {
   const router = useRouter();
   const params = useSearchParams();
   const forced = params.get("tour") === "1";
+  const auto = params.get("tour") === "auto"; // 테스트용: 자동화 브라우저에서도 '처음 들어온 것처럼' 판단
   const [steps, setSteps] = useState<Step[] | null>(null);
   const [index, setIndex] = useState(0);
   const [rect, setRect] = useState<DOMRect | null>(null);
 
   // 시작 여부: 처음이거나 '다시 보기'로 들어왔을 때. 자동화 브라우저(테스트)에서는 '다시 보기'로만 띄운다
   useEffect(() => {
-    if (!forced && (localStorage.getItem(DONE_KEY) || navigator.webdriver)) return;
+    if (!forced) {
+      if (accountDone) return;
+      // 이 기기에서 이미 닫았으면(계정 기록 전 버전) 계정에도 남기고 띄우지 않는다
+      if (localStorage.getItem(DONE_KEY)) return void markTourDone();
+      if (navigator.webdriver && !auto) return;
+    }
     // 화면(달력·브리핑)이 그려진 뒤 시작
     const t = setTimeout(() => {
       const available = STEPS.filter((s) => findVisible(s.target));
@@ -71,7 +79,7 @@ export function OnboardingTour() {
       setIndex(0);
     }, 600);
     return () => clearTimeout(t);
-  }, [forced]);
+  }, [forced, auto, accountDone]);
 
   const step = steps?.[index];
 
@@ -98,6 +106,7 @@ export function OnboardingTour() {
 
   const finish = useCallback(() => {
     localStorage.setItem(DONE_KEY, "1");
+    void markTourDone();
     delete document.documentElement.dataset.tour;
     setSteps(null);
     window.dispatchEvent(new Event(TOUR_DONE_EVENT));
