@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
-import { CHAT_ROOMS, parseRoom } from "@/lib/chat";
+import { CHAT_ROOMS, isBanned, parseRoom } from "@/lib/chat";
 import { isAdminRole } from "@/lib/types";
 import { Card } from "@/components/ui";
-import { getChatMessages, getMyChatMember } from "../actions";
+import { getChatMessages, getMyChatMember, getMyWarnings } from "../actions";
+import { BanNotice } from "../ban-notice";
 import { NicknameForm } from "../nickname-form";
 import { ChatRoomView } from "./chat-room";
 
@@ -16,6 +17,8 @@ export default async function ChatRoomPage({ params }: PageProps<"/chat/[room]">
   if (!room) notFound();
   const me = await requireUser();
   const [member, messages] = await Promise.all([getMyChatMember(), getChatMessages(room)]);
+  // 경고 3회 누적: 방에 들어올 수 없다 (메시지도 DB 권한에서 막혀 있다)
+  if (isBanned(member) && !isAdminRole(me.role)) return <BanNotice warnings={await getMyWarnings()} />;
 
   return (
     <div className="flex flex-col gap-3">
@@ -39,6 +42,7 @@ export default async function ChatRoomPage({ params }: PageProps<"/chat/[room]">
           ))}
         </nav>
       </div>
+      <p className="-mt-1 text-sm text-zinc-500">📚 수업 정보 · 휴강 · 시험 범위 · 과제 · 진도를 자유롭게 공유해요</p>
       {member ? (
         <ChatRoomView room={room} initial={messages} member={member} admin={isAdminRole(me.role)} />
       ) : (

@@ -15,6 +15,10 @@ export type ChatMessage = {
   body: string;
   created_at: string;
   deleted: boolean;
+  /** 본인이 지웠는지 (아니면 관리자 삭제) */
+  deletedSelf: boolean;
+  /** 관리자일 때만: 지워진 메시지의 원래 내용 */
+  originalBody?: string;
   author: { id: string; nickname: string; staff: boolean };
   /** 관리자일 때만 */
   identity?: ChatIdentity;
@@ -44,7 +48,7 @@ export function warningMessage(warnings: number, reason: string) {
   return {
     title: `⚠️ 소통방 경고 ${Math.min(warnings, CHAT_BAN_WARNINGS)}/${CHAT_BAN_WARNINGS}`,
     body: banned
-      ? `사유: ${reason} · 경고 ${CHAT_BAN_WARNINGS}회로 소통방 이용이 제한되었어요.`
+      ? `사유: ${reason} · 경고 ${CHAT_BAN_WARNINGS}회 누적으로 소통방을 더 이상 이용할 수 없어요.`
       : `사유: ${reason} · 경고 ${CHAT_BAN_WARNINGS}회를 받으면 소통방을 쓸 수 없어요.`,
     url: "/chat",
   };

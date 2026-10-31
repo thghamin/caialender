@@ -39,8 +39,8 @@ export async function setNickname(nickname: string): Promise<Result> {
   return {};
 }
 
-const SELECT = "id, room, body, created_at, deleted_at, author:chat_members!chat_messages_member_id_fkey(id, nickname, staff)";
-type Row = { id: number; room: number; body: string; created_at: string; deleted_at: string | null; author: { id: string; nickname: string; staff: boolean } };
+const SELECT = "id, room, body, created_at, deleted_at, deleted_self, author:chat_members!chat_messages_member_id_fkey(id, nickname, staff)";
+type Row = { id: number; room: number; body: string; created_at: string; deleted_at: string | null; deleted_self: boolean; author: { id: string; nickname: string; staff: boolean } };
 
 /**
  * 방의 메시지. afterId를 주면 그 뒤에 온 것만(새 메시지 확인용), 아니면 최근 100개.
@@ -57,10 +57,16 @@ export async function getChatMessages(roomRaw: number, afterId?: number): Promis
   const rows = ((data ?? []) as unknown as Row[]).sort((a, b) => a.id - b.id);
 
   let identities = new Map<string, ChatIdentity>();
+  let originals = new Map<number, string>();
   if (isAdminRole(me.role) && rows.length) {
     const ids = [...new Set(rows.map((r) => r.author.id))];
-    const { data: who } = await supabase.rpc("chat_member_identities", { p_members: ids });
+    const deletedIds = rows.filter((r) => r.deleted_at).map((r) => r.id);
+    const [{ data: who }, { data: bodies }] = await Promise.all([
+      supabase.rpc("chat_member_identities", { p_members: ids }),
+      deletedIds.length ? supabase.rpc("chat_deleted_bodies", { p_messages: deletedIds }) : Promise.resolve({ data: [] }),
+    ]);
     identities = new Map(((who ?? []) as (ChatIdentity & { id: string })[]).map(({ id, ...rest }) => [id, rest]));
+    originals = new Map(((bodies ?? []) as { id: number; body: string }[]).map((b) => [b.id, b.body]));
   }
   return rows.map((r) => ({
     id: r.id,
@@ -68,6 +74,8 @@ export async function getChatMessages(roomRaw: number, afterId?: number): Promis
     body: r.deleted_at ? "" : r.body,
     created_at: r.created_at,
     deleted: !!r.deleted_at,
+    deletedSelf: r.deleted_self,
+    originalBody: originals.get(r.id),
     author: r.author,
     identity: identities.get(r.author.id),
   }));
@@ -82,7 +90,7 @@ export async function sendChatMessage(roomRaw: number, body: string): Promise<Re
   if (text.length > CHAT_MAX_LENGTH) return { error: `메시지는 ${CHAT_MAX_LENGTH}자까지 쓸 수 있어요.` };
   const member = await getMyChatMember();
   if (!member) return { error: "먼저 닉네임을 정해 주세요." };
-  if (isBanned(member)) return { error: "경고 3회로 소통방 이용이 제한되었어요." };
+  if (isBanned(member)) return { error: "경고 3회 누적으로 소통방을 더 이상 이용할 수 없어요." };
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("chat_messages")
@@ -91,7 +99,16 @@ export async function sendChatMessage(roomRaw: number, body: string): Promise<Re
     .single();
   if (error || !data) return { error: "메시지를 보내지 못했어요. 잠시 후 다시 해 주세요." };
   const r = data as unknown as Row;
-  return { message: { id: r.id, room, body: r.body, created_at: r.created_at, deleted: false, author: r.author } };
+  return { message: { id: r.id, room, body: r.body, created_at: r.created_at, deleted: false, deletedSelf: false, author: r.author } };
+}
+
+/** 본인 메시지 삭제 (경고받은 메시지는 안 됨) */
+export async function deleteOwnChatMessage(id: number): Promise<Result> {
+  await requireUser();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("chat_delete_own", { p_message: id });
+  if (!error) return {};
+  return { error: error.message.includes("경고") ? "경고받은 메시지는 지울 수 없어요." : "지우지 못했어요." };
 }
 
 /** 관리자: 메시지 삭제 */
@@ -124,6 +141,7 @@ export async function resetChatWarnings(memberId: string): Promise<Result> {
   await requireAdmin();
   const supabase = await createClient();
   const { error } = await supabase.rpc("chat_reset_warnings", { p_member: memberId });
+  revalidatePath("/chat/members");
   return error ? { error: "초기화하지 못했어요." } : {};
 }
 
@@ -139,4 +157,54 @@ export async function getMyWarnings(): Promise<{ reason: string; created_at: str
     .order("created_at", { ascending: false })
     .limit(10);
   return data ?? [];
+}
+
+export type ChatAdminMember = {
+  id: string;
+  nickname: string;
+  staff: boolean;
+  warnings: number;
+  name: string;
+  student_no: string | null;
+  grade: number | null;
+  message_count: number;
+  last_message_at: string | null;
+  created_at: string;
+  history: { reason: string; created_at: string }[];
+  /** 닉네임 변경 기록 (최근 순) */
+  nicknames: { old_nickname: string; new_nickname: string; changed_at: string }[];
+};
+
+/** 관리자: 소통방 멤버 목록 (경고 많은 순 → 최근 활동 순) + 경고 기록 */
+export async function getChatAdminMembers(): Promise<ChatAdminMember[]> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const [{ data: members }, { data: history }, { data: renames }] = await Promise.all([
+    supabase.rpc("chat_admin_members"),
+    supabase.from("chat_warnings").select("member_id, reason, created_at").order("created_at", { ascending: false }).limit(500),
+    supabase.from("chat_nickname_history").select("member_id, old_nickname, new_nickname, changed_at").order("changed_at", { ascending: false }).limit(500),
+  ]);
+  const renamed = new Map<string, ChatAdminMember["nicknames"]>();
+  for (const r of renames ?? []) renamed.set(r.member_id, [...(renamed.get(r.member_id) ?? []), { old_nickname: r.old_nickname, new_nickname: r.new_nickname, changed_at: r.changed_at }]);
+  const byMember = new Map<string, { reason: string; created_at: string }[]>();
+  for (const h of history ?? []) byMember.set(h.member_id, [...(byMember.get(h.member_id) ?? []), { reason: h.reason, created_at: h.created_at }]);
+  return ((members ?? []) as Omit<ChatAdminMember, "history">[]).map((m) => ({ ...m, message_count: Number(m.message_count), history: byMember.get(m.id) ?? [], nicknames: renamed.get(m.id) ?? [] }));
+}
+
+/** 관리자: 멤버에게 직접 경고 (ban이면 바로 이용 제한). 알림을 보낸다 */
+export async function warnChatMember(memberId: string, reason: string, ban = false): Promise<Result & { warnings?: number }> {
+  await requireAdmin();
+  const why = reason.trim();
+  if (!why) return { error: "사유를 적어 주세요." };
+  if (why.length > 200) return { error: "사유는 200자까지 쓸 수 있어요." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("chat_warn_member", { p_member: memberId, p_reason: why, p_ban: ban });
+  const row = (data as { user_id: string; warnings: number }[] | null)?.[0];
+  if (error || !row) return { error: "처리하지 못했어요." };
+  if (pushConfigured()) {
+    const msg = warningMessage(row.warnings, why);
+    after(() => sendPushToUser(row.user_id, { ...msg, tag: `chat-warn-member:${memberId}:${row.warnings}` }).catch(() => {}));
+  }
+  revalidatePath("/chat/members");
+  return { warnings: row.warnings };
 }

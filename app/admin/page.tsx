@@ -44,6 +44,9 @@ export default async function AdminPage() {
           <Link href="/admin/members" className="rounded-md border border-brand/40 bg-white px-4 py-2 text-sm font-medium text-brand hover:bg-brand-soft">
             👥 회원 관리{pendingMembers ? ` (승인 대기 ${pendingMembers})` : ""}
           </Link>
+          <Link href="/chat/members" className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm hover:bg-zinc-100">
+            👥 소통방 멤버 관리
+          </Link>
           <Link href="/admin/events/new" className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm hover:bg-zinc-100">
             일정 직접 추가
           </Link>

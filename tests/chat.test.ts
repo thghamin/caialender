@@ -20,6 +20,6 @@ describe("소통방 규칙", () => {
     expect(isBanned({ warnings: 3 })).toBe(true);
     expect(warningMessage(1, "도배")).toMatchObject({ title: "⚠️ 소통방 경고 1/3", url: "/chat" });
     expect(warningMessage(1, "도배").body).toContain("사유: 도배");
-    expect(warningMessage(3, "욕설").body).toContain("이용이 제한");
+    expect(warningMessage(3, "욕설").body).toContain("더 이상 이용할 수 없어요");
   });
 });

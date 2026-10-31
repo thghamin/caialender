@@ -8,13 +8,15 @@ import { PageHero } from "@/components/page-hero";
 import { Card } from "@/components/ui";
 import { getMyChatMember, getMyWarnings } from "./actions";
 import { NicknameForm } from "./nickname-form";
+import { BanNotice } from "./ban-notice";
+import { isAdminRole } from "@/lib/types";
 
 export const metadata: Metadata = { title: "학년별 소통방 — C:AI:ender" };
 
 const ROOM_ICON = ["🌱", "🌿", "🌳", "🎓"];
 
 export default async function ChatHome() {
-  await requireUser();
+  const me = await requireUser();
   const supabase = await createClient();
   const [member, warnings, latest] = await Promise.all([
     getMyChatMember(),
@@ -34,13 +36,22 @@ export default async function ChatHome() {
     ),
   ]);
 
+  // 경고 3회 누적: 방 목록 대신 이용 제한 안내만
+  if (isBanned(member) && !isAdminRole(me.role)) return <BanNotice warnings={warnings} />;
+
   return (
     <div className="flex flex-col gap-6">
       <PageHero
         badge="닉네임으로 편하게"
         title="학년별 소통방"
-        subtitle="과목·수업·진도 이야기를 학년별 방에서 나눠요. 여러 학년 수업을 들으면 여러 방에 들어가도 돼요."
-      />
+        subtitle="수업 정보·휴강·시험 범위·과제·진도처럼 수업에 필요한 정보를 학년별로 자유롭게 나누는 방이에요. 여러 학년 수업을 들으면 여러 방에 들어가도 돼요."
+      >
+        {isAdminRole(me.role) && (
+          <Link href="/chat/members" className="rounded-full bg-zinc-900/80 px-4 py-1.5 text-sm font-semibold text-white hover:bg-zinc-900">
+            👥 멤버 관리
+          </Link>
+        )}
+      </PageHero>
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         <section className="grid min-w-0 gap-3 sm:grid-cols-2">
           {CHAT_ROOMS.map((room, i) => {
@@ -56,7 +67,7 @@ export default async function ChatHome() {
                 <span className="min-w-0 flex-1">
                   <span className="block text-lg font-extrabold">{room}학년 소통방</span>
                   <span className="block truncate text-sm text-zinc-500">
-                    {last ? (last.deleted_at ? "삭제된 메시지" : `${last.author.nickname}: ${last.body}`) : "아직 대화가 없어요. 첫 메시지를 남겨 보세요!"}
+                    {last ? (last.deleted_at ? "삭제된 메시지" : `${last.author.nickname}: ${last.body}`) : "아직 대화가 없어요. 휴강·시험 범위 소식을 먼저 나눠 보세요!"}
                   </span>
                   {last && <span className="block text-xs text-zinc-400">{formatKst(last.created_at)}</span>}
                 </span>

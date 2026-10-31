@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { CHAT_BAN_WARNINGS, CHAT_MAX_LENGTH, isBanned, type ChatMember, type ChatMessage, type ChatRoom } from "@/lib/chat";
-import { deleteChatMessage, getChatMessages, resetChatWarnings, sendChatMessage, warnChatAuthor } from "../actions";
+import { deleteChatMessage, deleteOwnChatMessage, getChatMessages, resetChatWarnings, sendChatMessage, warnChatAuthor } from "../actions";
 
 const POLL_MS = 3000; // 새 메시지 확인 간격
 const FULL_SYNC_EVERY = 5; // 이만큼에 한 번은 전체를 다시 받아 삭제된 메시지도 반영
@@ -63,7 +63,8 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
     setMessages((p) => (p.some((x) => x.id === r.message!.id) ? p : [...p, r.message!]));
   };
 
-  const markDeleted = (id: number) => setMessages((p) => p.map((m) => (m.id === id ? { ...m, deleted: true, body: "" } : m)));
+  const markDeleted = (id: number) =>
+    setMessages((p) => p.map((m) => (m.id === id ? { ...m, deleted: true, deletedSelf: false, originalBody: m.originalBody ?? m.body, body: "" } : m)));
 
   return (
     <div className="flex h-[calc(100dvh-230px)] min-h-[420px] flex-col overflow-hidden rounded-[22px] bg-white shadow-[0_1px_2px_rgb(0_0_0/0.04),0_10px_30px_-12px_rgb(0_0_0/0.12)] ring-1 ring-black/[0.04] md:h-[calc(100dvh-190px)]">
@@ -77,7 +78,13 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
         aria-label={`${room}학년 소통방 메시지`}
         aria-live="polite"
       >
-        {messages.length === 0 && <p className="m-auto text-sm text-zinc-400">아직 대화가 없어요. 첫 메시지를 남겨 보세요!</p>}
+        {messages.length === 0 && (
+          <div className="m-auto max-w-xs text-center text-sm text-zinc-400">
+            <p className="mb-1 text-2xl">💬</p>
+            <p>아직 대화가 없어요.</p>
+            <p>휴강·시험 범위·과제·진도 소식을 먼저 나눠 보세요!</p>
+          </div>
+        )}
         {messages.map((m, i) => {
           const mine = m.author.id === member.id;
           const newDay = i === 0 || dayText(messages[i - 1].created_at) !== dayText(m.created_at);
@@ -116,10 +123,35 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
                       m.deleted ? "bg-zinc-100 italic text-zinc-400" : mine ? "rounded-br-md bg-brand text-white" : "rounded-bl-md bg-white text-zinc-800 ring-1 ring-zinc-200"
                     }`}
                   >
-                    {m.deleted ? "관리자가 삭제한 메시지예요" : m.body}
+                    {m.deleted ? (m.deletedSelf ? "삭제된 메시지예요" : "관리자가 삭제한 메시지예요") : m.body}
                   </p>
                   {!mine && <span className="text-[10px] text-zinc-400">{timeText(m.created_at)}</span>}
                 </div>
+                {/* 관리자: 지워진 메시지의 원래 내용 (본인이 지운 글도 확인·경고할 수 있다) */}
+                {admin && m.deleted && m.originalBody && (
+                  <span className="flex max-w-full flex-wrap items-center gap-2 px-1 text-xs text-zinc-400" data-testid="chat-original">
+                    <span className="break-all">원래 내용: “{m.originalBody}”</span>
+                    {!mine && m.deletedSelf && (
+                      <button onClick={() => setWarnTarget({ ...m, body: m.originalBody! })} className="font-semibold text-amber-600 hover:text-amber-700">
+                        경고
+                      </button>
+                    )}
+                  </span>
+                )}
+                {/* 본인 메시지 삭제 (관리자는 아래 관리자 삭제를 쓴다) */}
+                {mine && !admin && !m.deleted && (
+                  <button
+                    onClick={async () => {
+                      if (!confirm("내 메시지를 삭제할까요?")) return;
+                      const r = await deleteOwnChatMessage(m.id);
+                      if (r.error) alert(r.error);
+                      else setMessages((p) => p.map((x) => (x.id === m.id ? { ...x, deleted: true, deletedSelf: true, body: "" } : x)));
+                    }}
+                    className="px-1 text-xs text-zinc-400 hover:text-red-600"
+                  >
+                    삭제
+                  </button>
+                )}
                 {admin && !m.deleted && (
                   <span className="flex gap-2 px-1 text-xs">
                     <button

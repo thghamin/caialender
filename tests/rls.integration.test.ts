@@ -392,9 +392,50 @@ run("인증·RLS 통합 테스트", () => {
       }
       const banned = await student.from("chat_messages").insert({ room: 1, member_id: s1Member, body: "제한 후" });
       expect(banned.error).not.toBeNull();
+      // 경고 3회면 소통방 메시지도 읽을 수 없고 닉네임도 못 바꾼다 (관리자는 계속 본다)
+      expect((await student.from("chat_messages").select("id")).data).toEqual([]);
+      expect((await student.rpc("set_chat_nickname", { p_nickname: nick("z") })).error).not.toBeNull();
+      expect(((await admin.from("chat_messages").select("id").eq("id", msgId)).data ?? []).length).toBe(1);
       // 관리자가 초기화하면 다시 쓸 수 있다
       expect((await admin.rpc("chat_reset_warnings", { p_member: s1Member })).error).toBeNull();
       expect((await student.from("chat_messages").insert({ room: 1, member_id: s1Member, body: `RLS-${tag} 복귀` })).error).toBeNull();
+    });
+
+    it("본인 메시지만 지울 수 있고(경고받은 건 못 지움), 원래 내용은 관리자만 본다", async () => {
+      const mine = await student.from("chat_messages").insert({ room: 3, member_id: s1Member, body: `RLS-${tag} 실수` }).select("id").single();
+      // 다른 학생은 못 지운다
+      expect((await student2.rpc("chat_delete_own", { p_message: mine.data!.id })).error).not.toBeNull();
+      expect((await student.rpc("chat_delete_own", { p_message: mine.data!.id })).error).toBeNull();
+      const seen = await student2.from("chat_messages").select("body, deleted_self").eq("id", mine.data!.id).single();
+      expect(seen.data).toEqual({ body: "", deleted_self: true });
+      // 학생은 원래 내용 칸을 읽을 수 없고, 관리자 함수도 빈 결과
+      expect((await student2.from("chat_messages").select("deleted_body")).error).not.toBeNull();
+      expect((await student2.rpc("chat_deleted_bodies", { p_messages: [mine.data!.id] })).data).toEqual([]);
+      expect((await admin.rpc("chat_deleted_bodies", { p_messages: [mine.data!.id] })).data).toEqual([{ id: mine.data!.id, body: `RLS-${tag} 실수` }]);
+      // 경고받은 메시지(msgId)는 본인이 지울 수 없다
+      const warned = await student.from("chat_messages").insert({ room: 3, member_id: s1Member, body: `RLS-${tag} 문제글` }).select("id").single();
+      await admin.rpc("chat_warn", { p_message: warned.data!.id, p_reason: "테스트", p_delete: false });
+      expect((await student.rpc("chat_delete_own", { p_message: warned.data!.id })).error).not.toBeNull();
+      await admin.rpc("chat_reset_warnings", { p_member: s1Member });
+    });
+
+    it("관리자 멤버 관리: 실제 회원·활동 목록, 직접 경고·이용 제한, 닉네임 변경 기록", async () => {
+      expect((await student.rpc("chat_admin_members")).data).toEqual([]);
+      const list = (await admin.rpc("chat_admin_members")).data as { id: string; name: string; message_count: number }[];
+      expect(list.find((m) => m.id === s1Member)).toMatchObject({ name: "테스트student" });
+      expect(Number(list.find((m) => m.id === s1Member)!.message_count)).toBeGreaterThan(0);
+      // 학생은 직접 경고 못 함, 관리자는 바로 이용 제한
+      expect((await student2.rpc("chat_warn_member", { p_member: s1Member, p_reason: "x" })).error).not.toBeNull();
+      const ban = await admin.rpc("chat_warn_member", { p_member: s1Member, p_reason: "운영 정책 위반", p_ban: true });
+      expect(ban.data).toEqual([{ user_id: ids.student, warnings: 3 }]);
+      expect((await student.from("chat_messages").insert({ room: 1, member_id: s1Member, body: "제한" })).error).not.toBeNull();
+      await admin.rpc("chat_reset_warnings", { p_member: s1Member });
+      // 닉네임을 바꾸면 기록이 남고, 관리자만 본다
+      expect((await student2.rpc("set_chat_nickname", { p_nickname: nick("n") })).error).toBeNull();
+      const s2 = ((await student2.rpc("my_chat_member")).data as { id: string }[])[0].id;
+      const hist = await admin.from("chat_nickname_history").select("old_nickname, new_nickname").eq("member_id", s2);
+      expect(hist.data).toEqual([{ old_nickname: nick("b"), new_nickname: nick("n") }]);
+      expect((await student2.from("chat_nickname_history").select("id")).data).toEqual([]);
     });
   });
 });
