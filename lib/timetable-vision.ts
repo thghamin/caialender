@@ -28,6 +28,39 @@ const SPLIT_DIST = 17;
 const isWhite = ([r, g, b]: RGB) => r > 246 && g > 246 && b > 246;
 const dist = (a: RGB, b: RGB) => Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) + Math.abs(a[2] - b[2]);
 
+/**
+ * 다크 모드 캡처를 라이트 모드처럼 바꾼다 (라이트 모드면 그대로 돌려준다).
+ * 다크 모드: 검은 바탕(≈17)·어두운 회색 눈금선(≈40)·밝은 회색 시간 숫자, 수업 칸은 조금 어두운 파스텔.
+ * 바탕·선 밝기의 무채색만 뒤집으면 바탕은 흰색, 눈금선은 옅은 회색이 되고, 수업 칸 색은 그대로라 같은 방식으로 잴 수 있다.
+ */
+export function toLightMode(img: RawImage): RawImage {
+  const { width: W, height: H, channels: ch } = img;
+  const lum: number[] = [];
+  for (let y = 0; y < H; y += Math.max(1, Math.floor(H / 60)))
+    for (let x = 0; x < W; x += Math.max(1, Math.floor(W / 40))) {
+      const [r, g, b] = pixel(img, x, y);
+      lum.push((r + g + b) / 3);
+    }
+  lum.sort((a, b) => a - b);
+  const bgLum = lum[lum.length >> 1];
+  if (bgLum >= 90) return img;
+  const out = Buffer.from(img.data);
+  for (let i = 0; i < out.length; i += ch) {
+    const r = out[i];
+    const g = out[i + 1];
+    const b = out[i + 2];
+    const mx = Math.max(r, g, b);
+    // 바탕·눈금선 밝기까지만 뒤집는다 (칸 안 글자(≈60~100)까지 뒤집으면 흰 틈으로 오해한다)
+    // (거의 검은 픽셀은 JPEG 색 번짐이 있어도 바탕으로 본다)
+    if (mx <= bgLum + 30) {
+      // 바탕(bgLum) → 255, 눈금선(≈40) → ≈230
+      const v = Math.max(0, Math.min(255, Math.round(255 - ((r + g + b) / 3 - bgLum))));
+      out[i] = out[i + 1] = out[i + 2] = v;
+    }
+  }
+  return { ...img, data: out };
+}
+
 /** 후보 좌표들에서 일정 간격(등차수열)을 찾아 가려진 선까지 복원한다 */
 export function fitProgression(cands: number[], minGap: number, maxGap: number, limit: number) {
   // 붙어 있는 좌표는 하나로
@@ -127,7 +160,11 @@ export function detectGrid(img: RawImage): GridInfo | null {
   const rowCands: number[] = [];
   for (let y = Math.max(0, gridTop - 2); y <= Math.min(H - 1, gridBottom + 2); y++) {
     let g = 0;
-    for (let x = x0; x < x1; x++) if (isGridGray(pixel(img, x, y))) g++;
+    // 가는 가로선만: 위아래(±d)와 색이 달라야 한다 (회색에 가까운 수업 칸 안쪽은 선이 아니다)
+    for (let x = x0; x < x1; x++) {
+      const p = pixel(img, x, y);
+      if (isGridGray(p) && dist(p, pixel(img, x, Math.max(0, y - d))) > 12 && dist(p, pixel(img, x, Math.min(H - 1, y + d))) > 12) g++;
+    }
     if (g > (x1 - x0) * 0.25) rowCands.push(y);
   }
   const rows = fitProgression(rowCands, W * 0.06, W * 0.22, gridBottom + 3);
@@ -137,7 +174,8 @@ export function detectGrid(img: RawImage): GridInfo | null {
   const colX = [...cols.lines];
   while (colX[0] - cols.gap > W * 0.02) colX.unshift(Math.round(colX[0] - cols.gap));
   // 오른쪽은 월~금 5칸이 안 될 때만 늘린다 (상자 오른쪽 바깥 여백을 토요일로 착각하지 않게)
-  while (colX.length - 1 < 5 && colX[colX.length - 1] + cols.gap < W - 1) colX.push(Math.round(colX[colX.length - 1] + cols.gap));
+  // (화면 끝에 걸쳐 오른쪽 테두리가 잘린 경우도 마지막 요일 칸으로 넣는다)
+  while (colX.length - 1 < 5 && colX[colX.length - 1] + cols.gap * 0.85 < W) colX.push(Math.min(W - 1, Math.round(colX[colX.length - 1] + cols.gap)));
 
   // 기준: 왼쪽 시간 숫자(9, 10, 11 …)는 수업 칸에 가려지지 않는다. 숫자 간격 = 1시간 높이이고,
   // 각 숫자 바로 위의 선이 그 시각의 선이다. (그 위의 요일 머리줄 선·화면 위쪽 선을 눈금으로 잘못 잡지 않게 한다)
@@ -145,7 +183,11 @@ export function detectGrid(img: RawImage): GridInfo | null {
   let hourPx = rows.gap;
   let first = rows.lines.find((y) => y >= gridTop - 2) ?? rows.lines[0];
   if (labels) {
-    if (Math.abs(labels.gap - hourPx) / labels.gap > 0.1) hourPx = labels.gap;
+    // 선이 수업 칸에 많이 가려지면 1.5배·2배 간격이 더 잘 맞아 보일 수 있다 → 숫자 간격 근처에서 다시 맞춘다
+    if (Math.abs(labels.gap - hourPx) / labels.gap > 0.04) {
+      const refit = fitProgression(rowCands, labels.gap * 0.96, labels.gap * 1.04, gridBottom + 3);
+      hourPx = refit && refit.lines.length >= 3 ? refit.gap : labels.gap;
+    }
     const l0 = labels.tops[0];
     const above = rowCands.filter((c) => c <= l0 && c >= l0 - hourPx * 0.45);
     first = above.length ? Math.max(...above) : Math.round(l0 - hourPx * 0.15);
@@ -168,15 +210,19 @@ export function detectGrid(img: RawImage): GridInfo | null {
 export function hourLabels(img: RawImage, timeColRight: number, top: number, bottom: number): { tops: number[]; gap: number } | null {
   const x0 = Math.round(timeColRight * 0.1);
   const x1 = Math.max(x0 + 2, timeColRight - 2);
-  const dark: boolean[] = [];
-  for (let y = top; y <= bottom; y++) {
+  const isDark = (x: number, y: number) => {
+    const [r, g, b] = pixel(img, x, y);
+    return r + g + b < 3 * 185;
+  };
+  // 위아래로 계속 어두운 세로줄(화면 가장자리 테두리 등)은 숫자가 아니다
+  const xs: number[] = [];
+  for (let x = x0; x < x1; x++) {
     let n = 0;
-    for (let x = x0; x < x1; x++) {
-      const [r, g, b] = pixel(img, x, y);
-      if (r + g + b < 3 * 185) n++;
-    }
-    dark.push(n > 0);
+    for (let y = top; y <= bottom; y++) if (isDark(x, y)) n++;
+    if (n < (bottom - top + 1) * 0.5) xs.push(x);
   }
+  const dark: boolean[] = [];
+  for (let y = top; y <= bottom; y++) dark.push(xs.some((x) => isDark(x, y)));
   const tops: number[] = [];
   for (let i = 0; i < dark.length; i++) if (dark[i] && (i === 0 || !dark[i - 1])) tops.push(top + i);
   if (tops.length < 3) return null;
@@ -253,7 +299,7 @@ export function detectBlocks(img: RawImage, grid: GridInfo, startHour: number): 
       }
       region ??= { top: y, fills: [] };
       const share = ps.filter((p) => dist(p, bg) <= 18).length / ps.length;
-      if (share >= 0.5 && Math.max(...bg) > 215) region.fills.push({ y, c: bg }); // 글자가 많은 줄은 색 판단에서 뺀다
+      if (share >= 0.5 && Math.max(...bg) > 170) region.fills.push({ y, c: bg }); // 글자가 많은 줄은 색 판단에서 뺀다
     }
     if (region) splitRegion(region.top, bottom, region.fills);
   }
@@ -282,16 +328,24 @@ export function detectBlocks(img: RawImage, grid: GridInfo, startHour: number): 
   const lowest = Math.max(...blocks.map((b) => b.bottom), 0);
   const x0 = colX[0];
   const x1 = colX[colX.length - 1];
-  const yNear = bottom - Math.max(2, Math.round(hourPx * 0.05));
-  const yFar = bottom - Math.round(hourPx * 0.45);
+  // 한 줄만 보면 압축 잡음에 흔들리므로 아래쪽 띠(0.08~0.2시간)와 위쪽 띠(0.35~0.5시간)의 평균 밝기를 비교한다
+  const band = (x: number, from: number, to: number) => {
+    let sum = 0;
+    let n = 0;
+    for (let y = Math.round(bottom - hourPx * from); y >= Math.round(bottom - hourPx * to); y--) {
+      const [r, g, b] = pixel(img, x, y);
+      sum += r + g + b;
+      n++;
+    }
+    return n ? sum / n : 0;
+  };
   const diffs: number[] = [];
   for (let x = x0 + 2; x < x1 - 2; x++) {
-    const a = pixel(img, x, yFar);
-    const b = pixel(img, x, yNear);
-    if (dist(a, b) < 60) diffs.push(a[0] + a[1] + a[2] - (b[0] + b[1] + b[2])); // 글자가 걸친 곳은 뺀다
+    const d = band(x, 0.35, 0.5) - band(x, 0.08, 0.2);
+    if (Math.abs(d) < 60) diffs.push(d); // 글자가 걸친 곳은 뺀다
   }
   diffs.sort((p, q) => p - q);
-  const faded = diffs.length > 10 && diffs[Math.floor(diffs.length / 2)] >= 8;
+  const faded = diffs.length > 10 && diffs[Math.floor(diffs.length / 2)] >= 6;
   // 상자가 눈금선이 아닌 곳(시간 중간)에서 끝났으면 화면에서 잘린 것이다
   const midCut = !lineY.some((l) => Math.abs(l - bottom) <= lineTol + 2);
   const cutLowest = (faded || midCut) && lowest >= bottom - lineTol * 2 - 2;

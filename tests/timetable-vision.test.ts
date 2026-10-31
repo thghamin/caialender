@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import sharp, { type Sharp } from "sharp";
-import { detectBlocks, detectGrid, fitProgression, mergeWithBlocks } from "@/lib/timetable-vision";
+import { detectBlocks, detectGrid, fitProgression, mergeWithBlocks, toLightMode } from "@/lib/timetable-vision";
 
 describe("시간표 눈금 복원", () => {
   it("수업 칸에 가려진 선을 일정한 간격으로 복원한다", () => {
@@ -51,7 +51,7 @@ const FRIEND = "tests/fixtures/private/everytime-friend.png";
 const SAMPLE = "tests/fixtures/private/everytime-sample.png";
 const measure = async (input: Sharp) => {
   const { data, info } = await input.removeAlpha().raw().toBuffer({ resolveWithObject: true });
-  const img = { data, width: info.width, height: info.height, channels: info.channels };
+  const img = toLightMode({ data, width: info.width, height: info.height, channels: info.channels });
   return detectBlocks(img, detectGrid(img)!, 9).map((b) => `${b.day} ${b.start_min / 60}-${b.end_min / 60}${b.truncated ? " 잘림" : ""}`);
 };
 describe.skipIf(!existsSync(FRIEND))("다른 사람 에타 스크린샷", () => {
@@ -80,6 +80,24 @@ describe.skipIf(!existsSync(SAMPLE))("수업 추가 화면 캡처 (선택된 칸
       "2 9-10.5",
       "3 10.5-12",
       "4 10.5-12", "4 13-13.5 잘림",
+    ]);
+  });
+});
+
+const DARK = "tests/fixtures/private/everytime-dark.png";
+describe.skipIf(!existsSync(DARK))("다크 모드 에타 스크린샷", () => {
+  it.each([
+    ["원본", (s: Sharp) => s],
+    ["0.7배", (s: Sharp) => s.resize(293)],
+    ["1.5배", (s: Sharp) => s.resize(627)],
+    ["JPEG", (s: Sharp) => s.jpeg({ quality: 70 })],
+  ] as const)("검은 바탕에서도 칸을 찾고, 회색빛 칸 안쪽을 눈금선으로 착각하지 않는다 (%s)", async (_, f) => {
+    const buf = await f(sharp(DARK)).toBuffer();
+    expect(await measure(sharp(buf))).toEqual([
+      "0 10.5-12", "0 15-16.5",
+      "1 11-13", "1 13.5-15", "1 15-16.5", "1 16.5-18",
+      "2 10.5-12", "2 15-16.5",
+      "3 11-13", "3 13.5-15", "3 15-16.5", "3 16.5-18",
     ]);
   });
 });

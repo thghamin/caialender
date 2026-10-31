@@ -51,4 +51,22 @@ run("에타 시간표 가져오기 (실제 AI)", () => {
     );
     expect(r!.courses.filter((c) => c.check).length).toBeGreaterThanOrEqual(2);
   });
+
+  const DARK = "tests/fixtures/private/everytime-dark.png";
+  it.skipIf(!existsSync(DARK))("다크 모드 시간표: 이름·요일·시각을 모두 맞게 읽는다", { timeout: 180_000 }, async () => {
+    const { analyzeByBlocks } = await import("@/lib/timetable-import");
+    const r = await analyzeByBlocks(readFileSync(DARK));
+    console.log(list(r!.courses).join("\n"));
+    // 긴 과목명의 문장부호(: ,)는 AI가 빼먹을 수 있어 글자만 비교한다
+    const got = list(r!.courses).map((g) => g.replace(/[^\p{L}\p{N}. -]/gu, ""));
+    const sky = "하늘을재고땅을나누다조선의과학일상을바꾸다";
+    expect(got).toEqual(
+      [
+        "월 10.5-12 학교문법론", "수 10.5-12 학교문법론", "화 11-13 교육사회", "목 11-13 교육과정",
+        "화 13.5-15 음운교육론", "목 13.5-15 음운교육론", "월 15-16.5 고전소설교육론", "수 15-16.5 고전소설교육론",
+        "화 15-16.5 문학교육론", "목 15-16.5 문학교육론", `화 16.5-18 ${sky}`, `목 16.5-18 ${sky}`,
+      ].sort(),
+    );
+  });
 });
+

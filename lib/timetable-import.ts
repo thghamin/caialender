@@ -14,7 +14,7 @@ import {
   TIMETABLE_SYSTEM_PROMPT,
   type TimetableCourse,
 } from "@/lib/timetable";
-import { blockRect, detectBlocks, detectGrid, firstHourRect, mergeWithBlocks } from "@/lib/timetable-vision";
+import { blockRect, detectBlocks, detectGrid, firstHourRect, mergeWithBlocks, toLightMode } from "@/lib/timetable-vision";
 
 /** 아주 작은 캡처는 선·칸 경계가 1px 안쪽으로 뭉개지므로 키워서 잰다 (가로 900px 정도) */
 async function upscaleSmall(bytes: Buffer): Promise<Buffer> {
@@ -26,7 +26,8 @@ async function upscaleSmall(bytes: Buffer): Promise<Buffer> {
 export async function analyzeByBlocks(original: Buffer): Promise<{ courses: TimetableCourse[]; dropped: string[] } | null> {
   const bytes = await upscaleSmall(original);
   const { data, info } = await sharp(bytes).removeAlpha().raw().toBuffer({ resolveWithObject: true });
-  const img = { data, width: info.width, height: info.height, channels: info.channels };
+  // 다크 모드 캡처는 라이트 모드처럼 바꿔서 잰다 (AI에게 보낼 칸 사진은 원본 그대로)
+  const img = toLightMode({ data, width: info.width, height: info.height, channels: info.channels });
   const grid = detectGrid(img);
   if (!grid) return null;
   const blocks = detectBlocks(img, grid, 9);
@@ -68,7 +69,7 @@ export async function analyzeWholeImage(bytes: Buffer, type: string): Promise<{ 
   const url = `data:${type};base64,${bytes.toString("base64")}`;
   const pixels = upscaleSmall(bytes)
     .then((b) => sharp(b).removeAlpha().raw().toBuffer({ resolveWithObject: true }))
-    .then(({ data, info }) => ({ data, width: info.width, height: info.height, channels: info.channels }))
+    .then(({ data, info }) => toLightMode({ data, width: info.width, height: info.height, channels: info.channels }))
     .catch(() => null);
   try {
     const { data } = await generateJson({
