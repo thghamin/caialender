@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { requireAdmin, requireUser } from "@/lib/auth";
@@ -19,13 +20,16 @@ import {
 
 type Result = { error?: string };
 
-/** 내 소통방 정보 (닉네임 없으면 null) */
-export async function getMyChatMember(): Promise<ChatMember | null> {
+/** 내 소통방 정보 (닉네임 없으면 null). 한 화면을 그리는 동안은 한 번만 조회한다 */
+const myChatMember = cache(async (): Promise<ChatMember | null> => {
   await requireUser();
   const supabase = await createClient();
   const { data } = await supabase.rpc("my_chat_member");
   const row = (data as ChatMember[] | null)?.[0];
   return row ?? null;
+});
+export async function getMyChatMember(): Promise<ChatMember | null> {
+  return myChatMember();
 }
 
 /** 닉네임을 쓸 수 있는지 (형식 + 다른 사람과 겹치는지, 대소문자 구분 없이). 지금 내 닉네임은 쓸 수 있다 */
@@ -167,7 +171,7 @@ export async function resetChatWarnings(memberId: string): Promise<Result> {
 /** 내가 받은 경고 목록 (사유·시각) */
 export async function getMyWarnings(): Promise<{ reason: string; created_at: string }[]> {
   const member = await getMyChatMember();
-  if (!member) return [];
+  if (!member || member.warnings === 0) return []; // 경고가 없으면 조회하지 않는다
   const supabase = await createClient();
   const { data } = await supabase
     .from("chat_warnings")
