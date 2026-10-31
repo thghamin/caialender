@@ -4,7 +4,7 @@ import { cache } from "react";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { requireAdmin, requireUser } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { pushConfigured, sendPushToUser } from "@/lib/push";
 import { isAdminRole } from "@/lib/types";
 import {
@@ -12,6 +12,7 @@ import {
   isBanned,
   nicknameError,
   parseRoom,
+  reportMessage,
   warningMessage,
   type ChatIdentity,
   type ChatMember,
@@ -230,4 +231,78 @@ export async function warnChatMember(memberId: string, reason: string, ban = fal
   }
   revalidatePath("/chat/members");
   return { warnings: row.warnings };
+}
+
+/** 학생: 다른 학생의 메시지 신고 → 관리자 전원에게 알림 */
+export async function reportChatMessage(id: number, room: number, reason: string): Promise<Result> {
+  await requireUser();
+  const why = reason.trim();
+  if (!why) return { error: "신고 사유를 골라 주세요." };
+  if (why.length > 200) return { error: "사유는 200자까지 쓸 수 있어요." };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("chat_report", { p_message: id, p_reason: why });
+  if (error) {
+    const known = ["이미 신고한", "내 메시지는", "신고할 수 없는", "닉네임을", "이용할 수 없어요"].find((k) => error.message.includes(k));
+    return { error: known ? error.message : "신고하지 못했어요. 잠시 후 다시 해 주세요." };
+  }
+  if (pushConfigured()) {
+    const msg = reportMessage(parseRoom(room) ?? room, why);
+    after(async () => {
+      // 관리자 목록은 학생 권한으로 못 보므로 서버에서만 조회
+      const db = createServiceClient();
+      const { data: admins } = await db.from("profiles").select("id").in("role", ["admin", "super_admin"]).eq("approval_status", "approved");
+      await Promise.all((admins ?? []).map((a) => sendPushToUser(a.id, { ...msg, tag: `chat-report:${id}` }).catch(() => {})));
+    });
+  }
+  return {};
+}
+
+export type ChatReport = {
+  id: number;
+  status: "open" | "resolved" | "dismissed";
+  reason: string;
+  created_at: string;
+  message_id: number;
+  room: number;
+  body: string;
+  message_deleted: boolean;
+  message_at: string;
+  author_id: string;
+  author_nickname: string;
+  author_name: string;
+  author_warnings: number;
+  reporter_nickname: string;
+  reporter_name: string;
+  report_count: number;
+};
+
+/** 관리자: 신고 목록 */
+export async function getChatReports(openOnly = true): Promise<ChatReport[]> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("chat_admin_reports", { p_open_only: openOnly });
+  return ((data ?? []) as ChatReport[]).map((r) => ({ ...r, report_count: Number(r.report_count) }));
+}
+
+/** 관리자: 처리 안 한 신고 수 (관리자가 아니면 0) */
+export async function getOpenReportCount(): Promise<number> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("chat_open_report_count");
+  return Number(data ?? 0);
+}
+
+/** 관리자: 신고 처리 — 경고하고 삭제 / 삭제만 / 문제없음 */
+export async function handleChatReport(messageId: number, action: "warn" | "delete" | "dismiss", reason = ""): Promise<Result> {
+  await requireAdmin();
+  if (action === "warn") {
+    const r = await warnChatAuthor(messageId, reason);
+    if (r.error) return r;
+  } else if (action === "delete") {
+    const r = await deleteChatMessage(messageId);
+    if (r.error) return r;
+  }
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("chat_handle_reports", { p_message: messageId, p_status: action === "dismiss" ? "dismissed" : "resolved" });
+  revalidatePath("/chat/reports");
+  return error ? { error: "처리 상태를 저장하지 못했어요." } : {};
 }

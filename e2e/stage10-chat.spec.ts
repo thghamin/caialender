@@ -177,3 +177,46 @@ test("내 메시지는 내가 지울 수 있고, 관리자는 원래 내용을 �
   await Promise.all([admin.close(), b.close()]);
 });
 
+test("학생이 다른 학생의 메시지를 신고하면, 관리자가 신고 목록에서 처리한다 (자음 닉네임도 가능)", async ({ browser }) => {
+  // 새 학생 c: 자음만 닉네임
+  const c = await browser.newPage();
+  await signupViaUi(c, { name: "소통다학생", studentNo: "2027000000", grade: 2, email: email("c") });
+  await c.goto("/chat/4");
+  await expect(async () => {
+    await c.getByLabel("닉네임").fill(`ㅇㅇ${tag.slice(-6)}`);
+    await expect(c.getByText("사용할 수 있는 닉네임이에요.")).toBeVisible({ timeout: 2000 });
+  }).toPass();
+  await c.getByRole("button", { name: "정하기" }).click();
+  await send(c, `${tag} 신고당할 글`);
+
+  const b = await browser.newPage();
+  await enter(b, "b", 4);
+  const target = b.getByTestId("chat-message").filter({ hasText: `${tag} 신고당할 글` });
+  await expect(target).toBeVisible({ timeout: 10_000 });
+  // 남의 메시지에는 삭제 대신 신고만 있다
+  await expect(target.getByRole("button", { name: "삭제" })).toHaveCount(0);
+  await target.getByRole("button", { name: "신고" }).click();
+  const dialog = b.getByRole("dialog", { name: "메시지 신고" });
+  await dialog.getByRole("button", { name: "도배" }).click();
+  await dialog.getByRole("button", { name: "신고하기" }).click();
+  await expect(b.getByText("신고했어요. 학생회가 확인할게요.")).toBeVisible();
+  // 두 번은 안 된다
+  await target.getByRole("button", { name: "신고" }).click();
+  await dialog.getByRole("button", { name: "신고하기" }).click();
+  await expect(dialog.getByText("이미 신고한 메시지예요.")).toBeVisible();
+
+  const admin = await browser.newPage();
+  await loginViaUi(admin, email("admin"));
+  await admin.waitForURL("**/my");
+  await admin.goto("/chat");
+  await admin.getByRole("link", { name: /신고/ }).click();
+  const report = admin.getByTestId("chat-report").filter({ hasText: `${tag} 신고당할 글` });
+  await expect(report).toContainText("소통다학생");
+  await expect(report).toContainText("도배");
+  await expect(report).toContainText("소통나학생"); // 신고자는 관리자에게만
+  admin.once("dialog", (d) => d.accept());
+  await report.getByRole("button", { name: "경고하고 삭제" }).click();
+  await expect(report).toHaveCount(0);
+  await Promise.all([admin.close(), b.close(), c.close()]);
+});
+

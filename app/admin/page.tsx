@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getOpenReportCount } from "@/app/chat/actions";
 import { requireAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatKst } from "@/lib/datetime";
@@ -28,9 +29,10 @@ export default async function AdminPage() {
       .order("created_at", { ascending: false }),
     supabase.from("events").select("*", { count: "exact", head: true }).eq("calendar", "academic"),
   ]);
-  const [pendingQuestions, { count: pendingMembers }] = await Promise.all([
+  const [pendingQuestions, { count: pendingMembers }, openReports] = await Promise.all([
     countPendingQuestions(),
     supabase.from("profiles").select("*", { count: "exact", head: true }).eq("approval_status", "pending"),
+    getOpenReportCount(),
   ]);
 
   return (
@@ -43,6 +45,9 @@ export default async function AdminPage() {
         <div className="grid grid-cols-2 gap-2 md:flex md:flex-wrap">
           <Link href="/admin/members" className="rounded-md border border-brand/40 bg-white px-4 py-2 font-medium text-brand hover:bg-brand-soft text-center text-[13px] md:text-sm">
             👥 회원 관리{pendingMembers ? ` (승인 대기 ${pendingMembers})` : ""}
+          </Link>
+          <Link href="/chat/reports" className="rounded-md border border-red-300 bg-white px-4 py-2 font-medium text-red-600 hover:bg-red-50 text-center text-[13px] md:text-sm">
+            🚨 소통방 신고{openReports ? ` (${openReports})` : ""}
           </Link>
           <Link href="/chat/members" className="rounded-md border border-zinc-300 bg-white px-4 py-2 hover:bg-zinc-100 text-center text-[13px] md:text-sm">
             👥 소통방 멤버 관리

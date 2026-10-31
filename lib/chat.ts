@@ -29,11 +29,11 @@ export function parseRoom(v: unknown): ChatRoom | null {
   return (CHAT_ROOMS as readonly number[]).includes(n) ? (n as ChatRoom) : null;
 }
 
-/** 닉네임 규칙: 2~12자, 한글·영문·숫자·밑줄만, 관리자·학생회 사칭 금지 */
+/** 닉네임 규칙: 2~12자, 한글(자음·모음만도 가능)·영문·숫자·밑줄만, 관리자·학생회 사칭 금지 */
 export function nicknameError(raw: string): string | null {
   const v = raw.trim();
   if (v.length < 2 || v.length > 12) return "닉네임은 2~12자로 정해 주세요.";
-  if (!/^[가-힣a-zA-Z0-9_]+$/.test(v)) return "닉네임은 한글·영문·숫자·밑줄(_)만 쓸 수 있어요.";
+  if (!/^[가-힣ㄱ-ㅎㅏ-ㅣa-zA-Z0-9_]+$/.test(v)) return "닉네임은 한글·영문·숫자·밑줄(_)만 쓸 수 있어요. (띄어쓰기·특수문자 불가)";
   if (/관리자|운영자|학생회|admin/i.test(v)) return "관리자·학생회로 오해할 수 있는 닉네임은 쓸 수 없어요.";
   return null;
 }
@@ -52,4 +52,11 @@ export function warningMessage(warnings: number, reason: string) {
       : `사유: ${reason} · 경고 ${CHAT_BAN_WARNINGS}회를 받으면 소통방을 쓸 수 없어요.`,
     url: "/chat",
   };
+}
+
+export const REPORT_REASONS = ["욕설·비방", "도배", "광고·홍보", "개인정보 노출", "수업과 무관한 글", "기타"] as const;
+
+/** 관리자에게 가는 신고 알림 문구 */
+export function reportMessage(room: number, reason: string) {
+  return { title: "🚨 소통방 신고가 들어왔어요", body: `${room}학년 소통방 · 사유: ${reason}`, url: "/chat/reports" };
 }

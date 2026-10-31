@@ -437,6 +437,32 @@ run("인증·RLS 통합 테스트", () => {
       expect(hist.data).toEqual([{ old_nickname: nick("b"), new_nickname: nick("n") }]);
       expect((await student2.from("chat_nickname_history").select("id")).data).toEqual([]);
     });
+
+    it("학생 신고: 다른 학생 메시지만, 한 번만. 신고 내용은 관리자만 본다", async () => {
+      const m = await student.from("chat_messages").insert({ room: 4, member_id: s1Member, body: `RLS-${tag} 신고될 글` }).select("id").single();
+      const id = m.data!.id;
+      // 내 메시지는 신고 못 함, 다른 학생은 신고 가능, 두 번은 안 됨
+      expect((await student.rpc("chat_report", { p_message: id, p_reason: "도배" })).error).not.toBeNull();
+      expect((await student2.rpc("chat_report", { p_message: id, p_reason: "도배" })).error).toBeNull();
+      expect((await student2.rpc("chat_report", { p_message: id, p_reason: "도배" })).error?.message).toContain("이미 신고한");
+      // 신고 표는 직접 못 읽고, 목록 함수도 학생에겐 빈 결과
+      expect((await student.from("chat_reports").select("id")).error).not.toBeNull();
+      expect((await student.rpc("chat_admin_reports")).data).toEqual([]);
+      expect((await student.rpc("chat_open_report_count")).data).toBe(0);
+      // 관리자는 메시지·작성자·신고자를 본다
+      const list = (await admin.rpc("chat_admin_reports")).data as { message_id: number; body: string; author_name: string; reporter_name: string }[];
+      expect(list.find((r) => r.message_id === id)).toMatchObject({ body: `RLS-${tag} 신고될 글`, author_name: "테스트student", reporter_name: "테스트student2" });
+      expect(Number((await admin.rpc("chat_open_report_count")).data)).toBeGreaterThanOrEqual(1);
+      // 학생은 처리 못 하고, 관리자가 처리하면 대기 목록에서 빠진다
+      expect((await student2.rpc("chat_handle_reports", { p_message: id, p_status: "dismissed" })).error).not.toBeNull();
+      expect((await admin.rpc("chat_handle_reports", { p_message: id, p_status: "dismissed" })).error).toBeNull();
+      const after = (await admin.rpc("chat_admin_reports")).data as { message_id: number }[];
+      expect(after.some((r) => r.message_id === id)).toBe(false);
+    });
+
+    it("자음·모음만으로 된 닉네임도 정할 수 있다", async () => {
+      expect((await student2.rpc("set_chat_nickname", { p_nickname: `ㅇㅇ${tag.slice(-6)}` })).error).toBeNull();
+    });
   });
 });
 

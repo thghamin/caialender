@@ -6,7 +6,7 @@ import { CHAT_BAN_WARNINGS, CHAT_ROOMS, isBanned } from "@/lib/chat";
 import { formatKst } from "@/lib/datetime";
 import { PageHero } from "@/components/page-hero";
 import { Card } from "@/components/ui";
-import { getMyChatMember, getMyWarnings } from "./actions";
+import { getMyChatMember, getMyWarnings, getOpenReportCount } from "./actions";
 import { NicknameForm } from "./nickname-form";
 import { BanNotice } from "./ban-notice";
 import { isAdminRole } from "@/lib/types";
@@ -18,9 +18,10 @@ const ROOM_ICON = ["🌱", "🌿", "🌳", "🎓"];
 export default async function ChatHome() {
   const me = await requireUser();
   const supabase = await createClient();
-  const [member, warnings, latest] = await Promise.all([
+  const [member, warnings, openReports, latest] = await Promise.all([
     getMyChatMember(),
     getMyWarnings(),
+    isAdminRole(me.role) ? getOpenReportCount() : Promise.resolve(0),
     // 방마다 가장 최근 메시지 (미리보기)
     Promise.all(
       CHAT_ROOMS.map((room) =>
@@ -47,9 +48,14 @@ export default async function ChatHome() {
         subtitle="수업 정보·휴강·시험 범위·과제·진도처럼 수업에 필요한 정보를 학년별로 자유롭게 나누는 방이에요. 여러 학년 수업을 들으면 여러 방에 들어가도 돼요."
       >
         {isAdminRole(me.role) && (
-          <Link href="/chat/members" className="rounded-full bg-zinc-900/80 px-4 py-1.5 text-sm font-semibold text-white hover:bg-zinc-900">
-            👥 멤버 관리
-          </Link>
+          <>
+            <Link href="/chat/reports" className="rounded-full bg-white px-4 py-1.5 text-sm font-bold text-red-600 hover:bg-red-50">
+              🚨 신고{openReports ? ` ${openReports}` : ""}
+            </Link>
+            <Link href="/chat/members" className="rounded-full bg-zinc-900/80 px-4 py-1.5 text-sm font-semibold text-white hover:bg-zinc-900">
+              👥 멤버 관리
+            </Link>
+          </>
         )}
       </PageHero>
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">

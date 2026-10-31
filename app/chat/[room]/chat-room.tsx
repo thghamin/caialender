@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CHAT_BAN_WARNINGS, CHAT_MAX_LENGTH, isBanned, type ChatMember, type ChatMessage, type ChatRoom } from "@/lib/chat";
-import { deleteChatMessage, deleteOwnChatMessage, getChatMessages, resetChatWarnings, sendChatMessage, warnChatAuthor } from "../actions";
+import { CHAT_BAN_WARNINGS, CHAT_MAX_LENGTH, isBanned, REPORT_REASONS, type ChatMember, type ChatMessage, type ChatRoom } from "@/lib/chat";
+import { deleteChatMessage, deleteOwnChatMessage, getChatMessages, reportChatMessage, resetChatWarnings, sendChatMessage, warnChatAuthor } from "../actions";
 
 const POLL_MS = 3000; // 새 메시지 확인 간격
 const FULL_SYNC_EVERY = 5; // 이만큼에 한 번은 전체를 다시 받아 삭제된 메시지도 반영
@@ -19,6 +19,8 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
   const [error, setError] = useState<string>();
   const [sending, setSending] = useState(false);
   const [warnTarget, setWarnTarget] = useState<ChatMessage | null>(null);
+  const [reportTarget, setReportTarget] = useState<ChatMessage | null>(null);
+  const [notice, setNotice] = useState<string>();
   const list = useRef<HTMLDivElement>(null);
   const nearBottom = useRef(true);
   const banned = isBanned(member);
@@ -138,6 +140,12 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
                     )}
                   </span>
                 )}
+                {/* 다른 학생 메시지 신고 → 관리자에게 알림 */}
+                {!mine && !admin && !m.deleted && (
+                  <button onClick={() => setReportTarget(m)} className="px-1 text-[11px] text-zinc-400 hover:text-red-600">
+                    신고
+                  </button>
+                )}
                 {/* 본인 메시지 삭제 (관리자는 아래 관리자 삭제를 쓴다) */}
                 {mine && !admin && !m.deleted && (
                   <button
@@ -214,6 +222,23 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
           <p className="px-1 pt-1 text-xs text-amber-700">⚠️ 받은 경고 {member.warnings}/{CHAT_BAN_WARNINGS} · {CHAT_BAN_WARNINGS}회면 글을 쓸 수 없어요</p>
         )}
       </div>
+      {notice && (
+        <div role="status" className="animate-pop-in fixed inset-x-4 bottom-28 z-50 mx-auto max-w-sm rounded-2xl bg-zinc-900 px-4 py-3 text-center text-[14px] text-white shadow-xl md:bottom-8">
+          {notice}
+        </div>
+      )}
+      {reportTarget && (
+        <ReportDialog
+          target={reportTarget}
+          room={room}
+          onClose={() => setReportTarget(null)}
+          onDone={() => {
+            setReportTarget(null);
+            setNotice("신고했어요. 학생회가 확인할게요.");
+            setTimeout(() => setNotice(undefined), 2500);
+          }}
+        />
+      )}
       {warnTarget && (
         <WarnDialog
           target={warnTarget}
@@ -275,6 +300,59 @@ function WarnDialog({ target, onClose, onDone }: { target: ChatMessage; onClose:
             className="flex-1 rounded-xl bg-amber-500 py-2.5 font-bold text-white disabled:opacity-50"
           >
             {pending ? "처리 중" : "경고하고 삭제"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** 학생: 신고 사유 고르기 → 관리자에게 알림 */
+function ReportDialog({ target, room, onClose, onDone }: { target: ChatMessage; room: ChatRoom; onClose: () => void; onDone: () => void }) {
+  const [reason, setReason] = useState<string>(REPORT_REASONS[0]);
+  const [detail, setDetail] = useState("");
+  const [error, setError] = useState<string>();
+  const [pending, setPending] = useState(false);
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center" onClick={onClose}>
+      <div role="dialog" aria-label="메시지 신고" onClick={(e) => e.stopPropagation()} className="animate-pop-in w-full max-w-md rounded-3xl bg-white p-5 shadow-2xl">
+        <p className="text-[17px] font-extrabold">🚨 메시지 신고</p>
+        <p className="mt-0.5 text-[13px] text-zinc-500">학생회(관리자)에게 알림이 가요. 신고한 사람은 상대에게 알려지지 않아요.</p>
+        <p className="mt-3 line-clamp-3 rounded-xl bg-zinc-50 px-3 py-2 text-[13px] text-zinc-700">
+          <b>{target.author.nickname}</b>: {target.body}
+        </p>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {REPORT_REASONS.map((r) => (
+            <button key={r} type="button" onClick={() => setReason(r)} className={`rounded-full px-3 py-1 text-[13px] ${reason === r ? "bg-red-600 text-white" : "bg-zinc-100 text-zinc-600"}`}>
+              {r}
+            </button>
+          ))}
+        </div>
+        <input
+          value={detail}
+          onChange={(e) => setDetail(e.target.value)}
+          maxLength={150}
+          placeholder="자세한 내용 (선택)"
+          aria-label="신고 내용"
+          className="mt-2 w-full rounded-xl border border-zinc-300 px-3 py-2 text-[16px] outline-none focus:border-red-500"
+        />
+        {error && <p className="mt-1 text-[13px] text-red-600">{error}</p>}
+        <div className="mt-4 flex gap-2">
+          <button onClick={onClose} className="flex-1 rounded-xl py-2.5 text-[14px] font-semibold text-zinc-600 ring-1 ring-zinc-200">
+            취소
+          </button>
+          <button
+            disabled={pending}
+            onClick={async () => {
+              setPending(true);
+              const r = await reportChatMessage(target.id, room, detail.trim() ? `${reason} — ${detail.trim()}` : reason);
+              setPending(false);
+              if (r.error) setError(r.error);
+              else onDone();
+            }}
+            className="flex-1 rounded-xl bg-red-600 py-2.5 text-[14px] font-bold text-white disabled:opacity-50"
+          >
+            {pending ? "보내는 중" : "신고하기"}
           </button>
         </div>
       </div>
