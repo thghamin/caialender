@@ -26,6 +26,12 @@ const PATHS: Record<string, React.ReactNode> = {
     </>
   ),
   menu: <path d="M4 7h16M4 12h16M4 17h16" />,
+  meal: (
+    <>
+      <path d="M4 13h16a8 8 0 0 1-16 0z" />
+      <path d="M3 21h18M9 4c0 2-1.5 2-1.5 4M13 4c0 2-1.5 2-1.5 4M17 4c0 2-1.5 2-1.5 4" />
+    </>
+  ),
   close: <path d="M6 6l12 12M18 6 6 18" />,
   notice: (
     <>
@@ -73,6 +79,7 @@ const MORE = [
   { href: "/notices", icon: "notice", label: "공지" },
   { href: "/qna", icon: "qna", label: "질문" },
   { href: "/search", icon: "search", label: "검색" },
+  { href: "/cafeteria", icon: "meal", label: "공식당 메뉴" },
 ] as const;
 
 /** 처음 둘러보기에서 비출 탭 */

@@ -33,6 +33,7 @@ export async function SiteHeader() {
           {approved && <NavLink href="/notices">공지</NavLink>}
           {approved && <NavLink href="/chat">소통방</NavLink>}
           {approved && <NavLink href="/qna">질문</NavLink>}
+          {approved && <NavLink href="/cafeteria">공식당</NavLink>}
           {admin && <NavLink href="/admin" strong>관리자</NavLink>}
         </nav>
         <div className="ml-auto flex min-w-0 items-center gap-1.5 text-sm md:gap-3">
