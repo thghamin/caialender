@@ -135,7 +135,11 @@ test("알림: 내 캘린더 일정 하루 전 알림을 켜면, 1분 작업이 2
   ids.event = ev!.id;
   await login(page, "student");
   // 내 캘린더에서 일정을 눌러 하루 전 알림 켜기
-  await page.locator(".caialender-calendar").getByText(`${T} 알림 테스트 MT`).first().click();
+  // 달력은 그달 주만 보여주므로, 일정(내일)이 다음 달이면 다음 달로 넘긴다
+  const cal = page.locator(".caialender-calendar");
+  const kstMonth = (t: number) => new Date(t + 9 * 3600_000).getUTCMonth();
+  if (kstMonth(new Date(start).getTime()) !== kstMonth(Date.now())) await cal.getByRole("button", { name: /다음|Next/ }).first().click();
+  await cal.getByText(`${T} 알림 테스트 MT`).first().click();
   const popup = page.getByRole("dialog", { name: `${T} 알림 테스트 MT` });
   await popup.getByRole("switch", { name: "하루 전 알림" }).click();
   await expect(popup.getByRole("switch", { name: "하루 전 알림" })).toHaveAttribute("aria-checked", "true");
