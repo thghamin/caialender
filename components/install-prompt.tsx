@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Hobanu } from "./hobanu";
 import { detectInApp } from "@/lib/client/in-app";
+import { TOUR_DONE_EVENT } from "./onboarding-tour";
 
 // 휴대폰에서 로그인하면 'C:AI:ender 앱 설치'를 권한다. 설치해야(특히 아이폰) 휴대폰 알림을 받을 수 있다.
 // - 안드로이드 크롬: beforeinstallprompt로 [앱 설치] 한 번에 설치
@@ -48,12 +49,18 @@ export function InstallPrompt() {
     };
     window.addEventListener("beforeinstallprompt", onPrompt);
     // 첫 화면이 다 그려진 뒤에 띄운다
-    const t = setTimeout(() => {
+    const show = () => {
       setPlatform(ios ? "ios" : "android");
       setOpen(true);
+    };
+    // 처음 둘러보기(OnboardingTour)가 떠 있으면 끝난 뒤에 권한다
+    const t = setTimeout(() => {
+      if (document.documentElement.dataset.tour === "open") window.addEventListener(TOUR_DONE_EVENT, show, { once: true });
+      else show();
     }, 1200);
     return () => {
       clearTimeout(t);
+      window.removeEventListener(TOUR_DONE_EVENT, show);
       window.removeEventListener("beforeinstallprompt", onPrompt);
     };
   }, []);

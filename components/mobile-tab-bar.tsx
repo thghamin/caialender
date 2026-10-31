@@ -80,11 +80,11 @@ export function MobileTabBar({ admin }: { admin: boolean }) {
         aria-label="모바일 메뉴"
         className="fixed inset-x-0 bottom-0 z-40 border-t border-brand/15 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
       >
-        <ul className="flex h-[68px]">
+        <ul className="flex h-[68px]" data-tour="tabs">
           {MAIN.map((t) => {
             const active = isActive(pathname, t.href) && !open;
             return (
-              <li key={t.href} className="flex-1">
+              <li key={t.href} className="flex-1" data-tour={t.href === "/timetable" ? "tab-timetable" : undefined}>
                 <Link href={t.href} prefetch aria-current={active ? "page" : undefined} className={tab(active)}>
                   {/* 선택된 탭 위쪽 막대 */}
                   {active && <span className="absolute inset-x-4 top-0 h-[3px] rounded-b-full bg-brand" />}
@@ -94,7 +94,7 @@ export function MobileTabBar({ admin }: { admin: boolean }) {
               </li>
             );
           })}
-          <li className="flex-1">
+          <li className="flex-1" data-tour="tab-more">
             <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-label="더보기" className={tab(open || moreActive)}>
               {(open || moreActive) && <span className="absolute inset-x-4 top-0 h-[3px] rounded-b-full bg-brand" />}
               <span className={`text-[28px] leading-none ${open || moreActive ? "" : "opacity-70 grayscale"}`}>{open ? "✕" : "☰"}</span>

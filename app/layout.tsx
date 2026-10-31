@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono } from "next/font/google";
 import { cookies } from "next/headers";
@@ -50,8 +51,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <SiteHeader />
         {/* 휴대폰에서는 하단 탭 메뉴에 가리지 않도록 아래 여백 */}
         <main className="flex-1 w-full max-w-6xl mx-auto px-3 pt-4 pb-28 sm:px-4 md:py-6">{children}</main>
-        <footer className="flex justify-center pb-28 pt-2 md:pb-6">
+        <footer className="flex flex-col items-center gap-2 pb-28 pt-2 md:pb-6">
           <ViewModeToggle mode={viewMode} />
+          <Link href="/?tour=1" className="text-xs text-zinc-400 underline-offset-2 hover:text-zinc-600 hover:underline">
+            사용법 다시 보기
+          </Link>
         </footer>
       </body>
     </html>

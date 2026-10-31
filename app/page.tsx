@@ -9,6 +9,8 @@ import { UpcomingList } from "@/components/upcoming-list";
 import { BriefingCard } from "@/components/briefing-card";
 import { PageHero } from "@/components/page-hero";
 import { Alert, Card } from "@/components/ui";
+import { OnboardingTour } from "@/components/onboarding-tour";
+import { Suspense } from "react";
 
 export default async function Home() {
   if (!isSupabaseConfigured()) {
@@ -52,15 +54,21 @@ export default async function Home() {
             </p>
             <CalendarLegend keys={["dept-event", "dept-deadline", "dept-other"]} />
           </div>
-          <Card className="p-3">
+          <Card className="p-3" data-tour="calendar">
             <CalendarView items={events.map((e) => toCalendarItem(e, interests))} loggedIn manage={admin ? { calendar: "dept" } : undefined} />
           </Card>
         </section>
         <aside className="flex min-w-0 flex-col gap-4">
-          <BriefingCard scope="all" />
+          <div data-tour="briefing">
+            <BriefingCard scope="all" />
+          </div>
           <UpcomingList events={events} title="다가오는 학과 일정" />
         </aside>
       </div>
+      {/* 처음 들어온 학생에게 화면 소개 (?tour=1 이면 다시 보기) */}
+      <Suspense>
+        <OnboardingTour />
+      </Suspense>
     </div>
   );
 }

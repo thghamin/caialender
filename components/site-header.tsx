@@ -25,7 +25,7 @@ export async function SiteHeader() {
           </span>
         </Link>
         {/* PC 메뉴. 휴대폰은 화면 아래 탭 메뉴(MobileTabBar) */}
-        <nav className="hidden gap-1 text-sm md:flex">
+        <nav className="hidden gap-1 text-sm md:flex" data-tour="nav">
           {approved && <NavLink href="/">학과 캘린더</NavLink>}
           {approved && <NavLink href="/academic">학사 캘린더</NavLink>}
           {approved && <NavLink href="/my">내 캘린더</NavLink>}
