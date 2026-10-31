@@ -32,7 +32,7 @@ export default async function AcademicPage() {
         subtitle={
           <>
             개강, 수강신청, 시험, 휴학·복학 접수, 공휴일까지 학교 학사일정을 모았어요. 필요한 일정은 눌러서 내 캘린더에 넣으세요.{" "}
-            <a href={KNU_SCHEDULE_URL(2026)} target="_blank" rel="noreferrer" className="underline underline-offset-2 hover:text-white">
+            <a href={KNU_SCHEDULE_URL(2026)} target="_blank" rel="noreferrer" className="font-semibold text-red-600 underline underline-offset-2 hover:text-red-700">
               출처: 경북대학교 홈페이지
             </a>
           </>

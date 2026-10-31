@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 
 // 앱 하단 탭은 5개 이하가 누르기 편하다(탭 하나 폭 ≈ 화면의 1/5).
-// 자주 쓰는 4개 + '더보기'(공지·소통방·질문·검색·관리)
+// 하단 탭: 학과·학사·내 캘린더·시간표·소통방, 나머지(공지·질문·검색·관리)는 머리줄 오른쪽 '더보기'
 
 // 선 아이콘 (이모지 대신: 기기마다 모양이 달라지지 않고 앱처럼 깔끔하게)
 const PATHS: Record<string, React.ReactNode> = {
@@ -65,33 +66,68 @@ const MAIN = [
   { href: "/academic", icon: "academic", label: "학사" },
   { href: "/my", icon: "star", label: "내 캘린더" },
   { href: "/timetable", icon: "timetable", label: "시간표" },
+  { href: "/chat", icon: "chat", label: "소통방" },
 ] as const;
 
 const MORE = [
   { href: "/notices", icon: "notice", label: "공지" },
-  { href: "/chat", icon: "chat", label: "소통방" },
   { href: "/qna", icon: "qna", label: "질문" },
   { href: "/search", icon: "search", label: "검색" },
 ] as const;
 
 const isActive = (pathname: string, href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
-/** 휴대폰 하단 탭 메뉴 (768px 미만에서만 보인다) */
-export function MobileTabBar({ admin }: { admin: boolean }) {
+/** 휴대폰 하단 탭 메뉴 (768px 미만에서만 보인다): 학과·학사·내 캘린더·시간표·소통방 */
+export function MobileTabBar() {
+  const pathname = usePathname();
+  // 누른 탭을 화면이 바뀌기 전에 바로 칠한다 (기다리는 느낌을 없앤다)
+  const [pressed, setPressed] = useState<string | null>(null);
+  const [lastPath, setLastPath] = useState(pathname);
+  if (lastPath !== pathname) {
+    setLastPath(pathname);
+    setPressed(null);
+  }
+
+  // 선택된 탭: 연한 테마색 둥근 바탕 + 테마색 아이콘·글자 (나머지는 회색 선 아이콘)
+  const tab = (active: boolean) =>
+    `flex h-full w-full flex-col items-center justify-center gap-[3px] rounded-[20px] text-[11px] leading-none whitespace-nowrap tracking-tight transition-colors ${
+      active ? "bg-brand/10 font-bold text-brand" : "font-medium text-zinc-500 active:bg-zinc-100"
+    }`;
+
+  return (
+    // 떠 있는 둥근 탭 바 (화면 아래·양옆에서 살짝 띄움)
+    <nav
+      aria-label="모바일 메뉴"
+      className="fixed inset-x-2.5 bottom-[calc(8px+env(safe-area-inset-bottom))] z-40 rounded-[26px] border border-black/[0.06] bg-white/90 p-1.5 shadow-[0_8px_30px_-6px_rgb(0_0_0/0.18)] backdrop-blur-xl md:hidden"
+    >
+      <ul className="flex h-[56px] gap-0.5" data-tour="tabs">
+        {MAIN.map((t) => {
+          const active = pressed ? pressed === t.href : isActive(pathname, t.href);
+          return (
+            <li key={t.href} className="min-w-0 flex-1" data-tour={t.href === "/timetable" ? "tab-timetable" : t.href === "/chat" ? "tab-chat" : undefined}>
+              <Link href={t.href} prefetch onClick={() => t.href !== pathname && setPressed(t.href)} aria-current={active ? "page" : undefined} className={tab(active)}>
+                <Icon name={t.icon} className={`size-6 ${active ? "" : "opacity-80"}`} />
+                {t.label}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+
+/** 휴대폰 머리줄 오른쪽(로그아웃 옆) '더보기': 공지·질문·검색·관리 */
+export function MoreMenu({ admin }: { admin: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  // 누른 탭을 화면이 바뀌기 전에 바로 칠한다 (기다리는 느낌을 없앤다)
-  const [pressed, setPressed] = useState<string | null>(null);
   const more = admin ? [...MORE, { href: "/admin", icon: "admin", label: "관리" } as const] : MORE;
   const moreActive = more.some((m) => isActive(pathname, m.href));
-
-  // 다른 화면으로 가면 더보기 창을 닫는다
   const [lastPath, setLastPath] = useState(pathname);
   if (lastPath !== pathname) {
     setLastPath(pathname);
     setOpen(false);
-    setPressed(null);
   }
   // 더보기 안의 화면도 미리 받아 둔다 (창을 열자마자 눌러도 바로 뜨게)
   useEffect(() => {
@@ -105,21 +141,27 @@ export function MobileTabBar({ admin }: { admin: boolean }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
-  // 선택된 탭: 연한 테마색 둥근 바탕 + 테마색 아이콘·글자 (나머지는 회색 선 아이콘)
-  const tab = (active: boolean) =>
-    `flex h-full w-full flex-col items-center justify-center gap-[3px] rounded-[20px] text-[11.5px] leading-none whitespace-nowrap tracking-tight transition-colors ${
-      active ? "bg-brand/10 font-bold text-brand" : "font-medium text-zinc-500 active:bg-zinc-100"
-    }`;
-
   return (
     <>
-      {open && (
-        <div className="fixed inset-0 z-40 bg-black/30 md:hidden" onClick={() => setOpen(false)}>
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-label="더보기"
+        data-tour="more"
+        className={`grid size-9 place-items-center rounded-full transition-colors md:hidden ${open || moreActive ? "bg-brand/10 text-brand" : "text-zinc-600 active:bg-zinc-100"}`}
+      >
+        <Icon name={open ? "close" : "menu"} className="size-6" />
+      </button>
+      {/* 머리줄의 흐림 효과 안에서는 fixed가 화면 기준이 아니므로 body에 바로 그린다 */}
+      {open &&
+        createPortal(
+        <div className="fixed inset-0 top-[60px] z-40 bg-black/30 md:hidden" onClick={() => setOpen(false)}>
           <div
             role="dialog"
             aria-label="더보기 메뉴"
             onClick={(e) => e.stopPropagation()}
-            className="animate-pop-in absolute inset-x-3 bottom-[calc(84px+env(safe-area-inset-bottom))] rounded-3xl bg-white p-3 shadow-2xl"
+            className="animate-pop-in absolute inset-x-3 top-2 rounded-3xl bg-white p-3 shadow-2xl"
           >
             <ul className="grid grid-cols-2 gap-2">
               {more.map((m) => (
@@ -139,33 +181,9 @@ export function MobileTabBar({ admin }: { admin: boolean }) {
               ))}
             </ul>
           </div>
-        </div>
-      )}
-      {/* 떠 있는 둥근 탭 바 (화면 아래·양옆에서 살짝 띄움) */}
-      <nav
-        aria-label="모바일 메뉴"
-        className="fixed inset-x-2.5 bottom-[calc(8px+env(safe-area-inset-bottom))] z-40 rounded-[26px] border border-black/[0.06] bg-white/90 p-1.5 shadow-[0_8px_30px_-6px_rgb(0_0_0/0.18)] backdrop-blur-xl md:hidden"
-      >
-        <ul className="flex h-[56px] gap-1" data-tour="tabs">
-          {MAIN.map((t) => {
-            const active = pressed ? pressed === t.href : isActive(pathname, t.href) && !open;
-            return (
-              <li key={t.href} className="flex-1" data-tour={t.href === "/timetable" ? "tab-timetable" : undefined}>
-                <Link href={t.href} prefetch onClick={() => t.href !== pathname && setPressed(t.href)} aria-current={active ? "page" : undefined} className={tab(active)}>
-                  <Icon name={t.icon} className={`size-6 ${active ? "" : "opacity-80"}`} />
-                  {t.label}
-                </Link>
-              </li>
-            );
-          })}
-          <li className="flex-1" data-tour="tab-more">
-            <button type="button" onClick={() => setOpen(!open)} aria-expanded={open} aria-label="더보기" className={tab(open || moreActive)}>
-              <Icon name={open ? "close" : "menu"} className={`size-6 ${open || moreActive ? "" : "opacity-80"}`} />
-              더보기
-            </button>
-          </li>
-        </ul>
-      </nav>
+        </div>,
+          document.body,
+        )}
     </>
   );
 }

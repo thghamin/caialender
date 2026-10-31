@@ -27,6 +27,7 @@ export default async function TimetablePage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHero
+        tone="timetable"
         badge={user.grade ? `${user.grade}학년 ${user.name}` : user.name}
         title="내 시간표"
         subtitle="수업을 직접 넣거나, 에브리타임 시간표를 캡처해서 올리면 AI가 그대로 옮겨 줘요. 수업마다 10분 전 알림을 켤 수 있어요."

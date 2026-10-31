@@ -36,14 +36,14 @@ export default async function Home() {
         title="학과 캘린더"
         subtitle="학생회가 공지방에 올린 공지를 AI가 정리하고, 기획부가 검수해 게시한 우리 과 일정이에요."
       >
-        <Link href="/academic" className="rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-green-700 hover:bg-green-50">
-          학사 캘린더 보기
+        <Link href="/academic" className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-b from-green-600 to-green-700 px-4 py-2 text-[13.5px] font-bold text-white shadow-md shadow-green-700/25 hover:brightness-105">
+          학사 캘린더 보기 <span aria-hidden>→</span>
         </Link>
-        <Link href="/my" className="rounded-full px-4 py-1.5 text-sm font-semibold text-white ring-1 ring-white/50 hover:bg-white/10">
-          내 캘린더 →
+        <Link href="/my" className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-4 py-2 text-[13.5px] font-bold text-green-700 ring-1 ring-green-300 hover:bg-white">
+          내 캘린더 <span aria-hidden>→</span>
         </Link>
         {admin && (
-          <Link href="/admin/events/new?cal=dept" className="rounded-full bg-zinc-900/80 px-4 py-1.5 text-sm font-semibold text-white hover:bg-zinc-900">
+          <Link href="/admin/events/new?cal=dept" className="rounded-full bg-zinc-900 px-4 py-2 text-[13.5px] font-bold text-white hover:bg-zinc-800">
             + 일정 추가
           </Link>
         )}

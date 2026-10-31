@@ -216,9 +216,10 @@ test("휴대폰: 하단 탭 메뉴로 이동하고, PC 버전 ↔ 모바일 버�
   await third.close();
   await tabs.getByRole("link", { name: /학사/ }).click();
   await expect(page.getByRole("heading", { name: "학사 캘린더" })).toBeVisible();
-  // 탭은 5개(학과·학사·내 캘린더·시간표·더보기), 나머지는 더보기에서 큰 버튼으로
+  // 하단 탭은 5개(학과·학사·내 캘린더·시간표·소통방), 공지·질문·검색은 머리줄 오른쪽 더보기에서 큰 버튼으로
   await expect(tabs.getByRole("listitem")).toHaveCount(5);
-  await tabs.getByRole("button", { name: "더보기" }).click();
+  await expect(tabs.getByRole("link", { name: /소통방/ })).toBeVisible();
+  await page.getByRole("banner").getByRole("button", { name: "더보기" }).click();
   const more = page.getByRole("dialog", { name: "더보기 메뉴" });
   await more.getByRole("link", { name: /질문/ }).click();
   await expect(page.getByRole("heading", { name: "질문 게시판" })).toBeVisible();

@@ -15,8 +15,8 @@ export function MyColorPicker({ initial }: { initial: MyColor }) {
   const [color, setColor] = useState(initial);
 
   return (
-    <div className="flex items-center gap-1.5 rounded-full bg-white/15 px-2 py-1 ring-1 ring-white/30" role="group" aria-label="내 테마 색">
-      <span className="mr-1 text-xs font-semibold">🎨 내 색</span>
+    <div className="flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1.5 shadow-sm ring-1 ring-black/[0.05]" role="group" aria-label="내 테마 색">
+      <span className="mr-1 text-[12px] font-bold text-amber-700">🎨 내 색</span>
       {(Object.keys(MY_COLORS) as MyColor[]).map((c) => (
         <button
           key={c}
@@ -28,7 +28,7 @@ export function MyColorPicker({ initial }: { initial: MyColor }) {
           aria-label={MY_COLORS[c].label}
           aria-pressed={c === color}
           title={MY_COLORS[c].label}
-          className={`size-6 rounded-full border-2 transition-transform hover:scale-110 ${c === color ? "scale-110 border-white shadow-md" : "border-white/50"}`}
+          className={`size-6 rounded-full border-2 transition-transform hover:scale-110 ${c === color ? "scale-110 border-white shadow-md ring-2 ring-zinc-400" : "border-white"}`}
           style={{ background: MY_COLORS[c].main }}
         />
       ))}

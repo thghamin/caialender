@@ -38,7 +38,7 @@ export default async function MyPage() {
   return (
     <div className="flex flex-col gap-6">
       <PageHero
-        tone="custom"
+        tone="my"
         badge={user.grade ? `${user.grade}학년 ${user.name}` : user.name}
         title="내 캘린더"
         subtitle={`학과·학사 캘린더에서 ☆로 담은 일정 ${mine.length}개(학사 ${academicCount}개) + 개인 일정 ${personal.length}개`}

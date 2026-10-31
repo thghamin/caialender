@@ -4,7 +4,7 @@ import { logout } from "@/app/auth/actions";
 import { isAdminRole, ROLE_LABEL } from "@/lib/types";
 import { Hobanu } from "./hobanu";
 import { NavLink } from "./nav-link";
-import { MobileTabBar } from "./mobile-tab-bar";
+import { MobileTabBar, MoreMenu } from "./mobile-tab-bar";
 import { InstallPrompt } from "./install-prompt";
 
 export async function SiteHeader() {
@@ -39,7 +39,7 @@ export async function SiteHeader() {
           {user ? (
             <>
               {approved && (
-                <Link href="/search" aria-label="검색" title="검색" data-tour="search" className="grid size-8 place-items-center rounded-full text-base hover:bg-brand-soft md:size-9 md:text-lg">
+                <Link href="/search" aria-label="검색" title="검색" data-tour="search" className="hidden size-9 place-items-center rounded-full text-lg hover:bg-brand-soft md:grid">
                   🔍
                 </Link>
               )}
@@ -59,6 +59,8 @@ export async function SiteHeader() {
               <form action={logout}>
                 <button className="whitespace-nowrap rounded-full border border-zinc-300 px-2.5 py-1 text-[13px] hover:bg-zinc-100 md:px-3 md:text-sm">로그아웃</button>
               </form>
+              {/* 휴대폰: 로그아웃 오른쪽 더보기 (공지·질문·검색·관리) */}
+              {approved && <MoreMenu admin={admin} />}
             </>
           ) : (
             <>
@@ -72,7 +74,7 @@ export async function SiteHeader() {
       </div>
     </header>
     {/* header의 backdrop-blur 안에 두면 fixed가 화면 기준이 아니게 되므로 밖에 둔다 */}
-    {approved && <MobileTabBar admin={admin} />}
+    {approved && <MobileTabBar />}
     {/* 로그인(승인)한 휴대폰 사용자에게 앱 설치 권유 */}
     {approved && <InstallPrompt />}
     </>

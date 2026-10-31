@@ -26,6 +26,7 @@ export default async function QnaPage({ searchParams }: PageProps<"/qna">) {
   return (
     <div className="flex flex-col gap-6">
       <PageHero
+        tone="qna"
         badge="학생회에게 물어보세요"
         title="질문 게시판"
         subtitle="일정이나 공지에서 궁금한 점을 남기면 학생회가 직접 답변해요. 답변은 모든 학생이 함께 볼 수 있어요."

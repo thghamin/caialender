@@ -53,16 +53,17 @@ export default async function ChatHome() {
     <div className="flex flex-col gap-6">
       {!isAdminRole(me.role) && <WarningPopup />}
       <PageHero
+        tone="chat"
         badge="닉네임으로 편하게"
         title="학년별 소통방"
         subtitle="수업 정보·휴강·시험 범위·과제·진도처럼 수업에 필요한 정보를 학년별로 자유롭게 나누는 방이에요. 여러 학년 수업을 들으면 여러 방에 들어가도 돼요."
       >
         {isAdminRole(me.role) && (
           <>
-            <Link href="/chat/reports" className="rounded-full bg-white px-4 py-1.5 text-sm font-bold text-red-600 hover:bg-red-50">
+            <Link href="/chat/reports" className="rounded-full bg-white px-4 py-2 text-[13px] font-bold text-red-600 shadow-sm ring-1 ring-red-200 hover:bg-red-50">
               🚨 신고{openReports ? ` ${openReports}` : ""}
             </Link>
-            <Link href="/chat/members" className="rounded-full bg-zinc-900/80 px-4 py-1.5 text-sm font-semibold text-white hover:bg-zinc-900">
+            <Link href="/chat/members" className="rounded-full bg-zinc-900 px-4 py-2 text-[13px] font-bold text-white hover:bg-zinc-800">
               👥 멤버 관리
             </Link>
           </>

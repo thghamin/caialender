@@ -34,14 +34,14 @@ const STEPS: Step[] = [
     body: "에브리타임 시간표 캡처 한 장이면 시간표가 완성돼요. 수업 10분 전에 알림도 와요.",
   },
   {
-    target: '[data-tour="tab-more"], [data-tour="nav"] a[href="/chat"]',
+    target: '[data-tour="tab-chat"], [data-tour="nav"] a[href="/chat"]',
     title: "학년별 소통방",
-    body: "1~4학년 방을 골라 닉네임으로 휴강·시험 범위·과제·진도 같은 수업 정보를 자유롭게 나눠요. 다른 학생에겐 닉네임만 보여요. (휴대폰은 더보기 → 소통방)",
+    body: "1~4학년 방을 골라 닉네임으로 휴강·시험 범위·과제·진도 같은 수업 정보를 자유롭게 나눠요. 다른 학생에겐 닉네임만 보여요.",
   },
   {
-    target: '[data-tour="search"], [data-tour="nav"] a[href="/qna"]',
+    target: '[data-tour="more"], [data-tour="nav"] a[href="/qna"]',
     title: "공지 · 질문 · 검색",
-    body: "학생회 공지를 보고, 궁금한 건 질문으로 남기면 답이 달릴 때 알려 줘요. 일정·공지는 🔍 검색으로 바로 찾아요.",
+    body: "학생회 공지를 보고, 궁금한 건 질문으로 남기면 답이 달릴 때 알려 줘요. 일정·공지 검색도 여기서! (휴대폰은 오른쪽 위 ☰ 더보기)",
   },
 ];
 

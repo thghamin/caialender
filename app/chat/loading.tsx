@@ -2,7 +2,7 @@
 export default function Loading() {
   return (
     <div className="flex flex-col gap-4" aria-busy="true" aria-label="소통방 불러오는 중">
-      <div className="h-28 animate-pulse rounded-2xl bg-gradient-to-br from-brand/70 to-brand-dark/70" />
+      <div className="h-32 animate-pulse rounded-[24px] bg-gradient-to-br from-sky-50 via-white to-blue-100 ring-1 ring-blue-200/60" />
       <div className="grid gap-3 sm:grid-cols-2">
         {[1, 2, 3, 4].map((i) => (
           <div key={i} className="flex items-center gap-3 rounded-[22px] bg-white p-4 ring-1 ring-black/[0.04]">
