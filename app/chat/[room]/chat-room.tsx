@@ -119,7 +119,7 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
                 <div className="flex items-end gap-1.5">
                   {mine && <span className="text-[10px] text-zinc-400">{timeText(m.created_at)}</span>}
                   <p
-                    className={`whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-[15px] leading-snug ${
+                    className={`whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-[14.5px] leading-snug ${
                       m.deleted ? "bg-zinc-100 italic text-zinc-400" : mine ? "rounded-br-md bg-brand text-white" : "rounded-bl-md bg-white text-zinc-800 ring-1 ring-zinc-200"
                     }`}
                   >
@@ -202,7 +202,7 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
               maxLength={CHAT_MAX_LENGTH}
               placeholder="메시지 보내기"
               aria-label="메시지"
-              className="max-h-32 min-h-11 flex-1 resize-none rounded-2xl border border-zinc-300 px-3 py-2.5 text-base outline-none focus:border-brand"
+              className="max-h-32 min-h-11 flex-1 resize-none rounded-2xl border border-zinc-300 px-3 py-2.5 text-[16px] outline-none focus:border-brand"
             />
             <button disabled={sending || !text.trim()} className="h-11 shrink-0 rounded-2xl bg-brand px-4 font-bold text-white disabled:opacity-40">
               보내기
@@ -235,7 +235,7 @@ function WarnDialog({ target, onClose, onDone }: { target: ChatMessage; onClose:
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center" onClick={onClose}>
       <div role="dialog" aria-label="경고 주기" onClick={(e) => e.stopPropagation()} className="animate-pop-in w-full max-w-md rounded-3xl bg-white p-5 shadow-2xl">
-        <p className="text-lg font-extrabold">⚠️ {target.author.nickname}에게 경고</p>
+        <p className="text-[17px] font-extrabold">⚠️ {target.author.nickname}에게 경고</p>
         {target.identity && (
           <p className="text-sm text-zinc-500">
             {target.identity.name} · 지금 경고 {target.identity.warnings}/{CHAT_BAN_WARNINGS}

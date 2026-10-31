@@ -28,6 +28,25 @@ export async function getMyChatMember(): Promise<ChatMember | null> {
   return row ?? null;
 }
 
+/** 닉네임을 쓸 수 있는지 (형식 + 다른 사람과 겹치는지, 대소문자 구분 없이). 지금 내 닉네임은 쓸 수 있다 */
+export async function checkNickname(nickname: string): Promise<{ ok: boolean; message: string }> {
+  await requireUser();
+  const v = nickname.trim();
+  const err = nicknameError(v);
+  if (err) return { ok: false, message: err };
+  const supabase = await createClient();
+  // ilike에서 _ 와 % 는 와일드카드이므로 그대로 비교되게 바꾼다
+  const pattern = v.replace(/[\\%_]/g, (c) => `\\${c}`);
+  const [{ data: same }, me] = await Promise.all([
+    supabase.from("chat_members").select("id").ilike("nickname", pattern).limit(1),
+    getMyChatMember(),
+  ]);
+  const taken = (same ?? []).some((r) => r.id !== me?.id);
+  if (taken) return { ok: false, message: "이미 쓰는 닉네임이에요." };
+  if (me && me.nickname === v) return { ok: true, message: "지금 쓰고 있는 닉네임이에요." };
+  return { ok: true, message: "사용할 수 있는 닉네임이에요." };
+}
+
 export async function setNickname(nickname: string): Promise<Result> {
   await requireUser();
   const err = nicknameError(nickname);

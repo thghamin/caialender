@@ -61,15 +61,15 @@ export default async function ChatHome() {
                 key={room}
                 href={`/chat/${room}`}
                 prefetch
-                className="group flex min-w-0 items-center gap-4 rounded-[22px] bg-white p-5 shadow-[0_1px_2px_rgb(0_0_0/0.04),0_10px_30px_-12px_rgb(0_0_0/0.12)] ring-1 ring-black/[0.04] transition hover:-translate-y-0.5 hover:ring-brand/30"
+                className="group flex min-w-0 items-center gap-3 rounded-[22px] bg-white p-4 shadow-[0_1px_2px_rgb(0_0_0/0.04),0_10px_30px_-12px_rgb(0_0_0/0.12)] ring-1 ring-black/[0.04] transition hover:-translate-y-0.5 hover:ring-brand/30"
               >
-                <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-brand-soft text-3xl">{ROOM_ICON[i]}</span>
+                <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-brand-soft text-2xl">{ROOM_ICON[i]}</span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-lg font-extrabold">{room}학년 소통방</span>
-                  <span className="block truncate text-sm text-zinc-500">
+                  <span className="block text-[16px] font-extrabold">{room}학년 소통방</span>
+                  <span className="block truncate text-[13px] text-zinc-500">
                     {last ? (last.deleted_at ? "삭제된 메시지" : `${last.author.nickname}: ${last.body}`) : "아직 대화가 없어요. 휴강·시험 범위 소식을 먼저 나눠 보세요!"}
                   </span>
-                  {last && <span className="block text-xs text-zinc-400">{formatKst(last.created_at)}</span>}
+                  {last && <span className="block text-[11px] text-zinc-400">{formatKst(last.created_at)}</span>}
                 </span>
                 <span className="text-zinc-300 group-hover:text-brand">›</span>
               </Link>
@@ -80,8 +80,8 @@ export default async function ChatHome() {
           <Card>
             {member ? (
               <div className="flex flex-col gap-3">
-                <p className="text-sm text-zinc-500">
-                  내 닉네임 <b className="text-base text-zinc-900">{member.nickname}</b>
+                <p className="text-[13px] text-zinc-500">
+                  내 닉네임 <b className="text-[15px] text-zinc-900">{member.nickname}</b>
                 </p>
                 <NicknameForm current={member.nickname} />
               </div>
@@ -94,10 +94,10 @@ export default async function ChatHome() {
               <p className={`font-bold ${isBanned(member) ? "text-red-700" : "text-amber-700"}`}>
                 ⚠️ 받은 경고 {member.warnings}/{CHAT_BAN_WARNINGS}
               </p>
-              <p className="mt-1 text-sm text-zinc-600">
+              <p className="mt-1 text-[13px] text-zinc-600">
                 {isBanned(member) ? "경고 3회로 소통방에 글을 쓸 수 없어요. 학생회에 문의하세요." : "경고를 3번 받으면 소통방에 글을 쓸 수 없어요."}
               </p>
-              <ul className="mt-2 flex flex-col gap-1 text-sm">
+              <ul className="mt-2 flex flex-col gap-1 text-[13px]">
                 {warnings.map((w, i) => (
                   <li key={i} className="rounded-lg bg-zinc-50 px-3 py-1.5">
                     {w.reason} <span className="text-xs text-zinc-400">· {formatKst(w.created_at)}</span>
@@ -106,7 +106,7 @@ export default async function ChatHome() {
               </ul>
             </Card>
           )}
-          <Card className="text-sm text-zinc-600">
+          <Card className="text-[13px] text-zinc-600">
             <p className="mb-1 font-semibold text-zinc-800">소통방 규칙</p>
             <ul className="list-disc space-y-0.5 pl-5">
               <li>욕설·비방·도배·광고·개인정보 노출은 삭제되고 경고를 받아요.</li>

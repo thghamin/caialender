@@ -42,12 +42,12 @@ export default async function ChatRoomPage({ params }: PageProps<"/chat/[room]">
           ))}
         </nav>
       </div>
-      <p className="-mt-1 text-sm text-zinc-500">📚 수업 정보 · 휴강 · 시험 범위 · 과제 · 진도를 자유롭게 공유해요</p>
+      <p className="-mt-1 text-[12.5px] text-zinc-500">📚 수업 정보 · 휴강 · 시험 범위 · 과제 · 진도를 자유롭게 공유해요</p>
       {member ? (
         <ChatRoomView room={room} initial={messages} member={member} admin={isAdminRole(me.role)} />
       ) : (
         <Card className="mx-auto w-full max-w-md">
-          <p className="mb-3 text-lg font-bold">닉네임을 정하고 들어가요</p>
+          <p className="mb-3 text-[17px] font-bold">닉네임을 정하고 들어가요</p>
           <NicknameForm />
         </Card>
       )}

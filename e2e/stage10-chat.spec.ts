@@ -54,7 +54,17 @@ test("소통방: 학년 방을 골라 닉네임으로 대화하고, 학생에게
   // 방 목록에 최근 메시지가 보이고, 골라서 들어간다
   await expect(b.getByRole("link", { name: /2학년 소통방/ })).toContainText(nick("a"));
   await b.getByRole("link", { name: /2학년 소통방/ }).click();
+  // 이미 쓰는 닉네임(대소문자만 달라도)은 바로 알려 주고 정할 수 없다
+  // (화면이 막 그려진 직후엔 입력이 초기화될 수 있어 될 때까지 다시 입력)
+  await expect(async () => {
+    await b.getByLabel("닉네임").fill(nick("a").toUpperCase());
+    await expect(b.getByText("이미 쓰는 닉네임이에요.")).toBeVisible({ timeout: 2000 });
+  }).toPass();
+  await expect(b.getByRole("button", { name: "정하기" })).toBeDisabled();
+  await b.getByLabel("닉네임").fill("관리자님");
+  await expect(b.getByText(/관리자·학생회로 오해/)).toBeVisible();
   await b.getByLabel("닉네임").fill(nick("b"));
+  await expect(b.getByText("사용할 수 있는 닉네임이에요.")).toBeVisible();
   await b.getByRole("button", { name: "정하기" }).click();
   const msg = b.getByTestId("chat-message").filter({ hasText: `${tag} 자료구조` });
   await expect(msg).toContainText(nick("a"));
