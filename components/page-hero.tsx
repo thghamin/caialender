@@ -1,4 +1,5 @@
-// 페이지 상단 카드: 화면마다 정해진 연한 파스텔 색 + 오른쪽 그림(달력·말풍선). 제목은 마지막 단어만 색으로 강조
+// 페이지 상단 카드: 연한 파스텔 색 + 오른쪽 그림(달력·말풍선). 제목은 마지막 단어만 색으로 강조
+// 학과(초록)·학사(빨강)·질문(보라)은 고정색, 내 캘린더·시간표·소통방은 사용자가 고른 색(--brand)의 연한 버전
 export type HeroTone = "knu" | "dept" | "my" | "chat" | "timetable" | "qna" | "custom";
 
 type Art = "check" | "star" | "chat" | "question";
@@ -25,31 +26,31 @@ const TONES: Record<HeroTone, { card: string; badge: string; accent: string; mai
     watermark: "K:AI",
   },
   my: {
-    card: "from-amber-50 via-white to-yellow-100/70 ring-amber-200/60",
-    badge: "bg-amber-100/80 text-amber-700 ring-amber-200/80",
-    accent: "text-amber-500",
-    main: "#f3b433",
-    soft: "#fdf0cf",
-    deep: "#d39410",
+    card: "from-[color-mix(in_srgb,var(--brand)_9%,white)] via-white to-[color-mix(in_srgb,var(--brand)_17%,white)] ring-[color-mix(in_srgb,var(--brand)_22%,white)]",
+    badge: "bg-[color-mix(in_srgb,var(--brand)_13%,white)] text-brand ring-[color-mix(in_srgb,var(--brand)_25%,white)]",
+    accent: "text-brand",
+    main: "var(--brand)",
+    soft: "color-mix(in srgb, var(--brand) 16%, white)",
+    deep: "var(--brand-dark)",
     art: "star",
   },
   timetable: {
-    card: "from-orange-50 via-white to-amber-100/70 ring-amber-200/60",
-    badge: "bg-amber-100/80 text-amber-800 ring-amber-200/80",
-    accent: "text-amber-600",
-    main: "#e3a52c",
-    soft: "#fbecc8",
-    deep: "#b9800f",
+    card: "from-[color-mix(in_srgb,var(--brand)_9%,white)] via-white to-[color-mix(in_srgb,var(--brand)_17%,white)] ring-[color-mix(in_srgb,var(--brand)_22%,white)]",
+    badge: "bg-[color-mix(in_srgb,var(--brand)_13%,white)] text-brand ring-[color-mix(in_srgb,var(--brand)_25%,white)]",
+    accent: "text-brand",
+    main: "var(--brand)",
+    soft: "color-mix(in srgb, var(--brand) 16%, white)",
+    deep: "var(--brand-dark)",
     art: "check",
     bell: true,
   },
   chat: {
-    card: "from-sky-50 via-white to-blue-100/70 ring-blue-200/60",
-    badge: "bg-blue-100/80 text-blue-600 ring-blue-200/80",
-    accent: "text-blue-600",
-    main: "#3b82f6",
-    soft: "#dbe8fe",
-    deep: "#2563eb",
+    card: "from-[color-mix(in_srgb,var(--brand)_9%,white)] via-white to-[color-mix(in_srgb,var(--brand)_17%,white)] ring-[color-mix(in_srgb,var(--brand)_22%,white)]",
+    badge: "bg-[color-mix(in_srgb,var(--brand)_13%,white)] text-brand ring-[color-mix(in_srgb,var(--brand)_25%,white)]",
+    accent: "text-brand",
+    main: "var(--brand)",
+    soft: "color-mix(in srgb, var(--brand) 16%, white)",
+    deep: "var(--brand-dark)",
     art: "chat",
   },
   qna: {
@@ -84,7 +85,7 @@ function HeroArt({ tone }: { tone: HeroTone }) {
     <svg viewBox="0 0 160 140" className="h-full w-full" aria-hidden>
       <defs>
         <filter id={`hero-shadow-${tone}`} x="-20%" y="-20%" width="140%" height="150%">
-          <feDropShadow dx="0" dy="8" stdDeviation="7" floodColor={t.deep} floodOpacity="0.22" />
+          <feDropShadow dx="0" dy="8" stdDeviation="7" style={{ floodColor: t.deep, floodOpacity: 0.22 }} />
         </filter>
       </defs>
       {/* 움직임 선 */}

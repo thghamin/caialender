@@ -16,7 +16,7 @@ export function MyColorPicker({ initial }: { initial: MyColor }) {
 
   return (
     <div className="flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1.5 shadow-sm ring-1 ring-black/[0.05]" role="group" aria-label="내 테마 색">
-      <span className="mr-1 text-[12px] font-bold text-amber-700">🎨 내 색</span>
+      <span className="mr-1 text-[12px] font-bold text-brand">🎨 내 색</span>
       {(Object.keys(MY_COLORS) as MyColor[]).map((c) => (
         <button
           key={c}
