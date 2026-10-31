@@ -23,7 +23,7 @@ export default async function ChatRoomPage({ params }: PageProps<"/chat/[room]">
         <Link href="/chat" className="grid size-9 place-items-center rounded-full text-xl hover:bg-brand-soft" aria-label="소통방 목록">
           ‹
         </Link>
-        <h1 className="text-xl font-extrabold tracking-tight">{room}학년 소통방</h1>
+        <h1 className="whitespace-nowrap text-lg font-extrabold tracking-tight sm:text-xl">{room}학년 소통방</h1>
         {/* 다른 학년 방으로 바로 이동 */}
         <nav className="ml-auto flex gap-1" aria-label="다른 학년 방">
           {CHAT_ROOMS.map((r) => (
@@ -32,7 +32,7 @@ export default async function ChatRoomPage({ params }: PageProps<"/chat/[room]">
               href={`/chat/${r}`}
               prefetch
               aria-current={r === room ? "page" : undefined}
-              className={`grid size-9 place-items-center rounded-full text-sm font-bold ${r === room ? "bg-brand text-white" : "bg-white text-zinc-500 ring-1 ring-zinc-200"}`}
+              className={`grid size-8 place-items-center rounded-full text-sm font-bold sm:size-9 ${r === room ? "bg-brand text-white" : "bg-white text-zinc-500 ring-1 ring-zinc-200"}`}
             >
               {r}
             </Link>

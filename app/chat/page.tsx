@@ -42,7 +42,7 @@ export default async function ChatHome() {
         subtitle="과목·수업·진도 이야기를 학년별 방에서 나눠요. 여러 학년 수업을 들으면 여러 방에 들어가도 돼요."
       />
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-        <section className="grid gap-3 sm:grid-cols-2">
+        <section className="grid min-w-0 gap-3 sm:grid-cols-2">
           {CHAT_ROOMS.map((room, i) => {
             const last = latest[i];
             return (
@@ -50,7 +50,7 @@ export default async function ChatHome() {
                 key={room}
                 href={`/chat/${room}`}
                 prefetch
-                className="group flex items-center gap-4 rounded-[22px] bg-white p-5 shadow-[0_1px_2px_rgb(0_0_0/0.04),0_10px_30px_-12px_rgb(0_0_0/0.12)] ring-1 ring-black/[0.04] transition hover:-translate-y-0.5 hover:ring-brand/30"
+                className="group flex min-w-0 items-center gap-4 rounded-[22px] bg-white p-5 shadow-[0_1px_2px_rgb(0_0_0/0.04),0_10px_30px_-12px_rgb(0_0_0/0.12)] ring-1 ring-black/[0.04] transition hover:-translate-y-0.5 hover:ring-brand/30"
               >
                 <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-brand-soft text-3xl">{ROOM_ICON[i]}</span>
                 <span className="min-w-0 flex-1">

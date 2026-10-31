@@ -168,7 +168,7 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
               }}
               rows={1}
               maxLength={CHAT_MAX_LENGTH}
-              placeholder={`${member.nickname}(으)로 메시지 보내기`}
+              placeholder="메시지 보내기"
               aria-label="메시지"
               className="max-h-32 min-h-11 flex-1 resize-none rounded-2xl border border-zinc-300 px-3 py-2.5 text-base outline-none focus:border-brand"
             />

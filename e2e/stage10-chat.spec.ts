@@ -6,7 +6,7 @@ const tag = Date.now().toString(36);
 const prefix = `e2e10-${tag}`;
 const email = (k: string) => `${prefix}-${k}@caialender-test.dev`;
 const ids: Record<string, string> = {};
-const nick = (k: string) => `${k}${tag}`.slice(0, 12);
+const nick = (k: string) => `${k === "admin" ? "mod" : k}${tag}`.slice(0, 12);
 
 test.describe.configure({ mode: "serial" });
 
@@ -28,15 +28,16 @@ async function enter(page: Page, k: string, room: number) {
   await page.waitForURL("**/my");
   await page.goto(`/chat/${room}`);
   const form = page.getByLabel("닉네임");
-  if (await form.isVisible().catch(() => false)) {
+  await expect(form.or(page.getByLabel("메시지", { exact: true }))).toBeVisible();
+  if (await form.isVisible()) {
     await form.fill(nick(k));
     await page.getByRole("button", { name: "정하기" }).click();
   }
-  await expect(page.getByLabel("메시지")).toBeVisible();
+  await expect(page.getByLabel("메시지", { exact: true })).toBeVisible();
 }
 
 async function send(page: Page, text: string) {
-  await page.getByLabel("메시지").fill(text);
+  await page.getByLabel("메시지", { exact: true }).fill(text);
   await page.getByRole("button", { name: "보내기" }).click();
   await expect(page.getByTestId("chat-message").filter({ hasText: text })).toBeVisible();
 }
@@ -102,7 +103,7 @@ test("관리자: 닉네임의 실제 회원을 보고, 삭제·경고한다. 경
   }
   await a.goto("/chat/2");
   await expect(a.getByText(/경고 3회로 소통방에 글을 쓸 수 없어요/)).toBeVisible();
-  await expect(a.getByLabel("메시지")).toHaveCount(0);
+  await expect(a.getByLabel("메시지", { exact: true })).toHaveCount(0);
 
   // 관리자가 단순 삭제도 할 수 있다
   const b = await browser.newPage();

@@ -339,7 +339,9 @@ run("인증·RLS 통합 테스트", () => {
     let s1Member: string;
 
     it("승인 대기 회원은 닉네임을 만들 수 없다", async () => {
-      const { error } = await pendingUser.rpc("set_chat_nickname", { p_nickname: nick("p") });
+      // (pending 계정은 위 승인 테스트에서 승인되므로, 여전히 승인 대기인 hacker 계정으로 확인)
+      const waiting = await signIn(`rls-hacker-${tag}@caialender.test`);
+      const { error } = await waiting.rpc("set_chat_nickname", { p_nickname: nick("p") });
       expect(error).not.toBeNull();
     });
 
