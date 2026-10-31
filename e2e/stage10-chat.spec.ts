@@ -117,7 +117,11 @@ test("관리자: 닉네임의 실제 회원을 보고, 삭제·경고한다. 경
   await admin.reload();
   admin.once("dialog", (d) => d.accept());
   await admin.getByTestId("chat-message").filter({ hasText: `${tag} 지울 메시지` }).getByRole("button", { name: "삭제" }).click();
-  await expect(admin.getByTestId("chat-message").filter({ hasText: `${tag} 지울 메시지` })).toHaveCount(0);
+  // 지워진 메시지로 바뀌고, 관리자에게만 원래 내용이 남는다
+  const removed = admin.getByTestId("chat-message").filter({ hasText: `${tag} 지울 메시지` });
+  await expect(removed).toContainText("관리자가 삭제한 메시지예요");
+  await expect(removed.getByTestId("chat-original")).toBeVisible();
+  await expect(b.getByTestId("chat-message").filter({ hasText: `${tag} 지울 메시지` })).toHaveCount(0, { timeout: 20_000 });
   await Promise.all([admin.close(), a.close(), b.close()]);
 });
 
@@ -152,14 +156,14 @@ test("내 메시지는 내가 지울 수 있고, 관리자는 원래 내용을 �
   // a는 이용 제한 상태 → 제한 풀기
   await admin.getByLabel("멤버 검색").fill("소통가학생");
   const aRow = admin.getByTestId("chat-member").filter({ hasText: "소통가학생" });
-  await expect(aRow).toContainText("이용 제한");
+  await expect(aRow.getByTestId("ban-badge")).toBeVisible();
   admin.once("dialog", (d) => d.accept());
   await aRow.getByRole("button", { name: "제한 풀기" }).click();
-  await expect(aRow).not.toContainText("이용 제한");
+  await expect(aRow.getByTestId("ban-badge")).toHaveCount(0);
   // 바로 이용 제한도 된다
   await aRow.getByRole("button", { name: "이용 제한" }).click();
   await admin.getByRole("dialog", { name: "이용 제한" }).getByRole("button", { name: "이용 제한하기" }).click();
-  await expect(aRow).toContainText("이용 제한");
+  await expect(aRow.getByTestId("ban-badge")).toBeVisible();
   await Promise.all([admin.close(), b.close()]);
 });
 

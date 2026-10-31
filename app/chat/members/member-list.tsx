@@ -44,7 +44,9 @@ export function MemberList({ members }: { members: ChatAdminMember[] }) {
                 <span className="text-base font-bold">{m.nickname}</span>
                 {m.staff && <span className="rounded bg-brand px-1.5 py-px text-[11px] font-bold text-white">학생회</span>}
                 {banned ? (
-                  <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">이용 제한</span>
+                  <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700" data-testid="ban-badge">
+                    이용 제한 중
+                  </span>
                 ) : m.warnings > 0 ? (
                   <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-700">
                     경고 {m.warnings}/{CHAT_BAN_WARNINGS}
