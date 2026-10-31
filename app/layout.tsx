@@ -51,11 +51,19 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <SiteHeader />
         {/* 휴대폰에서는 하단 탭 메뉴에 가리지 않도록 아래 여백 */}
         <main className="flex-1 w-full max-w-6xl mx-auto px-3 pt-4 pb-28 sm:px-4 md:py-6">{children}</main>
-        <footer className="flex flex-col items-center gap-2 pb-28 pt-2 md:pb-6">
+        <footer className="flex flex-col items-center gap-2 px-4 pb-28 pt-2 md:pb-6">
           <ViewModeToggle mode={viewMode} />
           <Link href="/?tour=1" className="text-xs text-zinc-400 underline-offset-2 hover:text-zinc-600 hover:underline">
             사용법 다시 보기
           </Link>
+          {/* 정식 출시 전 안내 (휴대폰·PC 모두 맨 아래) */}
+          <p className="max-w-md text-center text-[11.5px] leading-relaxed text-zinc-400" data-testid="beta-note">
+            <span className="mr-1 rounded-full bg-zinc-200/70 px-1.5 py-px text-[10.5px] font-bold text-zinc-500">BETA</span>
+            C:AI:ender는 아직 정식 출시 전 서비스예요. 사용하면서 받는 피드백을 바탕으로 계속 보완하고 있어요.{" "}
+            <Link href="/qna" className="font-semibold text-zinc-500 underline underline-offset-2 hover:text-zinc-700">
+              의견 남기기
+            </Link>
+          </p>
         </footer>
       </body>
     </html>
