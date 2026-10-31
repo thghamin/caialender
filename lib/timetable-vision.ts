@@ -45,14 +45,28 @@ export function toLightMode(img: RawImage): RawImage {
   const bgLum = lum[lum.length >> 1];
   if (bgLum >= 90) return img;
   const out = Buffer.from(img.data);
-  for (let i = 0; i < out.length; i += ch) {
-    const r = out[i];
-    const g = out[i + 1];
-    const b = out[i + 2];
-    const mx = Math.max(r, g, b);
-    // 바탕·눈금선 밝기까지만 뒤집는다 (칸 안 글자(≈60~100)까지 뒤집으면 흰 틈으로 오해한다)
-    // (거의 검은 픽셀은 JPEG 색 번짐이 있어도 바탕으로 본다)
-    if (mx <= bgLum + 30) {
+  // 칸 안의 검은 글자는 바탕과 밝기가 같아도 뒤집지 않는다: 같은 줄에서 양옆 가까이(k px 안)에
+  // 밝은 칸 색이 있으면 글자로 본다. (바탕·눈금선은 적어도 한쪽이 어두운 바탕으로 이어진다)
+  const k = Math.max(4, Math.round(W * 0.03));
+  const bright = (i: number) => Math.max(img.data[i], img.data[i + 1], img.data[i + 2]) > 165;
+  const leftDist = new Int32Array(W);
+  for (let y = 0; y < H; y++) {
+    const row = y * W * ch;
+    let last = -1e9;
+    for (let x = 0; x < W; x++) {
+      if (bright(row + x * ch)) last = x;
+      leftDist[x] = x - last;
+    }
+    let next = 1e9;
+    for (let x = W - 1; x >= 0; x--) {
+      const i = row + x * ch;
+      if (bright(i)) next = x;
+      const r = out[i];
+      const g = out[i + 1];
+      const b = out[i + 2];
+      // 바탕·눈금선 밝기(거의 검은색, JPEG 색 번짐 포함)만 뒤집는다
+      if (Math.max(r, g, b) > bgLum + 30) continue;
+      if (leftDist[x] <= k && next - x <= k) continue; // 칸 안 글자
       // 바탕(bgLum) → 255, 눈금선(≈40) → ≈230
       const v = Math.max(0, Math.min(255, Math.round(255 - ((r + g + b) / 3 - bgLum))));
       out[i] = out[i + 1] = out[i + 2] = v;
@@ -139,7 +153,15 @@ export function detectGrid(img: RawImage): GridInfo | null {
   //    상자 밖은 그 위치들이 대부분 흰 바탕이고, 글자·밑줄은 한두 줄짜리라 긴 구간이 되지 못한다.
   const hit = new Uint8Array(H);
   for (const cx of cols.lines)
-    for (let y = 0; y < H; y++) if ([cx - 1, cx, cx + 1].some((x) => x >= 0 && x < W && !isWhite(pixel(img, x, y)))) hit[y]++;
+    for (let y = 0; y < H; y++)
+      if (
+        [cx - 2, cx - 1, cx, cx + 1, cx + 2].some((x) => {
+          if (x < 0 || x >= W) return false;
+          const [r, g, b] = pixel(img, x, y);
+          return r + g + b < 3 * 251; // 흐릿해진 가는 선(확대·압축)도 잡도록 거의 흰색까지만 흰 바탕으로 본다
+        })
+      )
+        hit[y]++;
   const need = Math.max(2, Math.ceil(cols.lines.length * 0.6));
   const maxHole = Math.round(W * 0.02); // 잠깐 끊긴 곳은 이어 본다
   let run: [number, number] | null = null;
@@ -203,7 +225,10 @@ export function detectGrid(img: RawImage): GridInfo | null {
     y = at + hourPx;
   }
   if (lineY.length < 3) return null;
-  return { lineY, colX, hourPx, bottom: Math.max(lineY[lineY.length - 1], gridBottom - 2) };
+  // 상자 끝이 마지막 눈금선 바로 아래(압축 잡음 몇 줄)면 그 선이 끝이다. 한참 아래면 시간 중간에서 잘린 화면.
+  const last = lineY[lineY.length - 1];
+  const boxBottom = gridBottom - 2 - last <= hourPx * 0.2 ? last : gridBottom - 2;
+  return { lineY, colX, hourPx, bottom: boxBottom };
 }
 
 /** 왼쪽 시간 숫자 칸의 숫자 덩어리 윗끝들과 그 간격 (못 찾으면 null) */
@@ -223,8 +248,15 @@ export function hourLabels(img: RawImage, timeColRight: number, top: number, bot
   }
   const dark: boolean[] = [];
   for (let y = top; y <= bottom; y++) dark.push(xs.some((x) => isDark(x, y)));
+  // 숫자 덩어리의 윗끝 (1~2줄짜리 압축 잡음 점은 숫자가 아니다)
+  const minH = Math.max(3, Math.round(img.width * 0.008));
   const tops: number[] = [];
-  for (let i = 0; i < dark.length; i++) if (dark[i] && (i === 0 || !dark[i - 1])) tops.push(top + i);
+  for (let i = 0; i < dark.length; i++) {
+    if (!dark[i] || (i > 0 && dark[i - 1])) continue;
+    let j = i;
+    while (j < dark.length && dark[j]) j++;
+    if (j - i >= minH) tops.push(top + i);
+  }
   if (tops.length < 3) return null;
   const fit = fitProgression(tops, img.width * 0.05, img.width * 0.25, img.height);
   if (!fit || fit.lines.length < 3) return null;
@@ -270,7 +302,7 @@ export function detectBlocks(img: RawImage, grid: GridInfo, startHour: number): 
     const minSide = Math.max(3, Math.round(hourPx * 0.2));
     const splitRegion = (from: number, to: number, fills: { y: number; c: RGB }[]) => {
       let bestK = -1;
-      let bestD = SPLIT_DIST;
+      let bestD = 0;
       for (let k = minSide; k <= fills.length - minSide; k++) {
         // 양쪽 모두 30분 칸 이상 높이여야 한다 (맨 아래 그림자 몇 줄을 칸으로 떼어내지 않게)
         if (fills[k].y - from < hourPx * 0.4 || to - fills[k].y < hourPx * 0.4) continue;
@@ -279,6 +311,18 @@ export function detectBlocks(img: RawImage, grid: GridInfo, startHour: number): 
           bestD = d;
           bestK = k;
         }
+      }
+      // 확실히 다른 색이면 나눈다. 애매하면(다크 모드·압축으로 색 차이가 줄어든 경우) 경계에서 색이 '한 번에' 바뀌는지 본다:
+      // 다른 칸이면 경계 바로 위·아래 몇 줄의 색이 이미 양쪽 평균과 같고, 한 칸 안의 잡음은 그렇게 딱 갈리지 않는다.
+      if (bestK >= 0 && bestD <= SPLIT_DIST) {
+        const w = Math.max(3, Math.round(hourPx * 0.12));
+        // 경계에 붙은 1~2줄은 확대·압축으로 두 색이 섞여 있어 건너뛴다
+        const skip = Math.max(1, Math.round(hourPx * 0.03));
+        const up = mean(fills.slice(Math.max(0, bestK - w - skip), Math.max(1, bestK - skip)).map((f) => f.c));
+        const down = mean(fills.slice(Math.min(bestK + skip, fills.length - 1), bestK + w + skip).map((f) => f.c));
+        const step = dist(up, down);
+        const gapRows = fills[bestK].y - fills[bestK - 1].y; // 경계 근처에 글자 줄이 끼면 색이 서서히 바뀐 것처럼 보이지 않게
+        if (!(bestD > 10 && step >= bestD * 0.85 && gapRows <= hourPx * 0.25)) bestK = -1;
       }
       if (bestK < 0) return push(from, to, fills.map((f) => f.c));
       const at = fills[bestK].y;
@@ -298,8 +342,10 @@ export function detectBlocks(img: RawImage, grid: GridInfo, startHour: number): 
         continue;
       }
       region ??= { top: y, fills: [] };
-      const share = ps.filter((p) => dist(p, bg) <= 18).length / ps.length;
-      if (share >= 0.5 && Math.max(...bg) > 170) region.fills.push({ y, c: bg }); // 글자가 많은 줄은 색 판단에서 뺀다
+      const near = ps.filter((p) => dist(p, bg) <= 18);
+      // 색은 중앙값 근처 픽셀들의 평균 (잡음이 줄어 비슷한 파스텔색도 구분된다). 글자가 많은 줄은 색 판단에서 뺀다
+      if (near.length >= ps.length * 0.5 && Math.max(...bg) > 170)
+        region.fills.push({ y, c: [0, 1, 2].map((c) => near.reduce((sum, p) => sum + p[c], 0) / near.length) as RGB });
     }
     if (region) splitRegion(region.top, bottom, region.fills);
   }

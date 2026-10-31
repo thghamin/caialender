@@ -68,5 +68,13 @@ run("에타 시간표 가져오기 (실제 AI)", () => {
       ].sort(),
     );
   });
+
+  const SIM = "tests/fixtures/private/everytime-friend-darksim.png";
+  it.skipIf(!existsSync(SIM))("다크 모드(새까만 글자) 친구 시간표도 라이트 모드와 똑같이 읽는다", { timeout: 180_000 }, async () => {
+    const { analyzeByBlocks } = await import("@/lib/timetable-import");
+    const [dark, light] = await Promise.all([analyzeByBlocks(readFileSync(SIM)), analyzeByBlocks(readFileSync(FRIEND))]);
+    console.log(list(dark!.courses).join("\n"));
+    expect(list(dark!.courses)).toEqual(list(light!.courses));
+  });
 });
 

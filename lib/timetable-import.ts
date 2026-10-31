@@ -34,17 +34,19 @@ export async function analyzeByBlocks(original: Buffer): Promise<{ courses: Time
   if (blocks.length === 0 || blocks.length > 40) return null;
 
   // 칸마다 잘라서 글자가 잘 보이게 키운다
-  const crop = async (r: { left: number; top: number; width: number; height: number }) => {
+  const dark = img.data !== data;
+  const crop = async (r: { left: number; top: number; width: number; height: number }, invert = false) => {
     // 글자가 또렷하도록 가로 480px 이상으로 키운다 (작은 캡처는 최대 4배)
     const scale = Math.min(4, Math.max(1.5, 480 / r.width));
-    const png = await sharp(bytes)
+    let p = sharp(bytes)
       .extract(r)
-      .resize({ width: Math.round(r.width * scale), kernel: "lanczos3" })
-      .png()
-      .toBuffer();
+      .resize({ width: Math.round(r.width * scale), kernel: "lanczos3" });
+    if (invert) p = p.negate({ alpha: false });
+    const png = await p.png().toBuffer();
     return { type: "image_url" as const, image_url: { url: `data:image/png;base64,${png.toString("base64")}` } };
   };
-  const images = await Promise.all([crop(firstHourRect(grid)), ...blocks.map((b) => crop(blockRect(grid, b)))]);
+  // 다크 모드의 시간 숫자는 검은 바탕 회색 글씨라 흰 바탕 검은 글씨로 뒤집어 보낸다 (수업 칸은 원래 밝은 바탕이라 그대로)
+  const images = await Promise.all([crop(firstHourRect(grid), dark), ...blocks.map((b) => crop(blockRect(grid, b)))]);
   const { data: raw } = await generateJson({
     messages: [
       { role: "system", content: BLOCK_TEXT_SYSTEM_PROMPT },
