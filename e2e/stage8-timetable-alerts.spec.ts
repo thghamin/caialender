@@ -10,6 +10,7 @@ const T = `E2E8-${tag}`;
 const email = (k: string) => `${prefix}-${k}@caialender-test.dev`;
 const ids: Record<string, string> = {};
 const SAMPLE = path.join(__dirname, "../tests/fixtures/private/everytime-full.png");
+const DARK = path.join(__dirname, "../tests/fixtures/private/everytime-dark.png");
 
 test.describe.configure({ mode: "serial" });
 
@@ -95,14 +96,25 @@ test("시간표: 에타처럼 수업을 직접 추가하고(5분 단위 시계),
   await expect(page.getByText("아직 시간표가 없어요.")).toBeVisible();
 });
 
-test("시간표: 에타 스크린샷을 AI가 읽어 그대로 넣는다 (실제 AI)", async ({ page }) => {
+test("시간표: 에브리타임 캡처를 AI가 읽어 그대로 넣는다, 다크 모드 캡처는 먼저 묻는다 (실제 AI)", async ({ page }) => {
   test.skip(!existsSync(SAMPLE), "에타 샘플 스크린샷(tests/fixtures/private)이 없으면 건너뜀");
   test.setTimeout(150_000);
   await login(page, "student");
   await page.goto("/timetable");
-  await page.getByRole("button", { name: /에타 시간표 가져오기/ }).click();
-  const sheet = page.getByRole("dialog", { name: "에타 시간표 가져오기" });
-  await sheet.getByLabel("에타 시간표 스크린샷").setInputFiles(SAMPLE);
+  await page.getByRole("button", { name: /에브리타임 시간표 가져오기/ }).click();
+  const sheet = page.getByRole("dialog", { name: "에브리타임 시간표 가져오기" });
+  await expect(sheet.getByText(/라이트 모드/).first()).toBeVisible();
+  // 다크 모드 캡처를 고르면 읽기 전에 멈추고 묻는다 → 다른 사진 고르기
+  if (existsSync(DARK)) {
+    await sheet.getByLabel("에브리타임 시간표 캡처").setInputFiles(DARK);
+    await sheet.getByRole("button", { name: "🤖 AI로 읽기" }).click();
+    const ask = sheet.getByRole("alertdialog", { name: "다크 모드 캡처 확인" });
+    await expect(ask).toBeVisible();
+    await expect(ask.getByRole("button", { name: "그래도 진행" })).toBeVisible();
+    await ask.getByRole("button", { name: "다른 사진 고르기" }).click();
+    await expect(ask).toBeHidden();
+  }
+  await sheet.getByLabel("에브리타임 시간표 캡처").setInputFiles(SAMPLE);
   await sheet.getByRole("button", { name: "🤖 AI로 읽기" }).click();
   await expect(sheet.getByText(/AI가 읽은 수업 \d+개/)).toBeVisible({ timeout: 120_000 });
   // 이름은 고칠 수 있는 입력칸에 들어 있다

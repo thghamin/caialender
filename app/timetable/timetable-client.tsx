@@ -33,13 +33,13 @@ export function TimetableClient({ initial }: { initial: Keyed[] }) {
           + 수업 추가
         </button>
         <button onClick={() => setSheet({ mode: "import" })} className="rounded-full border border-brand/40 bg-white px-4 py-2 text-sm font-semibold text-brand hover:bg-brand-soft">
-          📷 에타 시간표 가져오기 (AI)
+          📷 에브리타임 시간표 가져오기
         </button>
       </div>
 
       {courses.length === 0 ? (
         <div className="rounded-xl border-2 border-dashed border-zinc-300 bg-white/70 p-6 text-center text-sm text-zinc-500">
-          아직 시간표가 없어요. <b>+ 수업 추가</b>로 직접 넣거나, 에브리타임 시간표를 캡처해서 <b>📷 에타 시간표 가져오기</b>를 눌러 보세요.
+          아직 시간표가 없어요. <b>+ 수업 추가</b>로 직접 넣거나, 에브리타임 시간표를 캡처해서 <b>📷 에브리타임 시간표 가져오기</b>를 눌러 보세요.
         </div>
       ) : (
         <TimetableGrid courses={courses} onSelect={openEdit} />
@@ -315,7 +315,10 @@ function ImportSheet({ hasExisting, onClose }: { hasExisting: boolean; onClose: 
     setFile(f);
     setPreview(f ? URL.createObjectURL(f) : undefined);
     setResult(null);
+    setDarkAsk(false);
   };
+  // 다크 모드 캡처는 인식이 불안정해서, 읽기 전에 한 번 묻는다
+  const [darkAsk, setDarkAsk] = useState(false);
   const [result, setResult] = useState<Keyed[] | null>(null);
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [replace, setReplace] = useState(false);
@@ -323,10 +326,12 @@ function ImportSheet({ hasExisting, onClose }: { hasExisting: boolean; onClose: 
   const [analyzing, startAnalyze] = useTransition();
   const [saving, setSaving] = useState(false);
 
-  const analyze = () =>
+  const analyze = (force = false) =>
     startAnalyze(async () => {
       setError(undefined);
-      if (!file) return setError("시간표 스크린샷을 먼저 골라 주세요.");
+      if (!file) return setError("시간표 캡처 사진을 먼저 골라 주세요.");
+      if (!force && (await isDarkImage(file))) return setDarkAsk(true);
+      setDarkAsk(false);
       const fd = new FormData();
       fd.set("image", await shrinkImage(file));
       const r = await analyzeTimetableImage(fd);
@@ -353,7 +358,7 @@ function ImportSheet({ hasExisting, onClose }: { hasExisting: boolean; onClose: 
 
   return (
     <SheetFrame
-      title="에타 시간표 가져오기"
+      title="에브리타임 시간표 가져오기"
       onClose={onClose}
       action={
         result && (
@@ -363,14 +368,25 @@ function ImportSheet({ hasExisting, onClose }: { hasExisting: boolean; onClose: 
         )
       }
     >
-      <ol className="mb-3 list-decimal space-y-1 pl-5 text-sm text-zinc-600">
-        <li>에브리타임 앱에서 시간표 화면을 캡처하세요. 요일과 시간 눈금이 보이게 찍으면 정확해요.</li>
+      <ol className="mb-3 list-decimal space-y-1.5 pl-5 text-sm text-zinc-600">
+        <li>
+          에브리타임 앱 아래 <b>시간표</b> 탭에서 내 시간표를 띄우고 화면을 캡처하세요.
+          <span className="block text-xs text-zinc-500">요일 줄과 왼쪽 시간 숫자가 보이게, 토요일·늦은 수업까지 다 나오게 찍어 주세요.</span>
+        </li>
         <li>아래에서 캡처한 사진을 고르고 <b>AI로 읽기</b>를 누르세요.</li>
-        <li>AI가 읽은 결과를 확인하고 <b>추가</b>를 누르면 시간표에 들어가요. 틀린 곳은 추가한 뒤 칸을 눌러 고칠 수 있어요.</li>
+        <li>읽은 수업명·교수명·장소를 확인하고(바로 고칠 수 있어요) <b>추가</b>를 누르면 끝!</li>
       </ol>
+      <div className="mb-3 flex gap-2 rounded-xl bg-amber-50 px-3 py-2.5 text-sm text-amber-900 ring-1 ring-amber-200">
+        <span aria-hidden>☀️</span>
+        <p>
+          <b>라이트 모드</b>(흰 바탕)로 캡처해야 정확하게 읽어요. 휴대폰이 다크 모드라면 잠깐 바꿔서 캡처해 주세요.
+          <span className="mt-1 block text-xs text-amber-800/80">아이폰: 설정 → 디스플레이 및 밝기 → 라이트</span>
+          <span className="block text-xs text-amber-800/80">갤럭시: 설정 → 디스플레이 → 라이트</span>
+        </p>
+      </div>
       {/* 공지 등록과 같은 첨부 상자: 파일 선택 버튼 + 끌어다 놓기 + 미리보기 */}
       <div className="flex flex-col gap-1 text-sm">
-        <span className="font-medium text-zinc-700">에타 시간표 스크린샷 (PNG·JPG·WEBP)</span>
+        <span className="font-medium text-zinc-700">시간표 캡처 사진 (PNG·JPG·WEBP)</span>
         <div
           onDragOver={(e) => {
             e.preventDefault();
@@ -397,7 +413,7 @@ function ImportSheet({ hasExisting, onClose }: { hasExisting: boolean; onClose: 
               ref={input}
               type="file"
               accept="image/png,image/jpeg,image/webp"
-              aria-label="에타 시간표 스크린샷"
+              aria-label="에브리타임 시간표 캡처"
               className="sr-only"
               onChange={(e) => pick(e.target.files?.[0])}
             />
@@ -426,9 +442,32 @@ function ImportSheet({ hasExisting, onClose }: { hasExisting: boolean; onClose: 
           )}
         </div>
       </div>
+      {darkAsk && (
+        <div role="alertdialog" aria-label="다크 모드 캡처 확인" className="mt-3 rounded-xl bg-zinc-900 p-4 text-sm text-white">
+          <p className="font-bold">🌙 다크 모드로 캡처한 사진 같아요</p>
+          <p className="mt-1 text-zinc-300">
+            검은 바탕 시간표는 수업 칸과 시간을 제대로 못 읽을 수 있어요. 라이트 모드로 다시 캡처하는 걸 추천해요. 그래도 진행할까요?
+          </p>
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                if (input.current) input.current.value = "";
+                pick(undefined);
+              }}
+              className="flex-1 rounded-lg bg-white py-2 font-semibold text-zinc-900"
+            >
+              다른 사진 고르기
+            </button>
+            <button type="button" onClick={() => analyze(true)} className="flex-1 rounded-lg py-2 font-semibold text-white ring-1 ring-white/40">
+              그래도 진행
+            </button>
+          </div>
+        </div>
+      )}
       <button
-        onClick={analyze}
-        disabled={analyzing || !preview}
+        onClick={() => analyze()}
+        disabled={analyzing || !preview || darkAsk}
         className="mt-3 w-full rounded-xl bg-brand py-2.5 text-sm font-bold text-white disabled:opacity-50"
       >
         {analyzing ? "🤖 AI가 글자를 읽고, 칸 위치로 시각을 재고 있어요… (20~40초)" : "🤖 AI로 읽기"}
@@ -501,4 +540,27 @@ function ImportSheet({ hasExisting, onClose }: { hasExisting: boolean; onClose: 
       )}
     </SheetFrame>
   );
+}
+
+/** 사진이 다크 모드 캡처인지: 작게 줄여서 밝기 중앙값이 어두우면 (lib/timetable-vision toLightMode와 같은 기준) */
+async function isDarkImage(file: File): Promise<boolean> {
+  try {
+    const bmp = await createImageBitmap(file);
+    const w = 60;
+    const h = Math.max(1, Math.round((bmp.height / bmp.width) * w));
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return false;
+    ctx.drawImage(bmp, 0, 0, w, h);
+    bmp.close();
+    const { data } = ctx.getImageData(0, 0, w, h);
+    const lum: number[] = [];
+    for (let i = 0; i < data.length; i += 4) lum.push((data[i] + data[i + 1] + data[i + 2]) / 3);
+    lum.sort((a, b) => a - b);
+    return lum[lum.length >> 1] < 90;
+  } catch {
+    return false;
+  }
 }

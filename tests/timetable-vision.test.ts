@@ -121,3 +121,23 @@ describe.each([
   });
 });
 
+const SAT = "tests/fixtures/private/everytime-saturday.png";
+describe.skipIf(!existsSync(SAT))("토요일 수업·긴 수업·진한 색 칸(흰 글씨) 에브리타임 캡처", () => {
+  it.each([
+    ["원본", (s: Sharp) => s],
+    ["1.5배", (s: Sharp) => s.metadata().then((m) => s.resize(Math.round(m.width! * 1.5)))],
+    ["2.5배", (s: Sharp) => s.metadata().then((m) => s.resize(Math.round(m.width! * 2.5)))],
+    ["JPEG", (s: Sharp) => s.jpeg({ quality: 70 })],
+  ] as const)("수업으로 꽉 찬 토요일 칸도 찾고, 흰 제목 글씨로 칸을 쪼개지 않는다 (%s)", async (_, f) => {
+    const buf = await (await f(sharp(SAT))).toBuffer();
+    expect(await measure(sharp(buf))).toEqual([
+      "0 13.5-15", "0 16.5-18",
+      "1 9-10.5", "1 10.5-12",
+      "2 9-10.5", "2 15-16.5", "2 16.5-18",
+      "3 10.5-12", "3 14-18",
+      "4 10-11", "4 13-15",
+      "5 9-21.5 잘림",
+    ]);
+  });
+});
+

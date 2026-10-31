@@ -76,5 +76,22 @@ run("에타 시간표 가져오기 (실제 AI)", () => {
     console.log(list(dark!.courses).join("\n"));
     expect(list(dark!.courses)).toEqual(list(light!.courses));
   });
+
+  const SAT = "tests/fixtures/private/everytime-saturday.png";
+  it.skipIf(!existsSync(SAT))("토요일·긴 수업·진한 색 칸(흰 글씨) 시간표", { timeout: 180_000 }, async () => {
+    const { analyzeByBlocks } = await import("@/lib/timetable-import");
+    const r = await analyzeByBlocks(readFileSync(SAT));
+    console.log(list(r!.courses).join("\n"));
+    const got = list(r!.courses).map((g) => g.replace(/[^\p{L}\p{N}. -]/gu, ""));
+    expect(got).toEqual(
+      [
+        "월 13.5-15 기계학습입문", "수 9-10.5 기계학습입문", "화 9-10.5 확률및통계", "목 10.5-12 확률및통계",
+        "화 10.5-12 신경망개론", "수 15-16.5 신경망개론", "월 16.5-18 딥러닝", "수 16.5-18 딥러닝",
+        "목 14-18 컴퓨팅사고와SW코딩", "금 10-11 창의및융합적사고", "금 13-15 인공지능", "토 9-21.5 휴먼케어",
+      ].sort(),
+    );
+    // 화면 아래로 이어지는 긴 수업은 끝 시각 확인 표시
+    expect(r!.courses.find((c) => c.name.includes("휴먼"))?.check).toBeTruthy();
+  });
 });
 

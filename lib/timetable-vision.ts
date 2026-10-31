@@ -225,6 +225,28 @@ export function detectGrid(img: RawImage): GridInfo | null {
     y = at + hourPx;
   }
   if (lineY.length < 3) return null;
+
+  // 토·일요일 칸: 수업으로 꽉 찬 요일은 오른쪽 세로선이 안 보여서 위에서 못 찾는다.
+  // 오른쪽에 한 칸 폭이 더 있고, 그 칸 머리줄이 흰 바탕에 요일 글자가 있으면 요일 칸으로 넣는다.
+  const headTop = Math.max(0, gridTop + 2);
+  const headBottom = first - 2;
+  while (colX.length - 1 < 7 && headBottom - headTop >= 4) {
+    const xl = colX[colX.length - 1];
+    const xr = Math.min(W - 1, Math.round(xl + cols.gap));
+    if (xr - xl < cols.gap * 0.85) break;
+    let white = 0;
+    let dark = 0;
+    let n = 0;
+    for (let y = headTop; y <= headBottom; y++)
+      for (let x = xl + 3; x < xr - 3; x++) {
+        const p = pixel(img, x, y);
+        n++;
+        if (isWhite(p)) white++;
+        else if (p[0] + p[1] + p[2] < 3 * 185) dark++;
+      }
+    if (!n || white < n * 0.6 || dark < 3) break;
+    colX.push(xr);
+  }
   // 상자 끝이 마지막 눈금선 바로 아래(압축 잡음 몇 줄)면 그 선이 끝이다. 한참 아래면 시간 중간에서 잘린 화면.
   const last = lineY[lineY.length - 1];
   const boxBottom = gridBottom - 2 - last <= hourPx * 0.2 ? last : gridBottom - 2;
@@ -314,6 +336,13 @@ export function detectBlocks(img: RawImage, grid: GridInfo, startHour: number): 
       }
       // 확실히 다른 색이면 나눈다. 애매하면(다크 모드·압축으로 색 차이가 줄어든 경우) 경계에서 색이 '한 번에' 바뀌는지 본다:
       // 다른 칸이면 경계 바로 위·아래 몇 줄의 색이 이미 양쪽 평균과 같고, 한 칸 안의 잡음은 그렇게 딱 갈리지 않는다.
+      // 진한 색 칸끼리는 서로 색이 크게 다르다(차이 100 이상). 흰 글자 번짐 정도(20~40)로는 나누지 않는다
+      const chroma = (c: RGB) => Math.max(...c) - Math.min(...c);
+      if (bestK >= 0) {
+        const a = mean(fills.slice(0, bestK).map((f) => f.c));
+        const b = mean(fills.slice(bestK).map((f) => f.c));
+        if (chroma(a) > 70 && chroma(b) > 70 && bestD <= 45) bestK = -1;
+      }
       if (bestK >= 0 && bestD <= SPLIT_DIST) {
         const w = Math.max(3, Math.round(hourPx * 0.12));
         // 경계에 붙은 1~2줄은 확대·압축으로 두 색이 섞여 있어 건너뛴다
@@ -336,6 +365,10 @@ export function detectBlocks(img: RawImage, grid: GridInfo, startHour: number): 
       const ps = xs.map((x) => pixel(img, x, y));
       const bg: RGB = [median(ps.map((p) => p[0])), median(ps.map((p) => p[1])), median(ps.map((p) => p[2]))];
       if (isWhite(bg) || (onLine(y) && isGridGray(bg))) {
+        // 진한 색 칸의 흰 글자 줄: 줄 대부분이 흰색이어도 칸 색이 군데군데 남아 있으면 같은 칸이다
+        // (에브리타임 진한 색 테마. 옅은 파스텔 칸은 글자가 검어서 해당 없음)
+        const last = region?.fills.at(-1)?.c;
+        if (last && Math.max(...last) - Math.min(...last) > 70 && ps.filter((p) => dist(p, last) <= 30).length >= ps.length * 0.15) continue;
         // 칸 사이 흰 틈 또는 빈 시간
         if (region) splitRegion(region.top, y, region.fills);
         region = null;
@@ -344,7 +377,12 @@ export function detectBlocks(img: RawImage, grid: GridInfo, startHour: number): 
       region ??= { top: y, fills: [] };
       const near = ps.filter((p) => dist(p, bg) <= 18);
       // 색은 중앙값 근처 픽셀들의 평균 (잡음이 줄어 비슷한 파스텔색도 구분된다). 글자가 많은 줄은 색 판단에서 뺀다
-      if (near.length >= ps.length * 0.5 && Math.max(...bg) > 170)
+      // 진한 색 칸 안의 아주 밝은 줄은 흰 글자(칸 색이 섞여 연분홍·연하늘 등)라 색 판단에서 뺀다
+      const prev = region.fills.length >= 3 ? mean(region.fills.slice(0, 8).map((f) => f.c)) : null;
+      const saturated = !!prev && Math.max(...prev) - Math.min(...prev) > 70;
+      const textOnSaturated = saturated && Math.min(...bg) > 215;
+      // 진한 색 칸은 흰 글자 번짐이 색을 크게 바꾸므로 글자가 거의 없는 줄(80% 이상 같은 색)만 쓴다
+      if (!textOnSaturated && near.length >= ps.length * (saturated ? 0.8 : 0.5) && Math.max(...bg) > 170)
         region.fills.push({ y, c: [0, 1, 2].map((c) => near.reduce((sum, p) => sum + p[c], 0) / near.length) as RGB });
     }
     if (region) splitRegion(region.top, bottom, region.fills);
