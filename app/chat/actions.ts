@@ -68,7 +68,7 @@ export async function setNickname(nickname: string): Promise<Result> {
 
 const SELECT =
   "id, room, body, created_at, deleted_at, deleted_self, reply_to, author:chat_members!chat_messages_member_id_fkey(id, nickname), " +
-  "reply:chat_messages!chat_messages_reply_to_fkey(id, body, deleted_at, author:chat_members!chat_messages_member_id_fkey(nickname))";
+  "reply:reply_to(id, body, deleted_at, author:chat_members!chat_messages_member_id_fkey(nickname))";
 type ReplyRow = { id: number; body: string; deleted_at: string | null; author: { nickname: string } } | null;
 type Row = { id: number; room: number; body: string; created_at: string; deleted_at: string | null; deleted_self: boolean; reply: ReplyRow; author: { id: string; nickname: string } };
 // '학생회' 표시는 공용 학생회 작성자일 때만 (관리자 개인 닉네임에는 붙이지 않는다)

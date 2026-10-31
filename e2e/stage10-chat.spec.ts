@@ -21,7 +21,11 @@ test.beforeAll(async ({ browser }) => {
   await service().from("profiles").update({ role: "admin" }).eq("id", ids.admin);
 });
 
-test.afterAll(async () => deleteUsersByPrefix(prefix)); // 닉네임·메시지·경고는 회원 삭제와 함께 지워진다
+test.afterAll(async () => {
+  // 공용 '학생회' 이름으로 보낸 테스트 메시지는 회원 삭제로 지워지지 않으므로 따로 지운다
+  await service().from("chat_messages").delete().eq("member_id", "00000000-0000-0000-0000-00000000c0de").like("body", `${tag}%`);
+  await deleteUsersByPrefix(prefix); // 닉네임·메시지·경고는 회원 삭제와 함께 지워진다
+});
 
 async function enter(page: Page, k: string, room: number) {
   await loginViaUi(page, email(k));
@@ -209,7 +213,7 @@ test("학생이 다른 학생의 메시지를 신고하면, 관리자가 신고 
   await loginViaUi(admin, email("admin"));
   await admin.waitForURL("**/my");
   await admin.goto("/chat");
-  await admin.getByRole("link", { name: /신고/ }).click();
+  await admin.getByRole("link", { name: /^🚨 신고/ }).click();
   const report = admin.getByTestId("chat-report").filter({ hasText: `${tag} 신고당할 글` });
   await expect(report).toContainText("소통다학생");
   await expect(report).toContainText("도배");
