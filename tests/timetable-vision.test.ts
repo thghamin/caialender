@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import sharp from "sharp";
+import sharp, { type Sharp } from "sharp";
 import { detectBlocks, detectGrid, fitProgression, mergeWithBlocks } from "@/lib/timetable-vision";
 
 describe("시간표 눈금 복원", () => {
@@ -45,3 +45,42 @@ describe.skipIf(!existsSync(FULL))("실제 에타 스크린샷 픽셀 측정", (
     ]);
   });
 });
+
+// 다른 화면 모양(위에 학기 탭, 아래 여백)·다른 해상도·JPEG 압축에서도 같은 결과여야 한다
+const FRIEND = "tests/fixtures/private/everytime-friend.png";
+const SAMPLE = "tests/fixtures/private/everytime-sample.png";
+const measure = async (input: Sharp) => {
+  const { data, info } = await input.removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const img = { data, width: info.width, height: info.height, channels: info.channels };
+  return detectBlocks(img, detectGrid(img)!, 9).map((b) => `${b.day} ${b.start_min / 60}-${b.end_min / 60}${b.truncated ? " 잘림" : ""}`);
+};
+describe.skipIf(!existsSync(FRIEND))("다른 사람 에타 스크린샷", () => {
+  const expected = [
+    "0 10.5-12", "0 13.5-15",
+    "1 10.5-12", "1 15-16.5", "1 16.5-18",
+    "2 9-10.5", "2 13.5-15", "2 15-16.5",
+    "3 15-16.5", "3 16.5-18",
+    "4 13-16",
+  ];
+  it.each([
+    ["원본", (s: Sharp) => s],
+    ["0.7배", (s: Sharp) => s.resize(295)],
+    ["2.5배", (s: Sharp) => s.resize(1052)],
+    ["JPEG", (s: Sharp) => s.jpeg({ quality: 70 })],
+  ] as const)("비슷한 파스텔색으로 붙은 칸도 나누고, 원래 아래 테두리에서 끝난 칸은 잘림이 아니다 (%s)", async (_, f) => {
+    const buf = await f(sharp(FRIEND)).toBuffer();
+    expect(await measure(sharp(buf))).toEqual(expected);
+  });
+});
+describe.skipIf(!existsSync(SAMPLE))("수업 추가 화면 캡처 (선택된 칸이 어둡고, 시간표가 중간에 잘림)", () => {
+  it("요일 머리줄을 9시로 착각하지 않고, 오른쪽 바깥 여백을 토요일로 보지 않는다", async () => {
+    expect(await measure(sharp(SAMPLE))).toEqual([
+      "0 9-10.5", "0 13-13.5 잘림",
+      "1 9-10.5", "1 13-13.5 잘림",
+      "2 9-10.5",
+      "3 10.5-12",
+      "4 10.5-12", "4 13-13.5 잘림",
+    ]);
+  });
+});
+

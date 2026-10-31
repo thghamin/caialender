@@ -1,0 +1,54 @@
+/**
+ * 실제 AI로 에타 시간표 스크린샷을 끝까지 읽어 보는 평가 테스트 (AI_EVAL=1 이고 개인 스크린샷이 있을 때만)
+ *   AI_EVAL=1 node --env-file=.env.local node_modules/.bin/vitest run tests/ai-timetable.eval.test.ts --silent=false
+ */
+import { existsSync, readFileSync } from "node:fs";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("server-only", () => ({}));
+
+const FRIEND = "tests/fixtures/private/everytime-friend.png";
+const MINE = "tests/fixtures/private/everytime-full.png";
+const run = process.env.AI_EVAL === "1" && existsSync(FRIEND) ? describe : describe.skip;
+const days = "월화수목금토일";
+const list = (courses: { name: string; slots: { day: number; start_min: number; end_min: number }[] }[]) =>
+  courses.flatMap((c) => c.slots.map((s) => `${days[s.day]} ${s.start_min / 60}-${s.end_min / 60} ${c.name.replace(/\s/g, "")}`)).sort();
+
+run("에타 시간표 가져오기 (실제 AI)", () => {
+  it("다른 사람 시간표: 수업 이름·요일·시각을 모두 맞게 읽는다", { timeout: 180_000 }, async () => {
+    const { analyzeByBlocks } = await import("@/lib/timetable-import");
+    const r = await analyzeByBlocks(readFileSync(FRIEND));
+    expect(r).not.toBeNull();
+    const got = list(r!.courses);
+    console.log(got.join("\n"));
+    expect(got).toEqual(
+      [
+        "수 9-10.5 기계학습입문",
+        "월 10.5-12 공학수학1",
+        "화 10.5-12 신경망개론",
+        "월 13.5-15 기계학습입문",
+        "수 13.5-15 공학수학1",
+        "금 13-16 심리학의이해",
+        "화 15-16.5 문제해결과알고리즘",
+        "수 15-16.5 신경망개론",
+        "목 15-16.5 문제해결과알고리즘",
+        "화 16.5-18 확률및통계",
+        "목 16.5-18 확률및통계",
+      ].sort(),
+    );
+  });
+
+  it.skipIf(!existsSync(MINE))("아래가 잘린 내 시간표: 이름·시작 시각을 맞게 읽고, 잘린 칸은 확인 표시", { timeout: 180_000 }, async () => {
+    const { analyzeByBlocks } = await import("@/lib/timetable-import");
+    const r = await analyzeByBlocks(readFileSync(MINE));
+    const got = list(r!.courses).map((g) => g.replace(/-[\d.]+ /, " "));
+    console.log(list(r!.courses).join("\n"));
+    expect(got).toEqual(
+      [
+        "월 9 동역학", "수 9 동역학", "화 9 로봇제어1", "목 10.5 로봇제어1", "금 10.5 이산수학", "수 13.5 이산수학",
+        "월 13 로봇운영체제실습", "화 13 모델링및시뮬레이션", "수 15 인공지능세미나특강", "목 14 컴퓨팅사고와SW코딩",
+      ].sort(),
+    );
+    expect(r!.courses.filter((c) => c.check).length).toBeGreaterThanOrEqual(2);
+  });
+});
