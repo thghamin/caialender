@@ -44,7 +44,7 @@ export default async function ChatRoomPage({ params }: PageProps<"/chat/[room]">
         </nav>
       </div>
       <div className="-mt-1 flex items-center gap-2">
-        <p className="min-w-0 flex-1 text-[12.5px] text-zinc-500">📚 수업 정보 · 휴강 · 시험 범위 · 과제 · 진도를 자유롭게 공유해요</p>
+        <p className="min-w-0 flex-1 truncate text-[12.5px] text-zinc-500">📚 휴강·시험 범위·과제·진도 자유롭게 공유</p>
         <RoomAlertToggle room={room} initialOn={alerts.includes(room)} compact />
       </div>
       {member ? (

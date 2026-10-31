@@ -263,7 +263,8 @@ test("관리자는 평소엔 닉네임으로(학생회 표시 없음), '학생�
   await enter(admin, "admin", 1);
   await send(admin, `${tag} 관리자 평소 말`);
   await admin.getByRole("button", { name: /학생회/ }).click();
-  await expect(admin.getByLabel("메시지", { exact: true })).toHaveAttribute("placeholder", /학생회 이름으로/);
+  await expect(admin.getByLabel("메시지", { exact: true })).toHaveAttribute("placeholder", "학생회로 보내기");
+  await expect(admin.getByTestId("staff-bar")).toBeVisible();
   await admin.getByLabel("메시지", { exact: true }).fill(`${tag} 도배 시 경고합니다`);
   await admin.getByRole("button", { name: "보내기" }).click();
   await expect(admin.getByTestId("chat-message").filter({ hasText: `${tag} 도배 시 경고합니다` })).toBeVisible();

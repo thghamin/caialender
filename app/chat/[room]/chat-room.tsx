@@ -83,7 +83,7 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
     setMessages((p) => p.map((m) => (m.id === id ? { ...m, deleted: true, deletedSelf: false, originalBody: m.originalBody ?? m.body, body: "" } : m)));
 
   return (
-    <div className="flex h-[calc(100dvh-230px)] min-h-[420px] flex-col overflow-hidden rounded-[22px] bg-white shadow-[0_1px_2px_rgb(0_0_0/0.04),0_10px_30px_-12px_rgb(0_0_0/0.12)] ring-1 ring-black/[0.04] md:h-[calc(100dvh-190px)]">
+    <div className="flex h-[calc(100dvh-268px-env(safe-area-inset-bottom))] min-h-[380px] flex-col overflow-hidden rounded-[22px] bg-white shadow-[0_1px_2px_rgb(0_0_0/0.04),0_10px_30px_-12px_rgb(0_0_0/0.12)] ring-1 ring-black/[0.04] md:h-[calc(100dvh-190px)]">
       <div
         ref={list}
         onScroll={(e) => {
@@ -172,56 +172,59 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
                     )}
                   </span>
                 )}
-                {!m.deleted && !banned && (
-                  <button
-                    onClick={() => {
-                      setReplyTarget(m);
-                      input.current?.focus();
-                    }}
-                    className="px-1 text-[11px] text-zinc-400 hover:text-brand"
-                  >
-                    답장
-                  </button>
-                )}
-                {/* 다른 학생 메시지 신고 → 관리자에게 알림 */}
-                {!mine && !admin && !m.deleted && !m.author.staff && (
-                  <button onClick={() => setReportTarget(m)} className="px-1 text-[11px] text-zinc-400 hover:text-red-600">
-                    신고
-                  </button>
-                )}
-                {/* 본인 메시지 삭제 (관리자는 아래 관리자 삭제를 쓴다) */}
-                {mine && !admin && !m.deleted && (
-                  <button
-                    onClick={async () => {
-                      if (!confirm("내 메시지를 삭제할까요?")) return;
-                      const r = await deleteOwnChatMessage(m.id);
-                      if (r.error) alert(r.error);
-                      else setMessages((p) => p.map((x) => (x.id === m.id ? { ...x, deleted: true, deletedSelf: true, body: "" } : x)));
-                    }}
-                    className="px-1 text-xs text-zinc-400 hover:text-red-600"
-                  >
-                    삭제
-                  </button>
-                )}
-                {admin && !m.deleted && (
-                  <span className="flex gap-2 px-1 text-xs">
-                    <button
-                      onClick={async () => {
-                        if (!confirm("이 메시지를 삭제할까요?")) return;
-                        const r = await deleteChatMessage(m.id);
-                        if (r.error) alert(r.error);
-                        else markDeleted(m.id);
-                      }}
-                      className="text-zinc-500 hover:text-red-600"
-                    >
-                      삭제
-                    </button>
-                    {!mine && !m.author.staff && (
-                      <button onClick={() => setWarnTarget(m)} className="font-semibold text-amber-600 hover:text-amber-700">
+                {/* 메시지 아래 버튼 줄: 누르기 쉽게 크게 (답장 · 신고/삭제 · 관리자 경고) */}
+                {!m.deleted && (
+                  <div className={`mt-0.5 flex flex-wrap gap-1 ${mine ? "justify-end" : ""}`}>
+                    {!banned && (
+                      <button
+                        onClick={() => {
+                          setReplyTarget(m);
+                          input.current?.focus();
+                        }}
+                        className="rounded-full bg-zinc-100 px-3 py-1 text-[13px] font-semibold text-zinc-600 hover:bg-brand-soft hover:text-brand"
+                      >
+                        ↩ 답장
+                      </button>
+                    )}
+                    {/* 다른 학생 메시지 신고 → 관리자에게 알림 */}
+                    {!mine && !admin && !m.author.staff && (
+                      <button onClick={() => setReportTarget(m)} className="rounded-full px-2.5 py-1 text-[12.5px] text-zinc-400 hover:bg-red-50 hover:text-red-600">
+                        신고
+                      </button>
+                    )}
+                    {/* 본인 메시지 삭제 (관리자는 관리자 삭제를 쓴다) */}
+                    {mine && !admin && (
+                      <button
+                        onClick={async () => {
+                          if (!confirm("내 메시지를 삭제할까요?")) return;
+                          const r = await deleteOwnChatMessage(m.id);
+                          if (r.error) alert(r.error);
+                          else setMessages((p) => p.map((x) => (x.id === m.id ? { ...x, deleted: true, deletedSelf: true, body: "" } : x)));
+                        }}
+                        className="rounded-full px-2.5 py-1 text-[12.5px] text-zinc-400 hover:bg-red-50 hover:text-red-600"
+                      >
+                        삭제
+                      </button>
+                    )}
+                    {admin && (
+                      <button
+                        onClick={async () => {
+                          if (!confirm("이 메시지를 삭제할까요?")) return;
+                          const r = await deleteChatMessage(m.id);
+                          if (r.error) alert(r.error);
+                          else markDeleted(m.id);
+                        }}
+                        className="rounded-full px-2.5 py-1 text-[12.5px] text-zinc-500 hover:bg-red-50 hover:text-red-600"
+                      >
+                        삭제
+                      </button>
+                    )}
+                    {admin && !mine && !m.author.staff && (
+                      <button onClick={() => setWarnTarget(m)} className="rounded-full bg-amber-50 px-2.5 py-1 text-[12.5px] font-semibold text-amber-700 hover:bg-amber-100">
                         경고
                       </button>
                     )}
-                  </span>
+                  </div>
                 )}
               </div>
             </div>
@@ -233,6 +236,11 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
           <p className="rounded-xl bg-red-50 px-3 py-3 text-center text-sm text-red-700">⚠️ 경고 {CHAT_BAN_WARNINGS}회로 소통방에 글을 쓸 수 없어요.</p>
         ) : (
           <>
+            {admin && asStaff && (
+              <p className="mb-1.5 rounded-xl bg-brand-soft px-3 py-1.5 text-[12.5px] font-semibold text-brand" data-testid="staff-bar">
+                📢 이번 메시지는 &apos;학생회&apos; 이름으로 보내요
+              </p>
+            )}
             {replyTarget && (
               <div className="mb-1.5 flex items-center gap-2 rounded-xl bg-zinc-100 px-3 py-1.5 text-[12.5px]" data-testid="reply-bar">
                 <span className="min-w-0 flex-1 truncate text-zinc-600">
@@ -276,7 +284,7 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
               }}
               rows={1}
               maxLength={CHAT_MAX_LENGTH}
-              placeholder={admin && asStaff ? "학생회 이름으로 보내기 (공지·안내)" : "메시지 보내기"}
+              placeholder={admin && asStaff ? "학생회로 보내기" : "메시지 보내기"}
               aria-label="메시지"
               className="max-h-32 min-h-11 flex-1 resize-none rounded-2xl border border-zinc-300 px-3 py-2.5 text-[16px] outline-none focus:border-brand"
             />
