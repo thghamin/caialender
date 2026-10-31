@@ -22,7 +22,7 @@ export async function approveByEmail(email: string) {
 }
 
 /**
- * 회원가입 화면으로 가입한다. 기본으로는 가입 후 승인 처리까지 해서 /my 로 이동한다.
+ * 회원가입 화면으로 가입한다. 기본으로는 가입 후 승인 처리까지 해서 /my 로 이동한다. (베타 자동 승인이어도 동작)
  * approve: false 면 승인하지 않고 제출 직후 상태 그대로 둔다.
  * 학번이 10자리 숫자면 겹치지 않는 학번으로 바꾼다 (exactStudentNo: true 면 그대로).
  */
@@ -43,7 +43,8 @@ export async function signupViaUi(
   await page.getByLabel("학년").selectOption(String(u.grade));
   await page.getByRole("button", { name: "가입하기" }).click();
   if (!approve) return studentNo;
-  await page.waitForURL("**/pending");
+  // 베타(자동 승인)면 바로 학과 캘린더로, 승인제면 승인 대기 화면으로 간다
+  await page.waitForURL((url) => !url.pathname.startsWith("/signup"));
   await approveByEmail(u.email);
   await page.goto("/my");
   return studentNo;

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient, createServiceClient } from "@/lib/supabase/server";
+import { AUTO_APPROVE_SIGNUP } from "@/lib/beta";
 
 /** 이 서비스는 경북대 전자공학부 인공지능전공 전용 */
 const DEPARTMENT = "전자공학부 인공지능전공";
@@ -76,13 +77,21 @@ export async function signup(_prev: AuthState, formData: FormData): Promise<Auth
   });
   if (error) return { error: translateAuthError(error.message) };
 
+  // 베타 기간: 방금 만든 이 계정만 바로 승인 (권한·역할은 학생 그대로, 다른 회원은 건드리지 않음)
+  if (AUTO_APPROVE_SIGNUP && data.user) {
+    await createServiceClient().from("profiles").update({ approval_status: "approved" }).eq("id", data.user.id).eq("approval_status", "pending");
+  }
   // 이메일 인증이 켜져 있으면 세션 없이 user만 반환됨
   if (!data.session) {
-    return { message: "가입 확인 메일을 보냈습니다. 메일의 링크를 누른 뒤 로그인하세요. 로그인 후 관리자 승인을 기다려 주세요." };
+    return {
+      message: AUTO_APPROVE_SIGNUP
+        ? "가입 확인 메일을 보냈습니다. 메일의 링크를 누른 뒤 로그인하세요."
+        : "가입 확인 메일을 보냈습니다. 메일의 링크를 누른 뒤 로그인하세요. 로그인 후 관리자 승인을 기다려 주세요.",
+    };
   }
-  // 가입 직후에는 승인 대기 상태. 관리자 승인 전까지 안내 화면만 보인다
   revalidatePath("/", "layout");
-  redirect("/pending");
+  // 베타: 바로 학과 캘린더(처음 사용법 안내가 뜬다) / 정식: 승인 대기 안내
+  redirect(AUTO_APPROVE_SIGNUP ? "/" : "/pending");
 }
 
 export async function logout() {

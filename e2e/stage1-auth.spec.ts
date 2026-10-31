@@ -16,6 +16,14 @@ const profileOf = async (email: string) => {
   return (await s.from("profiles").select("role, approval_status, department, grade").eq("id", id).single()).data;
 };
 
+/** 테스트 계정의 승인 상태를 바꾼다 (베타 자동 승인 중에도 승인제 흐름을 확인하기 위해) */
+const setStatus = async (email: string, status: "pending" | "approved" | "rejected") => {
+  const s = service();
+  const { data } = await s.auth.admin.listUsers({ perPage: 1000 });
+  const id = data.users.find((u) => u.email === email)!.id;
+  await s.from("profiles").update({ approval_status: status }).eq("id", id);
+};
+
 test("비로그인 사용자는 어떤 화면이든 로그인 화면으로 간다", async ({ page }) => {
   await page.goto("/");
   await expect(page).toHaveURL(/\/login$/);
@@ -37,8 +45,15 @@ test("관리자 지정 후 관리자 페이지 접근", async ({ page }) => {
   await expect(page.getByText("학생회 관리자")).toBeVisible();
 });
 
-test("회원가입 → 승인 대기(서비스 차단) → 관리자 승인 → 이용", async ({ page, browser }) => {
+test("베타: 가입하면 바로 이용 / 승인 대기 계정은 서비스 차단 → 관리자 승인 → 이용", async ({ page, browser }) => {
   await signupViaUi(page, { name: "김새내", studentNo: "2027012345", grade: 1, email: studentEmail }, { approve: false });
+  // 베타 기간: 승인 없이 바로 학과 캘린더로
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByRole("heading", { name: "학과 캘린더" })).toBeVisible();
+  expect(await profileOf(studentEmail)).toEqual({ role: "student", approval_status: "approved", department: "전자공학부 인공지능전공", grade: 1 });
+  // 정식 출시(승인제)나 관리자가 승인 대기로 돌린 경우를 위해: 승인 대기 계정의 차단·승인 흐름은 그대로 동작해야 한다
+  await setStatus(studentEmail, "pending");
+  await page.goto("/my");
   await expect(page).toHaveURL(/\/pending$/);
   await expect(page.getByRole("heading", { name: "가입 승인을 기다리고 있어요" })).toBeVisible();
   expect(await profileOf(studentEmail)).toEqual({ role: "student", approval_status: "pending", department: "전자공학부 인공지능전공", grade: 1 });
@@ -83,7 +98,8 @@ test("회원가입 → 승인 대기(서비스 차단) → 관리자 승인 → 
 test("관리자가 거절하면 거절 안내만 보인다", async ({ page, browser }) => {
   const email = `${prefix}-reject@caialender-test.dev`;
   await signupViaUi(page, { name: "거절될", studentNo: "2027000099", grade: 2, email }, { approve: false });
-  await expect(page).toHaveURL(/\/pending$/);
+  await expect(page).toHaveURL(/\/$/); // 베타: 바로 이용
+  await setStatus(email, "pending"); // 승인 대기 계정을 관리자가 거절하는 흐름 확인
 
   const admin = await browser.newPage();
   await loginViaUi(admin, adminEmail);
