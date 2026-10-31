@@ -39,7 +39,7 @@ export async function SiteHeader() {
           {user ? (
             <>
               {approved && (
-                <Link href="/search" aria-label="검색" title="검색" className="grid size-9 place-items-center rounded-full text-lg hover:bg-brand-soft">
+                <Link href="/search" aria-label="검색" title="검색" data-tour="search" className="grid size-9 place-items-center rounded-full text-lg hover:bg-brand-soft">
                   🔍
                 </Link>
               )}
