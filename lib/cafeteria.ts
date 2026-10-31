@@ -2,6 +2,14 @@
 
 export const COOP_MENU_URL = "https://coop.knu.ac.kr/sub03/sub01_01.html?shop_sqno=86";
 
+/** 이번 주(0)·다음 주(1) 메뉴 주소: 그 주 월요일 날짜(KST)를 selDate로 (생협 '다음주 식단' 버튼과 같은 방식) */
+export function coopWeekUrl(offsetWeeks: number, now = Date.now()) {
+  const kst = new Date(now + 9 * 3600_000);
+  const dow = (kst.getUTCDay() + 6) % 7; // 월=0 … 일=6
+  const monday = new Date(Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate() - dow + offsetWeeks * 7));
+  return `${COOP_MENU_URL}&selDate=${monday.toISOString().slice(0, 10)}`;
+}
+
 export type MenuItem = { name: string; price: string | null; note: string | null };
 export type MenuDay = { label: string; date: string | null };
 export type MenuMeal = { meal: string; corners: { corner: string; days: MenuItem[][] }[] };

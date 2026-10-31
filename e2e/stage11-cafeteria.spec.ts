@@ -26,5 +26,11 @@ test("더보기 → 공식당 메뉴: 오늘 요일이 골라져 있고, 요일�
     await tabs.getByRole("tab").first().click();
     await expect(tabs.getByRole("tab").first()).toHaveAttribute("aria-selected", "true");
   }
+  // 다음 주 메뉴 (올라와 있으면 요일 탭, 아니면 안내)
+  await page.getByRole("tablist", { name: "주" }).getByRole("tab", { name: "다음 주" }).click();
+  await expect(page).toHaveURL(/week=next/);
+  await expect(page.getByRole("tablist", { name: "주" }).getByRole("tab", { name: "다음 주" })).toHaveAttribute("aria-selected", "true");
+  await expect(tabs.or(fallback)).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText("오늘")).toHaveCount(0);
   await ctx.close();
 });

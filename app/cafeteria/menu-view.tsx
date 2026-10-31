@@ -4,11 +4,12 @@ import { useState } from "react";
 import { todayIndex, type WeeklyMenu } from "@/lib/cafeteria";
 
 /** 요일 고르기 + 그날 중식·석식 메뉴 (처음엔 오늘) */
-export function MenuView({ menu }: { menu: WeeklyMenu }) {
-  const today = todayIndex(menu.days);
+export function MenuView({ menu, thisWeek }: { menu: WeeklyMenu; thisWeek: boolean }) {
+  // 다음 주는 '오늘'이 없으므로 월요일(메뉴 있는 첫날)부터
+  const today = thisWeek ? todayIndex(menu.days) : -1;
   // 오늘 메뉴가 없으면(주말·휴무) 메뉴가 있는 첫 요일을 먼저 보여 준다
   const hasMenu = (i: number) => menu.meals.some((m) => m.corners.some((c) => (c.days[i] ?? []).length > 0));
-  const [day, setDay] = useState(() => (hasMenu(today) ? today : Math.max(0, menu.days.findIndex((_, i) => hasMenu(i)))));
+  const [day, setDay] = useState(() => (today >= 0 && hasMenu(today) ? today : Math.max(0, menu.days.findIndex((_, i) => hasMenu(i)))));
   return (
     <div className="flex flex-col gap-3">
       <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1" role="tablist" aria-label="요일">
@@ -59,7 +60,7 @@ export function MenuView({ menu }: { menu: WeeklyMenu }) {
           </section>
         ))}
       </div>
-      <p className="text-[12px] text-zinc-400">★ 표시는 생협 홈페이지 표기 그대로예요. 메뉴는 식당 사정에 따라 바뀔 수 있어요.</p>
+      <p className="text-[12px] text-zinc-400">★ 표시는 돼지고기(돈육)가 들어간 메뉴예요. 메뉴는 식당 사정에 따라 바뀔 수 있어요.</p>
     </div>
   );
 }

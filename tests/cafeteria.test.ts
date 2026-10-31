@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { parseCoopMenu, todayIndex } from "@/lib/cafeteria";
+import { coopWeekUrl, parseCoopMenu, todayIndex } from "@/lib/cafeteria";
 
 // 생협 홈페이지 공학관 학생식당 주간 메뉴 페이지를 저장한 것 (공개 메뉴 정보)
 const html = readFileSync("tests/fixtures/coop-menu.html", "utf8");
@@ -22,5 +22,12 @@ describe("공식당 주간 메뉴 읽기", () => {
     const kst = (s: string) => new Date(`${s}+09:00`).getTime();
     expect(todayIndex(menu.days, kst("2026-10-28T12:00"))).toBe(2); // 수
     expect(todayIndex(menu.days, kst("2026-11-01T12:00"))).toBe(0); // 일요일 → 첫 칸
+  });
+  it("이번 주·다음 주 주소는 그 주 월요일 날짜로", () => {
+    const kst = (s: string) => new Date(`${s}+09:00`).getTime();
+    expect(coopWeekUrl(0, kst("2026-10-31T19:00"))).toMatch(/selDate=2026-10-26$/); // 토 → 그 주 월
+    expect(coopWeekUrl(1, kst("2026-10-31T19:00"))).toMatch(/selDate=2026-11-02$/);
+    expect(coopWeekUrl(1, kst("2026-11-01T09:00"))).toMatch(/selDate=2026-11-02$/); // 일요일도 같은 주
+    expect(coopWeekUrl(0, kst("2026-11-02T00:30"))).toMatch(/selDate=2026-11-02$/); // 월요일 새벽
   });
 });
