@@ -15,15 +15,15 @@ for (const [name, viewport] of [["휴대폰", { width: 390, height: 844 }], ["PC
     await expect(tour).toBeVisible();
     await expect(tour.getByRole("heading", { name: "학과 캘린더" })).toBeVisible();
     const titles = ["학과 캘린더"];
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 10; i++) {
       const next = tour.getByRole("button", { name: "다음" });
       if (!(await next.isVisible())) break;
       await next.click();
       titles.push((await tour.getByRole("heading").textContent()) ?? "");
       if (i === 1) await page.screenshot({ path: `test-results/tour-${name}.png` });
     }
-    expect(titles).toEqual(["학과 캘린더", "AI 주간 브리핑", "캘린더 3개", "내 시간표", "학년별 소통방", "공지 · 질문 · 검색"]);
-    await expect(tour.getByText("6 / 6")).toBeVisible();
+    expect(titles).toEqual(["학과 캘린더", "AI 주간 브리핑", "학사 캘린더", "내 캘린더", "내 시간표", "학년별 소통방", "공지 · 질문 · 검색", "알림 받기"]);
+    await expect(tour.getByText("8 / 8")).toBeVisible();
     await tour.getByRole("button", { name: "시작하기" }).click();
     await expect(tour).toBeHidden();
     await expect(page).toHaveURL(/\/$/);

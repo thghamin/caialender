@@ -75,6 +75,9 @@ const MORE = [
   { href: "/search", icon: "search", label: "검색" },
 ] as const;
 
+/** 처음 둘러보기에서 비출 탭 */
+const TOUR_IDS: Record<string, string> = { "/academic": "tab-academic", "/my": "tab-my", "/timetable": "tab-timetable", "/chat": "tab-chat" };
+
 const isActive = (pathname: string, href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
 
 /** 휴대폰 하단 탭 메뉴 (768px 미만에서만 보인다): 학과·학사·내 캘린더·시간표·소통방 */
@@ -104,7 +107,7 @@ export function MobileTabBar() {
         {MAIN.map((t) => {
           const active = pressed ? pressed === t.href : isActive(pathname, t.href);
           return (
-            <li key={t.href} className="min-w-0 flex-1" data-tour={t.href === "/timetable" ? "tab-timetable" : t.href === "/chat" ? "tab-chat" : undefined}>
+            <li key={t.href} className="min-w-0 flex-1" data-tour={TOUR_IDS[t.href]}>
               <Link href={t.href} prefetch onClick={() => t.href !== pathname && setPressed(t.href)} aria-current={active ? "page" : undefined} className={tab(active)}>
                 <Icon name={t.icon} className={`size-6 ${active ? "" : "opacity-80"}`} />
                 {t.label}
