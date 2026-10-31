@@ -61,6 +61,9 @@ h3 {
 
 body {
   font-family: var(--font-sans);
+  /* 한국어는 낱말 중간에서 줄을 바꾸지 않는다 (띄어쓰기에서만). 긴 주소·이메일은 넘치지 않게 아무 데서나 */
+  word-break: keep-all;
+  overflow-wrap: anywhere;
   background-color: color-mix(in srgb, var(--brand) 3%, #fbfaf9);
   /* 은은한 테마색 빛과 점 무늬 */
   background-image:

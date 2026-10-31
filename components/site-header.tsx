@@ -17,7 +17,7 @@ export async function SiteHeader() {
     <>
     <header className="sticky top-0 z-30 border-b border-brand/15 bg-white/90 backdrop-blur">
       <div className="h-1 bg-gradient-to-r from-brand via-brand-dark to-knu-gold" />
-      <div className="max-w-6xl mx-auto px-3 sm:px-4 h-14 md:h-16 flex items-center gap-2 md:gap-6">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4 h-14 md:h-16 flex items-center gap-2 md:gap-3 lg:gap-6">
         <Link href="/" className="flex shrink-0 items-center gap-1.5 font-extrabold text-[17px] tracking-tight md:gap-2 md:text-lg">
           <Hobanu className="size-8 drop-shadow-sm md:size-9" title="" />
           <span>
@@ -25,7 +25,7 @@ export async function SiteHeader() {
           </span>
         </Link>
         {/* PC 메뉴. 휴대폰은 화면 아래 탭 메뉴(MobileTabBar) */}
-        <nav className="hidden gap-1 text-sm md:flex" data-tour="nav">
+        <nav className="hidden min-w-0 gap-0.5 overflow-x-auto whitespace-nowrap text-[13px] [scrollbar-width:none] md:flex lg:gap-1 lg:text-sm" data-tour="nav">
           {approved && <NavLink href="/">학과 캘린더</NavLink>}
           {approved && <NavLink href="/academic">학사 캘린더</NavLink>}
           {approved && <NavLink href="/my">내 캘린더</NavLink>}
@@ -36,7 +36,7 @@ export async function SiteHeader() {
           {approved && <NavLink href="/cafeteria">공식당</NavLink>}
           {admin && <NavLink href="/admin" strong>관리자</NavLink>}
         </nav>
-        <div className="ml-auto flex min-w-0 items-center gap-1.5 text-sm md:gap-3">
+        <div className="ml-auto flex shrink-0 items-center gap-1.5 text-sm md:gap-3">
           {user ? (
             <>
               {approved && (
@@ -45,7 +45,7 @@ export async function SiteHeader() {
                 </Link>
               )}
               <span className="text-zinc-500">
-                <span className="hidden sm:inline">
+                <span className="hidden whitespace-nowrap lg:inline">
                   {user.name}
                   {user.grade ? ` · ${user.grade}학년` : ""}
                 </span>

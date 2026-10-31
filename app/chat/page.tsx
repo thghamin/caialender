@@ -69,7 +69,7 @@ export default async function ChatHome() {
           </>
         )}
       </PageHero>
-      <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_340px]">
         <section className="grid min-w-0 gap-3 sm:grid-cols-2">
           {CHAT_ROOMS.map((room, i) => {
             const last = latest[i];
@@ -94,7 +94,7 @@ export default async function ChatHome() {
             );
           })}
         </section>
-        <aside className="flex flex-col gap-4">
+        <aside className="flex min-w-0 flex-col gap-4">
           <Card>
             {member ? (
               <div className="flex flex-col gap-3">

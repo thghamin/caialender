@@ -53,8 +53,11 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         <main className="flex-1 w-full max-w-6xl mx-auto px-3 pt-4 pb-28 sm:px-4 md:py-6">{children}</main>
         <footer className="flex flex-col items-center gap-2 px-4 pb-28 pt-2 md:pb-6">
           <ViewModeToggle mode={viewMode} />
-          <Link href="/?tour=1" className="text-xs text-zinc-400 underline-offset-2 hover:text-zinc-600 hover:underline">
-            사용법 다시 보기
+          <Link
+            href="/?tour=1"
+            className="inline-flex items-center gap-1.5 rounded-full bg-white px-5 py-2.5 text-[14px] font-bold text-brand shadow-sm ring-1 ring-brand/25 hover:bg-brand-soft"
+          >
+            📖 사용법 다시 보기
           </Link>
           {/* 정식 출시 전 안내 (휴대폰·PC 모두 맨 아래) */}
           <p className="max-w-md text-center text-[11.5px] leading-relaxed text-zinc-400" data-testid="beta-note">

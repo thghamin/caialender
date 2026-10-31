@@ -57,14 +57,14 @@ export default async function MembersPage({ searchParams }: PageProps<"/admin/me
       <Card className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-[1.05rem] font-bold">전체 회원 ({all.length})</h2>
-          <form className="flex gap-2">
+          <form className="flex w-full gap-2 sm:w-auto">
             <input
               name="q"
               defaultValue={q}
               placeholder="이름, 학번, 이메일로 찾기"
-              className="w-64 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-brand"
+              className="min-w-0 flex-1 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm outline-none focus:border-brand sm:w-64 sm:flex-none"
             />
-            <button className="rounded-lg border border-zinc-300 bg-white px-3 text-sm hover:bg-zinc-100">검색</button>
+            <button className="shrink-0 rounded-lg border border-zinc-300 bg-white px-3 text-sm hover:bg-zinc-100">검색</button>
           </form>
         </div>
         <MemberTable members={members} me={me} canApprove={canApprove} />

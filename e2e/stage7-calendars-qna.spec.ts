@@ -49,11 +49,12 @@ test.afterAll(async () => {
   await deleteUsersByPrefix(prefix); // questions는 profiles 삭제와 함께 지워진다
 });
 
-test("학사·학과 캘린더는 따로 보이고, 학사일정은 눌러서 담은 것만 내 캘린더에", async ({ page }) => {
+test("학사·학과 캘린더는 따로 보이고, 눌러서 담은 일정만 내 캘린더에", async ({ page }) => {
   await loginViaUi(page, email("student"));
   await page.waitForURL("**/my");
-  // 담기 전: 학과 일정(전체 대상)은 자동, 학사일정은 없음
-  await expect(page.getByText(`${T} 학과 MT`).first()).toBeVisible();
+  // 담기 전: 내 캘린더는 비어 있다 (학과·학사 모두 ☆로 담아야 들어간다)
+  await expect(page.getByRole("heading", { name: "내 캘린더" })).toBeVisible();
+  await expect(page.getByText(`${T} 학과 MT`)).toHaveCount(0);
   await expect(page.getByText(`${T} 학사 수강신청`)).toHaveCount(0);
 
   await page.goto("/");
