@@ -20,6 +20,19 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
   const [sending, setSending] = useState(false);
   const [warnTarget, setWarnTarget] = useState<ChatMessage | null>(null);
   const [reportTarget, setReportTarget] = useState<ChatMessage | null>(null);
+  const [replyTarget, setReplyTarget] = useState<ChatMessage | null>(null);
+  // 관리자: 이번 메시지를 공용 '학생회' 이름으로 보낼지 (기본은 내 닉네임)
+  const [asStaff, setAsStaff] = useState(false);
+  const input = useRef<HTMLTextAreaElement>(null);
+  // 인용을 누르면 원래 메시지로 가서 잠깐 표시
+  const [flash, setFlash] = useState<number | null>(null);
+  const jumpTo = (id: number) => {
+    const el = document.getElementById(`msg-${id}`);
+    if (!el) return;
+    el.scrollIntoView({ block: "center", behavior: "smooth" });
+    setFlash(id);
+    setTimeout(() => setFlash(null), 1200);
+  };
   const [notice, setNotice] = useState<string>();
   const list = useRef<HTMLDivElement>(null);
   const nearBottom = useRef(true);
@@ -56,11 +69,12 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
     const body = text.trim();
     if (!body || sending) return;
     setSending(true);
-    const r = await sendChatMessage(room, body);
+    const r = await sendChatMessage(room, body, replyTarget?.id, admin && asStaff);
     setSending(false);
     if (r.error || !r.message) return setError(r.error);
     setError(undefined);
     setText("");
+    setReplyTarget(null);
     nearBottom.current = true;
     setMessages((p) => (p.some((x) => x.id === r.message!.id) ? p : [...p, r.message!]));
   };
@@ -91,14 +105,15 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
           const mine = m.author.id === member.id;
           const newDay = i === 0 || dayText(messages[i - 1].created_at) !== dayText(m.created_at);
           return (
-            <div key={m.id} className="flex flex-col">
+            <div key={m.id} id={`msg-${m.id}`} className={`flex flex-col rounded-xl transition-colors ${flash === m.id ? "bg-amber-100/70" : ""}`}>
               {newDay && <p className="my-2 self-center rounded-full bg-zinc-200/70 px-3 py-0.5 text-xs text-zinc-500">{dayText(m.created_at)}</p>}
               <div className={`flex max-w-[85%] flex-col gap-0.5 ${mine ? "self-end items-end" : "self-start items-start"}`} data-testid="chat-message">
-                {!mine && (
-                  <span className="flex flex-wrap items-center gap-1 px-1 text-xs font-semibold text-zinc-600">
-                    {m.author.nickname}
-                    {m.author.staff && <span className="rounded bg-brand px-1 py-px text-[10px] font-bold text-white">학생회</span>}
+                {m.author.staff ? (
+                  <span className="flex items-center gap-1 px-1 text-xs font-bold text-brand">
+                    📢 <span className="rounded bg-brand px-1.5 py-px text-[11px] text-white">학생회</span>
                   </span>
+                ) : (
+                  !mine && <span className="px-1 text-xs font-semibold text-zinc-600">{m.author.nickname}</span>
                 )}
                 {admin && m.identity && (
                   <span className="px-1 text-[11px] text-zinc-400" data-testid="chat-identity">
@@ -118,11 +133,28 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
                     )}
                   </span>
                 )}
+                {/* 답장한 원래 메시지 (누르면 그 메시지로) */}
+                {m.reply && (
+                  <button
+                    type="button"
+                    onClick={() => jumpTo(m.reply!.id)}
+                    className="max-w-full truncate rounded-lg border-l-2 border-brand/60 bg-zinc-100 px-2 py-1 text-left text-[12px] text-zinc-500"
+                    data-testid="chat-reply-quote"
+                  >
+                    ↪ <b className="text-zinc-600">{m.reply.nickname}</b> {m.reply.deleted ? "삭제된 메시지" : m.reply.body}
+                  </button>
+                )}
                 <div className="flex items-end gap-1.5">
                   {mine && <span className="text-[10px] text-zinc-400">{timeText(m.created_at)}</span>}
                   <p
                     className={`whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-[14.5px] leading-snug ${
-                      m.deleted ? "bg-zinc-100 italic text-zinc-400" : mine ? "rounded-br-md bg-brand text-white" : "rounded-bl-md bg-white text-zinc-800 ring-1 ring-zinc-200"
+                      m.deleted
+                        ? "bg-zinc-100 italic text-zinc-400"
+                        : m.author.staff
+                          ? "rounded-bl-md bg-brand-soft font-medium text-zinc-900 ring-1 ring-brand/30"
+                          : mine
+                            ? "rounded-br-md bg-brand text-white"
+                            : "rounded-bl-md bg-white text-zinc-800 ring-1 ring-zinc-200"
                     }`}
                   >
                     {m.deleted ? (m.deletedSelf ? "삭제된 메시지예요" : "관리자가 삭제한 메시지예요") : m.body}
@@ -140,8 +172,19 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
                     )}
                   </span>
                 )}
+                {!m.deleted && !banned && (
+                  <button
+                    onClick={() => {
+                      setReplyTarget(m);
+                      input.current?.focus();
+                    }}
+                    className="px-1 text-[11px] text-zinc-400 hover:text-brand"
+                  >
+                    답장
+                  </button>
+                )}
                 {/* 다른 학생 메시지 신고 → 관리자에게 알림 */}
-                {!mine && !admin && !m.deleted && (
+                {!mine && !admin && !m.deleted && !m.author.staff && (
                   <button onClick={() => setReportTarget(m)} className="px-1 text-[11px] text-zinc-400 hover:text-red-600">
                     신고
                   </button>
@@ -173,7 +216,7 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
                     >
                       삭제
                     </button>
-                    {!mine && (
+                    {!mine && !m.author.staff && (
                       <button onClick={() => setWarnTarget(m)} className="font-semibold text-amber-600 hover:text-amber-700">
                         경고
                       </button>
@@ -189,6 +232,17 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
         {banned ? (
           <p className="rounded-xl bg-red-50 px-3 py-3 text-center text-sm text-red-700">⚠️ 경고 {CHAT_BAN_WARNINGS}회로 소통방에 글을 쓸 수 없어요.</p>
         ) : (
+          <>
+            {replyTarget && (
+              <div className="mb-1.5 flex items-center gap-2 rounded-xl bg-zinc-100 px-3 py-1.5 text-[12.5px]" data-testid="reply-bar">
+                <span className="min-w-0 flex-1 truncate text-zinc-600">
+                  ↪ <b>{replyTarget.author.id === member.id ? "나" : replyTarget.author.nickname}</b>에게 답장: {replyTarget.body}
+                </span>
+                <button type="button" onClick={() => setReplyTarget(null)} aria-label="답장 취소" className="shrink-0 text-base leading-none text-zinc-400">
+                  ✕
+                </button>
+              </div>
+            )}
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -196,7 +250,21 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
             }}
             className="flex items-end gap-2"
           >
+            {admin && (
+              <button
+                type="button"
+                onClick={() => setAsStaff(!asStaff)}
+                aria-pressed={asStaff}
+                title="켜면 이번 메시지를 내 닉네임 대신 공용 '학생회' 이름으로 보내요 (공지·제재 안내)"
+                className={`h-11 shrink-0 rounded-2xl px-2.5 text-[12px] font-bold leading-tight ${asStaff ? "bg-brand text-white" : "bg-zinc-100 text-zinc-500"}`}
+              >
+                📢
+                <br />
+                학생회
+              </button>
+            )}
             <textarea
+              ref={input}
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={(e) => {
@@ -208,7 +276,7 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
               }}
               rows={1}
               maxLength={CHAT_MAX_LENGTH}
-              placeholder="메시지 보내기"
+              placeholder={admin && asStaff ? "학생회 이름으로 보내기 (공지·안내)" : "메시지 보내기"}
               aria-label="메시지"
               className="max-h-32 min-h-11 flex-1 resize-none rounded-2xl border border-zinc-300 px-3 py-2.5 text-[16px] outline-none focus:border-brand"
             />
@@ -216,6 +284,7 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
               보내기
             </button>
           </form>
+          </>
         )}
         {error && <p className="px-1 pt-1 text-sm text-red-600">{error}</p>}
         {member.warnings > 0 && !banned && (

@@ -8,11 +8,14 @@ import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { pushConfigured, sendPushToUser } from "@/lib/push";
 import { isAdminRole } from "@/lib/types";
 import {
+  CHAT_BAN_WARNINGS,
   CHAT_MAX_LENGTH,
   isBanned,
   nicknameError,
   parseRoom,
   reportMessage,
+  roomAlertMessage,
+  STAFF_MEMBER_ID,
   warningMessage,
   type ChatIdentity,
   type ChatMember,
@@ -63,8 +66,16 @@ export async function setNickname(nickname: string): Promise<Result> {
   return {};
 }
 
-const SELECT = "id, room, body, created_at, deleted_at, deleted_self, author:chat_members!chat_messages_member_id_fkey(id, nickname, staff)";
-type Row = { id: number; room: number; body: string; created_at: string; deleted_at: string | null; deleted_self: boolean; author: { id: string; nickname: string; staff: boolean } };
+const SELECT =
+  "id, room, body, created_at, deleted_at, deleted_self, reply_to, author:chat_members!chat_messages_member_id_fkey(id, nickname), " +
+  "reply:chat_messages!chat_messages_reply_to_fkey(id, body, deleted_at, author:chat_members!chat_messages_member_id_fkey(nickname))";
+type ReplyRow = { id: number; body: string; deleted_at: string | null; author: { nickname: string } } | null;
+type Row = { id: number; room: number; body: string; created_at: string; deleted_at: string | null; deleted_self: boolean; reply: ReplyRow; author: { id: string; nickname: string } };
+// '학생회' 표시는 공용 학생회 작성자일 때만 (관리자 개인 닉네임에는 붙이지 않는다)
+const withStaff = (a: Row["author"]) => ({ ...a, staff: a.id === STAFF_MEMBER_ID });
+
+const toReply = (r: ReplyRow) =>
+  r ? { id: r.id, nickname: r.author.nickname, body: r.deleted_at ? "" : r.body, deleted: !!r.deleted_at } : null;
 
 /**
  * 방의 메시지. afterId를 주면 그 뒤에 온 것만(새 메시지 확인용), 아니면 최근 100개.
@@ -100,13 +111,14 @@ export async function getChatMessages(roomRaw: number, afterId?: number): Promis
     deleted: !!r.deleted_at,
     deletedSelf: r.deleted_self,
     originalBody: originals.get(r.id),
-    author: r.author,
+    reply: toReply(r.reply),
+    author: withStaff(r.author),
     identity: identities.get(r.author.id),
   }));
 }
 
-export async function sendChatMessage(roomRaw: number, body: string): Promise<Result & { message?: ChatMessage }> {
-  await requireUser();
+export async function sendChatMessage(roomRaw: number, body: string, replyTo?: number, asStaff = false): Promise<Result & { message?: ChatMessage }> {
+  const me = await requireUser();
   const room = parseRoom(roomRaw);
   const text = body.trim();
   if (!room) return { error: "방을 찾을 수 없어요." };
@@ -116,14 +128,55 @@ export async function sendChatMessage(roomRaw: number, body: string): Promise<Re
   if (!member) return { error: "먼저 닉네임을 정해 주세요." };
   if (isBanned(member)) return { error: "경고 3회 누적으로 소통방을 더 이상 이용할 수 없어요." };
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("chat_messages")
-    .insert({ room, member_id: member.id, body: text })
-    .select(SELECT)
-    .single();
-  if (error || !data) return { error: "메시지를 보내지 못했어요. 잠시 후 다시 해 주세요." };
+  let data: unknown = null;
+  let error: { message: string } | null = null;
+  if (asStaff) {
+    // 관리자: 공용 '학생회' 이름으로 (누가 보냈는지는 학생에게 보이지 않는다)
+    if (!isAdminRole(me.role)) return { error: "관리자만 학생회 이름으로 보낼 수 있어요." };
+    const posted = await supabase.rpc("chat_post_as_staff", { p_room: room, p_body: text, p_reply: replyTo ?? null });
+    error = posted.error;
+    if (!error) ({ data, error } = await supabase.from("chat_messages").select(SELECT).eq("id", posted.data as number).single());
+  } else {
+    ({ data, error } = await supabase.from("chat_messages").insert({ room, member_id: member.id, body: text, reply_to: replyTo ?? null }).select(SELECT).single());
+  }
+  if (error || !data) return { error: error?.message.includes("같은 방") ? error.message : "메시지를 보내지 못했어요. 잠시 후 다시 해 주세요." };
   const r = data as unknown as Row;
-  return { message: { id: r.id, room, body: r.body, created_at: r.created_at, deleted: false, deletedSelf: false, author: r.author } };
+  // 이 방 알림을 켠 사람들에게 (보낸 사람·이용 제한된 사람 제외)
+  if (pushConfigured()) {
+    const msg = roomAlertMessage(room, asStaff ? "학생회" : member.nickname, text);
+    after(async () => {
+      const db = createServiceClient();
+      const [{ data: subs }, { data: banned }] = await Promise.all([
+        db.from("chat_room_alerts").select("user_id").eq("room", room).neq("user_id", me.id),
+        db.from("chat_members").select("user_id").gte("warnings", CHAT_BAN_WARNINGS),
+      ]);
+      const skip = new Set((banned ?? []).map((b) => b.user_id));
+      await Promise.all((subs ?? []).filter((x) => !skip.has(x.user_id)).map((x) => sendPushToUser(x.user_id, msg).catch(() => {})));
+    });
+  }
+  return {
+    message: { id: r.id, room, body: r.body, created_at: r.created_at, deleted: false, deletedSelf: false, author: withStaff(r.author), reply: toReply(r.reply) },
+  };
+}
+
+/** 소통방 알림을 켠 방 목록 (기본은 모두 꺼짐) */
+export async function getMyRoomAlerts(): Promise<number[]> {
+  const me = await requireUser();
+  const supabase = await createClient();
+  const { data } = await supabase.from("chat_room_alerts").select("room").eq("user_id", me.id);
+  return (data ?? []).map((r) => r.room);
+}
+
+/** 방 알림 켜기·끄기 */
+export async function setRoomAlert(roomRaw: number, on: boolean): Promise<Result> {
+  const me = await requireUser();
+  const room = parseRoom(roomRaw);
+  if (!room) return { error: "방을 찾을 수 없어요." };
+  const supabase = await createClient();
+  const { error } = on
+    ? await supabase.from("chat_room_alerts").upsert({ user_id: me.id, room }, { onConflict: "user_id,room", ignoreDuplicates: true })
+    : await supabase.from("chat_room_alerts").delete().eq("user_id", me.id).eq("room", room);
+  return error ? { error: "알림 설정을 바꾸지 못했어요." } : {};
 }
 
 /** 본인 메시지 삭제 (경고받은 메시지는 안 됨) */
@@ -242,7 +295,7 @@ export async function reportChatMessage(id: number, room: number, reason: string
   const supabase = await createClient();
   const { error } = await supabase.rpc("chat_report", { p_message: id, p_reason: why });
   if (error) {
-    const known = ["이미 신고한", "내 메시지는", "신고할 수 없는", "닉네임을", "이용할 수 없어요"].find((k) => error.message.includes(k));
+    const known = ["이미 신고한", "내 메시지는", "신고할 수 없는", "닉네임을", "이용할 수 없어요", "학생회 공지"].find((k) => error.message.includes(k));
     return { error: known ? error.message : "신고하지 못했어요. 잠시 후 다시 해 주세요." };
   }
   if (pushConfigured()) {

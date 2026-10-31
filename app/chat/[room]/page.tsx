@@ -5,7 +5,8 @@ import { requireUser } from "@/lib/auth";
 import { CHAT_ROOMS, isBanned, parseRoom } from "@/lib/chat";
 import { isAdminRole } from "@/lib/types";
 import { Card } from "@/components/ui";
-import { getChatMessages, getMyChatMember, getMyWarnings } from "../actions";
+import { getChatMessages, getMyChatMember, getMyRoomAlerts, getMyWarnings } from "../actions";
+import { RoomAlertToggle } from "../room-alert-toggle";
 import { BanNotice } from "../ban-notice";
 import { NicknameForm } from "../nickname-form";
 import { ChatRoomView } from "./chat-room";
@@ -16,7 +17,7 @@ export default async function ChatRoomPage({ params }: PageProps<"/chat/[room]">
   const room = parseRoom((await params).room);
   if (!room) notFound();
   const me = await requireUser();
-  const [member, messages] = await Promise.all([getMyChatMember(), getChatMessages(room)]);
+  const [member, messages, alerts] = await Promise.all([getMyChatMember(), getChatMessages(room), getMyRoomAlerts()]);
   // 경고 3회 누적: 방에 들어올 수 없다 (메시지도 DB 권한에서 막혀 있다)
   if (isBanned(member) && !isAdminRole(me.role)) return <BanNotice warnings={await getMyWarnings()} />;
 
@@ -42,7 +43,10 @@ export default async function ChatRoomPage({ params }: PageProps<"/chat/[room]">
           ))}
         </nav>
       </div>
-      <p className="-mt-1 text-[12.5px] text-zinc-500">📚 수업 정보 · 휴강 · 시험 범위 · 과제 · 진도를 자유롭게 공유해요</p>
+      <div className="-mt-1 flex items-center gap-2">
+        <p className="min-w-0 flex-1 text-[12.5px] text-zinc-500">📚 수업 정보 · 휴강 · 시험 범위 · 과제 · 진도를 자유롭게 공유해요</p>
+        <RoomAlertToggle room={room} initialOn={alerts.includes(room)} compact />
+      </div>
       {member ? (
         <ChatRoomView room={room} initial={messages} member={member} admin={isAdminRole(me.role)} />
       ) : (

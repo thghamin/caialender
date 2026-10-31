@@ -5,6 +5,8 @@ export type ChatRoom = (typeof CHAT_ROOMS)[number];
 /** 경고를 이만큼 받으면 소통방에 글을 쓸 수 없다 (DB의 chat_can_post와 같은 기준) */
 export const CHAT_BAN_WARNINGS = 3;
 export const CHAT_MAX_LENGTH = 500;
+/** 관리자가 '학생회' 공식 이름으로 보낼 때 쓰는 공용 작성자 (DB에 고정) */
+export const STAFF_MEMBER_ID = "00000000-0000-0000-0000-00000000c0de";
 
 export type ChatMember = { id: string; nickname: string; staff: boolean; warnings: number };
 /** 관리자에게만 보이는 실제 회원 정보 */
@@ -20,6 +22,8 @@ export type ChatMessage = {
   /** 관리자일 때만: 지워진 메시지의 원래 내용 */
   originalBody?: string;
   author: { id: string; nickname: string; staff: boolean };
+  /** 답장한 원래 메시지 (요약) */
+  reply?: { id: number; nickname: string; body: string; deleted: boolean } | null;
   /** 관리자일 때만 */
   identity?: ChatIdentity;
 };
@@ -59,4 +63,10 @@ export const REPORT_REASONS = ["욕설·비방", "도배", "광고·홍보", "�
 /** 관리자에게 가는 신고 알림 문구 */
 export function reportMessage(room: number, reason: string) {
   return { title: "🚨 소통방 신고가 들어왔어요", body: `${room}학년 소통방 · 사유: ${reason}`, url: "/chat/reports" };
+}
+
+/** 소통방 새 메시지 알림 문구 (같은 방 알림은 기기에서 하나로 묶인다) */
+export function roomAlertMessage(room: number, nickname: string, body: string) {
+  const text = body.replace(/\s+/g, " ").trim();
+  return { title: `💬 ${room}학년 소통방`, body: `${nickname}: ${text.length > 80 ? `${text.slice(0, 80)}…` : text}`, url: `/chat/${room}`, tag: `chat-room-${room}` };
 }

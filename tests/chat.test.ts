@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isBanned, nicknameError, parseRoom, reportMessage, warningMessage } from "@/lib/chat";
+import { isBanned, nicknameError, parseRoom, reportMessage, roomAlertMessage, warningMessage } from "@/lib/chat";
 
 describe("소통방 규칙", () => {
   it("닉네임: 2~12자, 한글·영문·숫자·밑줄, 관리자 사칭 금지", () => {
@@ -30,5 +30,9 @@ describe("소통방 규칙", () => {
   });
   it("신고 알림 문구", () => {
     expect(reportMessage(2, "도배")).toEqual({ title: "🚨 소통방 신고가 들어왔어요", body: "2학년 소통방 · 사유: 도배", url: "/chat/reports" });
+  });
+  it("소통방 새 메시지 알림: 방·닉네임·내용, 길면 줄임, 같은 방은 하나로 묶임", () => {
+    expect(roomAlertMessage(3, "과제왕", "내일  휴강\n이래요")).toEqual({ title: "💬 3학년 소통방", body: "과제왕: 내일 휴강 이래요", url: "/chat/3", tag: "chat-room-3" });
+    expect(roomAlertMessage(1, "a", "가".repeat(100)).body).toBe(`a: ${"가".repeat(80)}…`);
   });
 });

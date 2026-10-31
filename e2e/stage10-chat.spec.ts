@@ -220,3 +220,59 @@ test("학생이 다른 학생의 메시지를 신고하면, 관리자가 신고 
   await Promise.all([admin.close(), b.close(), c.close()]);
 });
 
+test("답장: 메시지에 답장하면 원래 메시지가 인용된다. 방 알림은 기본 꺼짐이고 방마다 켜고 끈다", async ({ browser }) => {
+  const b = await browser.newPage();
+  await enter(b, "b", 3);
+  await send(b, `${tag} 시험 범위 어디까지?`);
+  const c = await browser.newPage();
+  await loginViaUi(c, email("c"));
+  await c.waitForURL("**/my");
+  await c.goto("/chat/3");
+  const q = c.getByTestId("chat-message").filter({ hasText: `${tag} 시험 범위 어디까지?` });
+  await expect(q).toBeVisible();
+  await q.getByRole("button", { name: "답장" }).click();
+  await expect(c.getByTestId("reply-bar")).toContainText(`${tag} 시험 범위 어디까지?`);
+  await c.getByLabel("메시지", { exact: true }).fill(`${tag} 5장까지래요`);
+  await c.getByRole("button", { name: "보내기" }).click();
+  const answer = c.getByTestId("chat-message").filter({ hasText: `${tag} 5장까지래요` });
+  await expect(answer.getByTestId("chat-reply-quote")).toContainText(`${tag} 시험 범위 어디까지?`);
+  await expect(c.getByTestId("reply-bar")).toHaveCount(0);
+  // 상대 화면에도 인용과 함께 뜬다
+  await expect(b.getByTestId("chat-message").filter({ hasText: `${tag} 5장까지래요` }).getByTestId("chat-reply-quote")).toBeVisible({ timeout: 10_000 });
+
+  // 방 알림: 목록에서 모두 꺼짐 → 2학년만 켜기 → 새로고침해도 유지, 방 안에서도 같은 상태
+  await c.goto("/chat");
+  for (const r of [1, 2, 3, 4]) await expect(c.getByRole("button", { name: `${r}학년 소통방 알림 켜기` })).toBeVisible();
+  await c.getByRole("button", { name: "2학년 소통방 알림 켜기" }).click();
+  await expect(c.getByRole("button", { name: "2학년 소통방 알림 끄기" })).toBeVisible();
+  await c.reload();
+  await expect(c.getByRole("button", { name: "2학년 소통방 알림 끄기" })).toBeVisible();
+  await expect(c.getByRole("button", { name: "1학년 소통방 알림 켜기" })).toBeVisible();
+  await c.goto("/chat/2");
+  await c.getByRole("button", { name: "2학년 소통방 알림 끄기" }).click();
+  await expect(c.getByRole("button", { name: "2학년 소통방 알림 켜기" })).toBeVisible();
+  await Promise.all([b.close(), c.close()]);
+});
+
+test("관리자는 평소엔 닉네임으로(학생회 표시 없음), '학생회' 버튼을 켜면 공용 학생회 이름으로 보낸다", async ({ browser }) => {
+  const admin = await browser.newPage();
+  await enter(admin, "admin", 1);
+  await send(admin, `${tag} 관리자 평소 말`);
+  await admin.getByRole("button", { name: /학생회/ }).click();
+  await expect(admin.getByLabel("메시지", { exact: true })).toHaveAttribute("placeholder", /학생회 이름으로/);
+  await admin.getByLabel("메시지", { exact: true }).fill(`${tag} 도배 시 경고합니다`);
+  await admin.getByRole("button", { name: "보내기" }).click();
+  await expect(admin.getByTestId("chat-message").filter({ hasText: `${tag} 도배 시 경고합니다` })).toBeVisible();
+
+  const b = await browser.newPage();
+  await enter(b, "b", 1);
+  const normal = b.getByTestId("chat-message").filter({ hasText: `${tag} 관리자 평소 말` });
+  await expect(normal).toContainText(nick("admin"));
+  await expect(normal).not.toContainText("학생회");
+  const official = b.getByTestId("chat-message").filter({ hasText: `${tag} 도배 시 경고합니다` });
+  await expect(official).toContainText("학생회");
+  await expect(official).not.toContainText(nick("admin"));
+  await expect(official.getByRole("button", { name: "신고" })).toHaveCount(0);
+  await Promise.all([admin.close(), b.close()]);
+});
+

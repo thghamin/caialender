@@ -6,7 +6,8 @@ import { CHAT_BAN_WARNINGS, CHAT_ROOMS, isBanned } from "@/lib/chat";
 import { formatKst } from "@/lib/datetime";
 import { PageHero } from "@/components/page-hero";
 import { Card } from "@/components/ui";
-import { getMyChatMember, getMyWarnings, getOpenReportCount } from "./actions";
+import { getMyChatMember, getMyRoomAlerts, getMyWarnings, getOpenReportCount } from "./actions";
+import { RoomAlertToggle } from "./room-alert-toggle";
 import { NicknameForm } from "./nickname-form";
 import { BanNotice } from "./ban-notice";
 import { isAdminRole } from "@/lib/types";
@@ -18,10 +19,11 @@ const ROOM_ICON = ["🌱", "🌿", "🌳", "🎓"];
 export default async function ChatHome() {
   const me = await requireUser();
   const supabase = await createClient();
-  const [member, warnings, openReports, latest] = await Promise.all([
+  const [member, warnings, openReports, alerts, latest] = await Promise.all([
     getMyChatMember(),
     getMyWarnings(),
     isAdminRole(me.role) ? getOpenReportCount() : Promise.resolve(0),
+    getMyRoomAlerts(),
     // 방마다 가장 최근 메시지 (미리보기)
     Promise.all(
       CHAT_ROOMS.map((room) =>
@@ -63,22 +65,23 @@ export default async function ChatHome() {
           {CHAT_ROOMS.map((room, i) => {
             const last = latest[i];
             return (
-              <Link
+              <div
                 key={room}
-                href={`/chat/${room}`}
-                prefetch
-                className="group flex min-w-0 items-center gap-3 rounded-[22px] bg-white p-4 shadow-[0_1px_2px_rgb(0_0_0/0.04),0_10px_30px_-12px_rgb(0_0_0/0.12)] ring-1 ring-black/[0.04] transition hover:-translate-y-0.5 hover:ring-brand/30"
+                className="flex min-w-0 items-center gap-2 rounded-[22px] bg-white p-4 pr-3 shadow-[0_1px_2px_rgb(0_0_0/0.04),0_10px_30px_-12px_rgb(0_0_0/0.12)] ring-1 ring-black/[0.04] transition hover:ring-brand/30"
               >
-                <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-brand-soft text-2xl">{ROOM_ICON[i]}</span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[16px] font-extrabold">{room}학년 소통방</span>
-                  <span className="block truncate text-[13px] text-zinc-500">
-                    {last ? (last.deleted_at ? "삭제된 메시지" : `${last.author.nickname}: ${last.body}`) : "아직 대화가 없어요. 휴강·시험 범위 소식을 먼저 나눠 보세요!"}
+                <Link href={`/chat/${room}`} prefetch className="group flex min-w-0 flex-1 items-center gap-3">
+                  <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-brand-soft text-2xl">{ROOM_ICON[i]}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[16px] font-extrabold">{room}학년 소통방</span>
+                    <span className="block truncate text-[13px] text-zinc-500">
+                      {last ? (last.deleted_at ? "삭제된 메시지" : `${last.author.nickname}: ${last.body}`) : "아직 대화가 없어요. 휴강·시험 범위 소식을 먼저 나눠 보세요!"}
+                    </span>
+                    {last && <span className="block text-[11px] text-zinc-400">{formatKst(last.created_at)}</span>}
                   </span>
-                  {last && <span className="block text-[11px] text-zinc-400">{formatKst(last.created_at)}</span>}
-                </span>
-                <span className="text-zinc-300 group-hover:text-brand">›</span>
-              </Link>
+                </Link>
+                {/* 방 이름 옆 알림 켜기·끄기 (기본 꺼짐) */}
+                <RoomAlertToggle room={room} initialOn={alerts.includes(room)} compact />
+              </div>
             );
           })}
         </section>

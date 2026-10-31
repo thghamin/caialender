@@ -460,6 +460,39 @@ run("인증·RLS 통합 테스트", () => {
       expect(after.some((r) => r.message_id === id)).toBe(false);
     });
 
+    it("답장은 같은 방 메시지에만, 방 알림은 본인 것만 켜고 끈다(기본 꺼짐)", async () => {
+      const base = await student.from("chat_messages").insert({ room: 2, member_id: s1Member, body: `RLS-${tag} 원글` }).select("id").single();
+      const s2 = ((await student2.rpc("my_chat_member")).data as { id: string }[])[0].id;
+      const ok = await student2.from("chat_messages").insert({ room: 2, member_id: s2, body: `RLS-${tag} 답장`, reply_to: base.data!.id }).select("id, reply_to").single();
+      expect(ok.data?.reply_to).toBe(base.data!.id);
+      expect((await student2.from("chat_messages").insert({ room: 3, member_id: s2, body: "다른 방 답장", reply_to: base.data!.id })).error).not.toBeNull();
+      // 방 알림: 처음엔 없음, 본인 것만 켜고 끔
+      expect((await student.from("chat_room_alerts").select("room")).data).toEqual([]);
+      expect((await student.from("chat_room_alerts").insert({ user_id: ids.student, room: 2 })).error).toBeNull();
+      expect((await student.from("chat_room_alerts").insert({ user_id: ids.student2, room: 2 })).error).not.toBeNull();
+      expect((await student2.from("chat_room_alerts").select("room")).data).toEqual([]);
+      expect((await student.from("chat_room_alerts").select("room")).data).toEqual([{ room: 2 }]);
+      await student.from("chat_room_alerts").delete().eq("room", 2);
+      expect((await student.from("chat_room_alerts").select("room")).data).toEqual([]);
+    });
+
+    it("관리자는 평소엔 닉네임(학생회 표시 없음), 필요하면 공용 '학생회' 이름으로 보낸다. 누가 보냈는지는 학생이 모른다", async () => {
+      // 학생은 누가 관리자인지(staff) 읽을 수 없다
+      expect((await student.from("chat_members").select("staff")).error).not.toBeNull();
+      // 학생은 학생회 이름으로 못 보낸다
+      expect((await student.rpc("chat_post_as_staff", { p_room: 1, p_body: "사칭" })).error).not.toBeNull();
+      const posted = await admin.rpc("chat_post_as_staff", { p_room: 1, p_body: `RLS-${tag} 학생회 공지` });
+      expect(posted.error).toBeNull();
+      const seen = await student.from("chat_messages").select("body, author:chat_members!chat_messages_member_id_fkey(id, nickname)").eq("id", posted.data).single();
+      expect(seen.data).toEqual({ body: `RLS-${tag} 학생회 공지`, author: { id: "00000000-0000-0000-0000-00000000c0de", nickname: "학생회" } });
+      // 보낸 관리자(posted_by)는 학생이 읽을 수 없고, 학생회 공지는 신고할 수 없다
+      expect((await student.from("chat_messages").select("posted_by")).error).not.toBeNull();
+      expect((await student.rpc("chat_report", { p_message: posted.data, p_reason: "x" })).error?.message).toContain("학생회 공지");
+      // '학생회'는 닉네임으로 가져갈 수 없다
+      expect((await student2.rpc("set_chat_nickname", { p_nickname: "학생회" })).error).not.toBeNull();
+      await service.from("chat_messages").delete().eq("id", posted.data);
+    });
+
     it("자음·모음만으로 된 닉네임도 정할 수 있다", async () => {
       expect((await student2.rpc("set_chat_nickname", { p_nickname: `ㅇㅇ${tag.slice(-6)}` })).error).toBeNull();
     });
