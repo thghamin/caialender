@@ -10,6 +10,9 @@ export function MenuView({ menu, thisWeek }: { menu: WeeklyMenu; thisWeek: boole
   // 오늘 메뉴가 없으면(주말·휴무) 메뉴가 있는 첫 요일을 먼저 보여 준다
   const hasMenu = (i: number) => menu.meals.some((m) => m.corners.some((c) => (c.days[i] ?? []).length > 0));
   const [day, setDay] = useState(() => (today >= 0 && hasMenu(today) ? today : Math.max(0, menu.days.findIndex((_, i) => hasMenu(i)))));
+  // 방학·휴무 주: 메뉴가 하나도 없으면 안내만
+  if (!menu.days.some((_, i) => hasMenu(i)))
+    return <p className="rounded-[22px] bg-white p-6 text-center text-[14px] text-zinc-500 ring-1 ring-black/[0.04]">이 주에는 메뉴가 없어요. (방학·휴무, 또는 아직 안 올라옴 — 올라오는 대로 업데이트돼요)</p>;
   return (
     <div className="flex flex-col gap-3">
       <div className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1" role="tablist" aria-label="요일">

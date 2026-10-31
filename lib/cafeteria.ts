@@ -2,12 +2,25 @@
 
 export const COOP_MENU_URL = "https://coop.knu.ac.kr/sub03/sub01_01.html?shop_sqno=86";
 
-/** 이번 주(0)·다음 주(1) 메뉴 주소: 그 주 월요일 날짜(KST)를 selDate로 (생협 '다음주 식단' 버튼과 같은 방식) */
-export function coopWeekUrl(offsetWeeks: number, now = Date.now()) {
+/** 이번 주 기준 offsetWeeks 주 뒤(음수면 앞) 주의 월요일 (KST 날짜, UTC 자정으로 표현) */
+export function weekMonday(offsetWeeks: number, now = Date.now()) {
   const kst = new Date(now + 9 * 3600_000);
   const dow = (kst.getUTCDay() + 6) % 7; // 월=0 … 일=6
-  const monday = new Date(Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate() - dow + offsetWeeks * 7));
-  return `${COOP_MENU_URL}&selDate=${monday.toISOString().slice(0, 10)}`;
+  return new Date(Date.UTC(kst.getUTCFullYear(), kst.getUTCMonth(), kst.getUTCDate() - dow + offsetWeeks * 7));
+}
+
+/** 그 주 메뉴 주소: 월요일 날짜를 selDate로 (생협 '다음주 식단' 버튼과 같은 방식) */
+export function coopWeekUrl(offsetWeeks: number, now = Date.now()) {
+  return `${COOP_MENU_URL}&selDate=${weekMonday(offsetWeeks, now).toISOString().slice(0, 10)}`;
+}
+
+/** 볼 수 있는 주 범위: 올해 첫 주(1월 1일이 든 주)부터 다음 주(생협이 미리 올리는 주)까지 */
+export function weekRange(now = Date.now()) {
+  const thisMonday = weekMonday(0, now).getTime();
+  const year = new Date(now + 9 * 3600_000).getUTCFullYear();
+  const jan1 = Date.UTC(year, 0, 1);
+  const firstMonday = jan1 - ((new Date(jan1).getUTCDay() + 6) % 7) * 86400_000;
+  return { min: -Math.round((thisMonday - firstMonday) / (7 * 86400_000)), max: 1 };
 }
 
 export type MenuItem = { name: string; price: string | null; note: string | null };

@@ -26,11 +26,19 @@ test("더보기 → 공식당 메뉴: 오늘 요일이 골라져 있고, 요일�
     await tabs.getByRole("tab").first().click();
     await expect(tabs.getByRole("tab").first()).toHaveAttribute("aria-selected", "true");
   }
-  // 다음 주 메뉴 (올라와 있으면 요일 탭, 아니면 안내)
-  await page.getByRole("tablist", { name: "주" }).getByRole("tab", { name: "다음 주" }).click();
-  await expect(page).toHaveURL(/week=next/);
-  await expect(page.getByRole("tablist", { name: "주" }).getByRole("tab", { name: "다음 주" })).toHaveAttribute("aria-selected", "true");
-  await expect(tabs.or(fallback)).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByText("오늘")).toHaveCount(0);
+  // 주 넘기기: 다음 주(오늘 표시 없음) → 이전 주로 두 번 → 지난주
+  await expect(page.getByTestId("week-label")).toBeVisible();
+  await page.getByRole("link", { name: "다음 주" }).click();
+  await expect(page).toHaveURL(/w=1/);
+  await expect(page.getByText("다음 주", { exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "다음 주" })).toHaveCount(0); // 다음 주가 끝
+  await expect(tabs.or(fallback).or(page.getByText("이 주에는 메뉴가 없어요"))).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText("오늘", { exact: true })).toHaveCount(0);
+  await page.getByRole("link", { name: "이전 주" }).click();
+  await page.getByRole("link", { name: "이전 주" }).click();
+  await expect(page).toHaveURL(/w=-1/);
+  await expect(page.getByText("지난주", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "이번 주로 돌아가기" }).click();
+  await expect(page.getByText("이번 주", { exact: true })).toBeVisible();
   await ctx.close();
 });
