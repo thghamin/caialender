@@ -332,4 +332,68 @@ run("인증·RLS 통합 테스트", () => {
 
     await service.from("push_subscriptions").delete().eq("endpoint", endpoint);
   });
+
+  describe("학년별 소통방", () => {
+    const nick = (k: string) => `t${k}${tag}`.slice(0, 12);
+    let msgId: number;
+    let s1Member: string;
+
+    it("승인 대기 회원은 닉네임을 만들 수 없다", async () => {
+      const { error } = await pendingUser.rpc("set_chat_nickname", { p_nickname: nick("p") });
+      expect(error).not.toBeNull();
+    });
+
+    it("닉네임은 겹칠 수 없고, 내 닉네임으로만 글을 쓴다", async () => {
+      expect((await student.rpc("set_chat_nickname", { p_nickname: nick("a") })).error).toBeNull();
+      expect((await student2.rpc("set_chat_nickname", { p_nickname: nick("a").toUpperCase() })).error).not.toBeNull();
+      expect((await student2.rpc("set_chat_nickname", { p_nickname: nick("b") })).error).toBeNull();
+      expect((await admin.rpc("set_chat_nickname", { p_nickname: nick("c") })).error).toBeNull();
+      s1Member = ((await student.rpc("my_chat_member")).data as { id: string }[])[0].id;
+      const s2Member = ((await student2.rpc("my_chat_member")).data as { id: string }[])[0].id;
+      const ins = await student.from("chat_messages").insert({ room: 2, member_id: s1Member, body: `RLS-${tag} 안녕` }).select("id").single();
+      expect(ins.error).toBeNull();
+      msgId = ins.data!.id;
+      // 다른 학생의 닉네임으로는 못 쓴다
+      expect((await student.from("chat_messages").insert({ room: 2, member_id: s2Member, body: "사칭" })).error).not.toBeNull();
+    });
+
+    it("학생은 닉네임만 볼 수 있고, 계정 id·실명은 볼 수 없다", async () => {
+      const msgs = await student2.from("chat_messages").select("id, body, author:chat_members!chat_messages_member_id_fkey(nickname)").eq("id", msgId).single();
+      expect(msgs.data).toMatchObject({ body: `RLS-${tag} 안녕`, author: { nickname: nick("a") } });
+      expect((await student2.from("chat_members").select("user_id")).error).not.toBeNull();
+      expect((await student2.from("chat_members").select("warnings")).error).not.toBeNull();
+      const who = await student2.rpc("chat_member_identities", { p_members: [s1Member] });
+      expect(who.data).toEqual([]);
+    });
+
+    it("관리자는 닉네임의 실제 회원을 확인한다", async () => {
+      const who = await admin.rpc("chat_member_identities", { p_members: [s1Member] });
+      expect(who.data).toEqual([expect.objectContaining({ id: s1Member, name: "테스트student", warnings: 0 })]);
+    });
+
+    it("학생은 삭제·경고를 못 하고, 관리자 경고 3번이면 글을 쓸 수 없다", async () => {
+      expect((await student2.rpc("chat_delete_message", { p_message: msgId })).error).not.toBeNull();
+      expect((await student2.rpc("chat_warn", { p_message: msgId, p_reason: "x" })).error).not.toBeNull();
+      const w1 = await admin.rpc("chat_warn", { p_message: msgId, p_reason: "욕설·비방", p_delete: true });
+      expect(w1.data).toEqual([{ user_id: ids.student, warnings: 1 }]);
+      // 삭제하면 내용까지 지워진다
+      const gone = await student2.from("chat_messages").select("body, deleted_at").eq("id", msgId).single();
+      expect(gone.data!.body).toBe("");
+      expect(gone.data!.deleted_at).not.toBeNull();
+      // 본인은 자기 경고 사유를 본다, 다른 학생은 못 본다
+      expect((await student.from("chat_warnings").select("reason")).data).toEqual([{ reason: "욕설·비방" }]);
+      expect((await student2.from("chat_warnings").select("reason")).data).toEqual([]);
+      for (let i = 2; i <= 3; i++) {
+        const m = await student.from("chat_messages").insert({ room: 1, member_id: s1Member, body: `RLS-${tag} ${i}` }).select("id").single();
+        expect(m.error).toBeNull();
+        expect((await admin.rpc("chat_warn", { p_message: m.data!.id, p_reason: "도배" })).data).toEqual([{ user_id: ids.student, warnings: i }]);
+      }
+      const banned = await student.from("chat_messages").insert({ room: 1, member_id: s1Member, body: "제한 후" });
+      expect(banned.error).not.toBeNull();
+      // 관리자가 초기화하면 다시 쓸 수 있다
+      expect((await admin.rpc("chat_reset_warnings", { p_member: s1Member })).error).toBeNull();
+      expect((await student.from("chat_messages").insert({ room: 1, member_id: s1Member, body: `RLS-${tag} 복귀` })).error).toBeNull();
+    });
+  });
 });
+

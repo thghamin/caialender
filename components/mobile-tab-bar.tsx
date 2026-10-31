@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 // 앱 하단 탭은 5개 이하가 누르기 편하다(탭 하나 폭 ≈ 화면의 1/5).
-// 자주 쓰는 4개 + '더보기'(공지·질문·검색·관리)
+// 자주 쓰는 4개 + '더보기'(공지·소통방·질문·검색·관리)
 const MAIN = [
   { href: "/", icon: "🏫", label: "학과" },
   { href: "/academic", icon: "🎓", label: "학사" },
@@ -15,6 +15,7 @@ const MAIN = [
 
 const MORE = [
   { href: "/notices", icon: "📄", label: "공지" },
+  { href: "/chat", icon: "🗨️", label: "소통방" },
   { href: "/qna", icon: "💬", label: "질문" },
   { href: "/search", icon: "🔍", label: "검색" },
 ] as const;

@@ -22,7 +22,7 @@ for (const [name, viewport] of [["휴대폰", { width: 390, height: 844 }], ["PC
       titles.push((await tour.getByRole("heading").textContent()) ?? "");
       if (i === 1) await page.screenshot({ path: `test-results/tour-${name}.png` });
     }
-    expect(titles).toEqual(["학과 캘린더", "AI 주간 브리핑", "캘린더 3개", "내 시간표", "공지 · 질문 · 검색"]);
+    expect(titles).toEqual(["학과 캘린더", "AI 주간 브리핑", "캘린더 3개", "내 시간표", "공지 · 소통방 · 질문"]);
     await expect(tour.getByText("5 / 5")).toBeVisible();
     await tour.getByRole("button", { name: "시작하기" }).click();
     await expect(tour).toBeHidden();

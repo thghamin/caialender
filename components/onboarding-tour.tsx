@@ -34,9 +34,9 @@ const STEPS: Step[] = [
     body: "에브리타임 시간표 캡처 한 장이면 시간표가 완성돼요. 수업 10분 전에 알림도 와요.",
   },
   {
-    target: '[data-tour="tab-more"], [data-tour="nav"] a[href="/qna"]',
-    title: "공지 · 질문 · 검색",
-    body: "학생회 공지를 보고, 궁금한 건 질문으로 남기면 답이 달릴 때 알려 줘요.",
+    target: '[data-tour="tab-more"], [data-tour="nav"] a[href="/chat"]',
+    title: "공지 · 소통방 · 질문",
+    body: "학년별 소통방에서 닉네임으로 수업 이야기를 나누고, 궁금한 건 질문으로 남기면 학생회 답이 달릴 때 알려 줘요.",
   },
 ];
 

@@ -1,0 +1,142 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { requireAdmin, requireUser } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
+import { pushConfigured, sendPushToUser } from "@/lib/push";
+import { isAdminRole } from "@/lib/types";
+import {
+  CHAT_MAX_LENGTH,
+  isBanned,
+  nicknameError,
+  parseRoom,
+  warningMessage,
+  type ChatIdentity,
+  type ChatMember,
+  type ChatMessage,
+} from "@/lib/chat";
+
+type Result = { error?: string };
+
+/** 내 소통방 정보 (닉네임 없으면 null) */
+export async function getMyChatMember(): Promise<ChatMember | null> {
+  await requireUser();
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("my_chat_member");
+  const row = (data as ChatMember[] | null)?.[0];
+  return row ?? null;
+}
+
+export async function setNickname(nickname: string): Promise<Result> {
+  await requireUser();
+  const err = nicknameError(nickname);
+  if (err) return { error: err };
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_chat_nickname", { p_nickname: nickname.trim() });
+  if (error) return { error: error.message.includes("이미") ? "이미 쓰는 닉네임이에요." : error.message };
+  revalidatePath("/chat", "layout");
+  return {};
+}
+
+const SELECT = "id, room, body, created_at, deleted_at, author:chat_members!chat_messages_member_id_fkey(id, nickname, staff)";
+type Row = { id: number; room: number; body: string; created_at: string; deleted_at: string | null; author: { id: string; nickname: string; staff: boolean } };
+
+/**
+ * 방의 메시지. afterId를 주면 그 뒤에 온 것만(새 메시지 확인용), 아니면 최근 100개.
+ * 관리자에게는 닉네임의 실제 회원(이름·학번·학년·경고 수)을 함께 준다.
+ */
+export async function getChatMessages(roomRaw: number, afterId?: number): Promise<ChatMessage[]> {
+  const me = await requireUser();
+  const room = parseRoom(roomRaw);
+  if (!room) return [];
+  const supabase = await createClient();
+  let q = supabase.from("chat_messages").select(SELECT).eq("room", room);
+  q = afterId ? q.gt("id", afterId).order("id").limit(200) : q.order("id", { ascending: false }).limit(100);
+  const { data } = await q;
+  const rows = ((data ?? []) as unknown as Row[]).sort((a, b) => a.id - b.id);
+
+  let identities = new Map<string, ChatIdentity>();
+  if (isAdminRole(me.role) && rows.length) {
+    const ids = [...new Set(rows.map((r) => r.author.id))];
+    const { data: who } = await supabase.rpc("chat_member_identities", { p_members: ids });
+    identities = new Map(((who ?? []) as (ChatIdentity & { id: string })[]).map(({ id, ...rest }) => [id, rest]));
+  }
+  return rows.map((r) => ({
+    id: r.id,
+    room,
+    body: r.deleted_at ? "" : r.body,
+    created_at: r.created_at,
+    deleted: !!r.deleted_at,
+    author: r.author,
+    identity: identities.get(r.author.id),
+  }));
+}
+
+export async function sendChatMessage(roomRaw: number, body: string): Promise<Result & { message?: ChatMessage }> {
+  await requireUser();
+  const room = parseRoom(roomRaw);
+  const text = body.trim();
+  if (!room) return { error: "방을 찾을 수 없어요." };
+  if (!text) return { error: "메시지를 입력하세요." };
+  if (text.length > CHAT_MAX_LENGTH) return { error: `메시지는 ${CHAT_MAX_LENGTH}자까지 쓸 수 있어요.` };
+  const member = await getMyChatMember();
+  if (!member) return { error: "먼저 닉네임을 정해 주세요." };
+  if (isBanned(member)) return { error: "경고 3회로 소통방 이용이 제한되었어요." };
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("chat_messages")
+    .insert({ room, member_id: member.id, body: text })
+    .select(SELECT)
+    .single();
+  if (error || !data) return { error: "메시지를 보내지 못했어요. 잠시 후 다시 해 주세요." };
+  const r = data as unknown as Row;
+  return { message: { id: r.id, room, body: r.body, created_at: r.created_at, deleted: false, author: r.author } };
+}
+
+/** 관리자: 메시지 삭제 */
+export async function deleteChatMessage(id: number): Promise<Result> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("chat_delete_message", { p_message: id });
+  return error ? { error: "삭제하지 못했어요." } : {};
+}
+
+/** 관리자: 작성자에게 경고 (메시지도 삭제). 경고받은 학생에게 알림 */
+export async function warnChatAuthor(id: number, reason: string): Promise<Result & { warnings?: number }> {
+  await requireAdmin();
+  const why = reason.trim();
+  if (!why) return { error: "경고 사유를 적어 주세요." };
+  if (why.length > 200) return { error: "사유는 200자까지 쓸 수 있어요." };
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("chat_warn", { p_message: id, p_reason: why, p_delete: true });
+  const row = (data as { user_id: string; warnings: number }[] | null)?.[0];
+  if (error || !row) return { error: "경고하지 못했어요." };
+  if (pushConfigured()) {
+    const msg = warningMessage(row.warnings, why);
+    after(() => sendPushToUser(row.user_id, { ...msg, tag: `chat-warn:${id}` }).catch(() => {}));
+  }
+  return { warnings: row.warnings };
+}
+
+/** 관리자: 경고 초기화 (이용 제한 풀기) */
+export async function resetChatWarnings(memberId: string): Promise<Result> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("chat_reset_warnings", { p_member: memberId });
+  return error ? { error: "초기화하지 못했어요." } : {};
+}
+
+/** 내가 받은 경고 목록 (사유·시각) */
+export async function getMyWarnings(): Promise<{ reason: string; created_at: string }[]> {
+  const member = await getMyChatMember();
+  if (!member) return [];
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("chat_warnings")
+    .select("reason, created_at")
+    .eq("member_id", member.id)
+    .order("created_at", { ascending: false })
+    .limit(10);
+  return data ?? [];
+}

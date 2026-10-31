@@ -31,6 +31,7 @@ export async function SiteHeader() {
           {approved && <NavLink href="/my">내 캘린더</NavLink>}
           {approved && <NavLink href="/timetable">내 시간표</NavLink>}
           {approved && <NavLink href="/notices">공지</NavLink>}
+          {approved && <NavLink href="/chat">소통방</NavLink>}
           {approved && <NavLink href="/qna">질문</NavLink>}
           {admin && <NavLink href="/admin" strong>관리자</NavLink>}
         </nav>

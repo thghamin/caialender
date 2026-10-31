@@ -1,0 +1,52 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { requireUser } from "@/lib/auth";
+import { CHAT_ROOMS, parseRoom } from "@/lib/chat";
+import { isAdminRole } from "@/lib/types";
+import { Card } from "@/components/ui";
+import { getChatMessages, getMyChatMember } from "../actions";
+import { NicknameForm } from "../nickname-form";
+import { ChatRoomView } from "./chat-room";
+
+export const metadata: Metadata = { title: "소통방 — C:AI:ender" };
+
+export default async function ChatRoomPage({ params }: PageProps<"/chat/[room]">) {
+  const room = parseRoom((await params).room);
+  if (!room) notFound();
+  const me = await requireUser();
+  const [member, messages] = await Promise.all([getMyChatMember(), getChatMessages(room)]);
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <Link href="/chat" className="grid size-9 place-items-center rounded-full text-xl hover:bg-brand-soft" aria-label="소통방 목록">
+          ‹
+        </Link>
+        <h1 className="text-xl font-extrabold tracking-tight">{room}학년 소통방</h1>
+        {/* 다른 학년 방으로 바로 이동 */}
+        <nav className="ml-auto flex gap-1" aria-label="다른 학년 방">
+          {CHAT_ROOMS.map((r) => (
+            <Link
+              key={r}
+              href={`/chat/${r}`}
+              prefetch
+              aria-current={r === room ? "page" : undefined}
+              className={`grid size-9 place-items-center rounded-full text-sm font-bold ${r === room ? "bg-brand text-white" : "bg-white text-zinc-500 ring-1 ring-zinc-200"}`}
+            >
+              {r}
+            </Link>
+          ))}
+        </nav>
+      </div>
+      {member ? (
+        <ChatRoomView room={room} initial={messages} member={member} admin={isAdminRole(me.role)} />
+      ) : (
+        <Card className="mx-auto w-full max-w-md">
+          <p className="mb-3 text-lg font-bold">닉네임을 정하고 들어가요</p>
+          <NicknameForm />
+        </Card>
+      )}
+    </div>
+  );
+}
