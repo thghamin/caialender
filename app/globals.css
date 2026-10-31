@@ -180,10 +180,6 @@ body {
   }
 }
 
-/* 학과 캘린더 배경: 옅은 초록 K:AI 무늬 */
-.dept-backdrop {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='140'%3E%3Ctext x='10' y='90' font-family='Arial Black,Arial,sans-serif' font-size='52' font-weight='900' fill='%2316a34a' fill-opacity='0.06' transform='rotate(-14 110 70)'%3EK:AI%3C/text%3E%3C/svg%3E");
-}
 
 @keyframes pop-in {
   from {

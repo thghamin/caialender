@@ -28,8 +28,8 @@ export default async function Home() {
   const admin = isAdminRole(user.role);
 
   return (
-    // 학과 캘린더는 초록 테마 + 배경 K:AI 무늬 (학사 캘린더는 KNU 빨강 유지)
-    <div className="theme-dept dept-backdrop flex flex-col gap-6">
+    // 학과 캘린더는 초록 테마 (K:AI는 상단 카드 안에만, 학사 캘린더는 KNU 빨강 유지)
+    <div className="theme-dept flex flex-col gap-6">
       <PageHero
         tone="dept"
         badge="K:AI · 경북대학교 인공지능전공"
