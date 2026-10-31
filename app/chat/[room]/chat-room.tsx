@@ -105,6 +105,7 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
     if (r.error || !r.message) return setError(r.error);
     setError(undefined);
     setText("");
+    if (input.current) input.current.style.height = "";
     setReplyTarget(null);
     nearBottom.current = true;
     setMessages((p) => (p.some((x) => x.id === r.message!.id) ? p : [...p, r.message!]));
@@ -180,10 +181,11 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
                     ↪ <b className="text-zinc-600">{m.reply.nickname}</b> {m.reply.deleted ? "삭제된 메시지" : m.reply.body}
                   </button>
                 )}
-                <div className="flex items-end gap-1.5">
-                  {mine && <span className="text-[10px] text-zinc-400">{timeText(m.created_at)}</span>}
+                <div className="flex max-w-full items-end gap-1.5">
+                  {mine && <span className="shrink-0 text-[10px] text-zinc-400">{timeText(m.created_at)}</span>}
+                  {/* 띄어쓰기 없는 긴 글(링크·ㅋㅋㅋ 등)도 말풍선 안에서 줄바꿈 */}
                   <p
-                    className={`whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-[14.5px] leading-snug ${
+                    className={`min-w-0 whitespace-pre-wrap rounded-2xl [overflow-wrap:anywhere] px-3 py-2 text-[14.5px] leading-snug ${
                       m.deleted
                         ? "bg-zinc-100 italic text-zinc-400"
                         : m.author.staff
@@ -195,7 +197,7 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
                   >
                     {m.deleted ? (m.deletedSelf ? "삭제된 메시지예요" : "관리자가 삭제한 메시지예요") : m.body}
                   </p>
-                  {!mine && <span className="text-[10px] text-zinc-400">{timeText(m.created_at)}</span>}
+                  {!mine && <span className="shrink-0 text-[10px] text-zinc-400">{timeText(m.created_at)}</span>}
                 </div>
                 {/* 관리자: 지워진 메시지의 원래 내용 (본인이 지운 글도 확인·경고할 수 있다) */}
                 {admin && m.deleted && m.originalBody && (
@@ -310,15 +312,23 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
             <textarea
               ref={input}
               value={text}
-              onChange={(e) => setText(e.target.value)}
+              onChange={(e) => {
+                setText(e.target.value);
+                // 줄이 늘면 입력창도 같이 커진다 (최대 높이는 max-h)
+                e.target.style.height = "auto";
+                e.target.style.height = `${e.target.scrollHeight}px`;
+              }}
               onKeyDown={(e) => {
-                // Enter로 보내고 Shift+Enter는 줄바꿈 (한글 조합 중에는 보내지 않는다)
+                // PC: Enter로 보내고 Shift+Enter는 줄바꿈 (한글 조합 중에는 보내지 않는다)
+                // 휴대폰: Shift 키가 없으니 Enter는 줄바꿈, 보내기는 버튼으로
+                if (window.matchMedia("(pointer: coarse)").matches) return;
                 if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
                   e.preventDefault();
                   send();
                 }
               }}
               rows={1}
+              enterKeyHint="enter"
               maxLength={CHAT_MAX_LENGTH}
               placeholder={admin && asStaff ? "학생회로 보내기" : "메시지 보내기"}
               aria-label="메시지"

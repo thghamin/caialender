@@ -94,6 +94,30 @@ test("소통방: 학년 방을 골라 닉네임으로 대화하고, 학생에게
   await b.close();
 });
 
+test("휴대폰: 엔터는 줄바꿈이고 보내기 버튼으로 보낸다. 띄어쓰기 없는 긴 글도 말풍선 안에서 줄바꿈된다", async ({ browser }) => {
+  const ctx = await browser.newContext({ viewport: { width: 360, height: 760 }, hasTouch: true, isMobile: true });
+  const b = await ctx.newPage();
+  await enter(b, "b", 2);
+  const box = b.getByLabel("메시지", { exact: true });
+  await box.click();
+  await box.pressSequentially(`${tag} 첫째 줄`);
+  await box.press("Enter"); // 휴대폰에서는 보내지 않고 줄을 바꾼다
+  await box.pressSequentially("둘째 줄");
+  await expect(box).toHaveValue(`${tag} 첫째 줄\n둘째 줄`);
+  await b.getByRole("button", { name: "보내기" }).click();
+  const multi = b.getByTestId("chat-message").filter({ hasText: `${tag} 첫째 줄` });
+  await expect(multi).toContainText("둘째 줄");
+  await expect(box).toHaveValue("");
+
+  const long = `${tag}${"ㅋ".repeat(60)}https://caialender.vercel.app/chat/2?very=long&query=string`;
+  await send(b, long);
+  const bubble = b.getByTestId("chat-message").filter({ hasText: long }).locator("p").first();
+  const r = (await bubble.boundingBox())!;
+  expect(r.x + r.width).toBeLessThanOrEqual(360);
+  expect(await b.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(360);
+  await ctx.close();
+});
+
 test("관리자: 닉네임의 실제 회원을 보고, 삭제·경고한다. 경고 3회면 글을 쓸 수 없다", async ({ browser }) => {
   const admin = await browser.newPage();
   await enter(admin, "admin", 2);
