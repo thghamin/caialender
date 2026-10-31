@@ -103,9 +103,9 @@ test("개인 일정: 학과 일정과 겹치면 경고, 확인 후 저장, 상�
   await expect(page.getByText("편의점 알바").first()).toBeVisible();
 
   await page.goto(`/events/${ids.g1}`);
-  await expect(page.getByText(/내 일정과 시간이 겹칩니다: 편의점 알바/)).toBeVisible();
+  await expect(page.getByText(/내 일정과 시간이 겹칩니다:.*편의점 알바/)).toBeVisible();
 
-  // 겹치지 않는 일정은 바로 저장
+  // 두 번째 개인 일정 (테스트 일정과는 겹치지 않음)
   await page.goto("/my");
   await page.getByLabel("제목").fill("스터디");
   await page.getByLabel("날짜").fill(ymd(kstDay(6)));
@@ -115,7 +115,12 @@ test("개인 일정: 학과 일정과 겹치면 경고, 확인 후 저장, 상�
   await expect(page.getByRole("button", { name: "종료 10분" })).toHaveCount(0);
   await expect(page.getByText("오전 10:00 ~ 오후 12:30")).toBeVisible();
   await page.getByRole("button", { name: "추가", exact: true }).click();
-  await expect(page.getByText("개인 일정을 추가했습니다.")).toBeVisible();
+  // 실제 학과 일정(시간 지정 여러 날 일정 등)과 겹칠 수 있으니 경고가 뜨면 확인하고 저장
+  const saved = page.getByText("개인 일정을 추가했습니다.");
+  const anyway = page.getByRole("button", { name: "겹쳐도 추가하기" });
+  await expect(saved.or(anyway)).toBeVisible();
+  if (await anyway.isVisible()) await anyway.click();
+  await expect(saved).toBeVisible();
 
   // 다른 학생에게는 내 개인 일정이 보이지 않는다
   await page.getByRole("button", { name: "로그아웃" }).click();

@@ -48,7 +48,7 @@ export default async function Home() {
         <section className="flex min-w-0 flex-col gap-3">
           <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-zinc-500">
-              {admin ? "관리자: 일정을 누르면 바로 수정, 빈 날짜를 누르면 그날로 일정 추가" : "일정을 누르면 내 캘린더에 바로 추가할 수 있어요."}
+              {admin ? "일정을 누르면 수정 · 빈 날짜를 누르면 추가" : "일정을 누르면 내 캘린더에 추가할 수 있어요."}
             </p>
             <CalendarLegend keys={["dept-event", "dept-deadline", "dept-other"]} />
           </div>

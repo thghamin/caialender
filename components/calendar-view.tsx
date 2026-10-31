@@ -102,29 +102,41 @@ export function CalendarView({ items, loggedIn = false, manage }: { items: Calen
         }
         footerToolbar={mobile ? { center: "dayGridMonth,listMonth" } : undefined}
         height="auto"
+        // 그달에 필요한 주만 (다음 달 날짜만 있는 빈 줄을 그리지 않는다)
+        fixedWeekCount={false}
         dayMaxEvents={mobile ? 2 : 3}
-        // 월 보기에서도 모든 일정을 색 막대로 그려서 긴 제목을 두 줄까지 보여준다
+        // 날짜는 숫자만, 오늘은 동그라미. 일요일 빨강·토요일 파랑
+        dayCellTopContent={(a) => (
+          <span className={`cal-day ${a.isToday ? "cal-day-today" : ""} ${a.isOther ? "cal-day-other" : a.dow === 0 ? "cal-sun" : a.dow === 6 ? "cal-sat" : ""}`}>
+            {a.dayNumberText.replace("일", "")}
+          </span>
+        )}
+        dayHeaderClass={(a) => (a.dow === 0 ? "cal-sun" : a.dow === 6 ? "cal-sat" : "")}
+        // 일정은 연한 색 막대 + 왼쪽 진한 선, 제목은 한 줄 (전체 제목은 눌러서 보기)
         eventDisplay="block"
-        eventContent={(arg) => {
-          const grid = arg.view.type.startsWith("dayGrid");
-          return (
-            <div
-              className={`cal-ev ${grid ? "cal-ev-clamp" : ""}`}
-              title={arg.timeText ? `${arg.timeText} ${arg.event.title}` : arg.event.title}
-            >
-              {arg.timeText && !arg.event.allDay && <span className="cal-ev-time">{arg.timeText}</span>}
-              <span className="cal-ev-title">{arg.event.title}</span>
-            </div>
-          );
-        }}
-        events={items.map((i) => ({
-          id: i.id,
-          title: `${i.kind === "deadline" ? "⏰ " : ""}${i.interested ? "★ " : ""}${i.title}`,
-          start: i.start,
-          end: endForCalendar(i),
-          allDay: i.allDay,
-          color: COLORS[colorKey(i)],
-        }))}
+        eventContent={(arg) => (
+          <div
+            className="cal-ev"
+            style={{ boxShadow: `inset 3px 0 0 ${arg.event.extendedProps.base as string}` }}
+            title={arg.timeText ? `${arg.timeText} ${arg.event.title}` : arg.event.title}
+          >
+            {arg.timeText && !arg.event.allDay && <span className="cal-ev-time">{arg.timeText}</span>}
+            <span className="cal-ev-title">{arg.event.title}</span>
+          </div>
+        )}
+        events={items.map((i) => {
+          const base = COLORS[colorKey(i)];
+          return {
+            id: i.id,
+            title: `${i.kind === "deadline" ? "⏰ " : ""}${i.interested ? "★ " : ""}${i.title}`,
+            start: i.start,
+            end: endForCalendar(i),
+            allDay: i.allDay,
+            color: `color-mix(in srgb, ${base} 15%, white)`,
+            contrastColor: `color-mix(in srgb, ${base} 70%, black)`,
+            extendedProps: { base },
+          };
+        })}
         eventClick={(info) => {
           info.jsEvent.preventDefault();
           setSelectedId(info.event.id);
