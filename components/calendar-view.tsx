@@ -298,7 +298,7 @@ function endForCalendar(i: CalendarItem) {
 
 export function CalendarLegend({ keys }: { keys: ColorKey[] }) {
   return (
-    <div className="flex flex-wrap gap-3 text-xs text-zinc-600">
+    <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-600">
       {keys.map((k) => (
         <span key={k} className="flex items-center gap-1">
           <span className="inline-block size-2.5 rounded-full" style={{ background: COLORS[k] }} />

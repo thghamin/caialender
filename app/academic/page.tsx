@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getCurrentUserId, requireUser } from "@/lib/auth";
 import { isAdminRole } from "@/lib/types";
 import { getInterestIds, getPublishedEvents } from "@/lib/data/events";
@@ -21,6 +22,7 @@ export default async function AcademicPage() {
     userId ? getInterestIds(userId) : new Set<string>(),
   ]);
   const undergrad = events.filter((e) => e.target_note !== "대학원");
+  const admin = isAdminRole(user.role);
 
   return (
     // 학사 캘린더는 KNU 빨강 고정
@@ -37,14 +39,30 @@ export default async function AcademicPage() {
             </a>
           </>
         }
-      />
+      >
+        {/* 학과 캘린더와 같은 배치: 다른 캘린더로 가는 버튼 (학사는 빨강) */}
+        <Link href="/" className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-b from-red-500 to-red-600 px-4 py-2 text-[13.5px] font-bold text-white shadow-md shadow-red-600/25 hover:brightness-105">
+          학과 캘린더 보기 <span aria-hidden>→</span>
+        </Link>
+        <Link href="/my" className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-4 py-2 text-[13.5px] font-bold text-red-600 ring-1 ring-red-300 hover:bg-white">
+          내 캘린더 <span aria-hidden>→</span>
+        </Link>
+        {admin && (
+          <Link href="/admin/events/new?cal=academic" className="rounded-full bg-zinc-900 px-4 py-2 text-[13.5px] font-bold text-white hover:bg-zinc-800">
+            + 일정 추가
+          </Link>
+        )}
+      </PageHero>
       <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
         <section className="flex min-w-0 flex-col gap-3">
-          <div className="flex items-center justify-end">
+          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-zinc-500">
+              {admin ? "일정을 누르면 수정 · 빈 날짜를 누르면 추가" : "일정을 누르면 내 캘린더에 추가할 수 있어요."}
+            </p>
             <CalendarLegend keys={["academic", "dept-deadline", "academic-holiday"]} />
           </div>
           <Card className="p-2! sm:p-3!">
-            <AcademicCalendar items={events.map((e) => toCalendarItem(e, interests))} loggedIn manage={isAdminRole(user.role)} />
+            <AcademicCalendar items={events.map((e) => toCalendarItem(e, interests))} loggedIn manage={admin} />
           </Card>
         </section>
         <aside className="flex min-w-0 flex-col gap-4">

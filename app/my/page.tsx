@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { isMyColor, MY_COLOR_COOKIE } from "@/lib/my-color";
@@ -43,12 +44,19 @@ export default async function MyPage() {
         title="내 캘린더"
         subtitle={`학과·학사 캘린더에서 ☆로 담은 일정 ${mine.length}개(학사 ${academicCount}개) + 개인 일정 ${personal.length}개`}
       >
+        {/* 학과·학사 캘린더와 같은 배치: 다른 캘린더로 가는 버튼 (내 색을 따른다) */}
+        <Link href="/" className="inline-flex items-center gap-1.5 rounded-full bg-brand px-4 py-2 text-[13.5px] font-bold text-white shadow-md shadow-brand/25 hover:brightness-105">
+          학과 캘린더 <span aria-hidden>→</span>
+        </Link>
+        <Link href="/academic" className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-4 py-2 text-[13.5px] font-bold text-brand ring-1 ring-brand/30 hover:bg-white">
+          학사 캘린더 <span aria-hidden>→</span>
+        </Link>
         <MyColorPicker initial={color} />
       </PageHero>
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
       <section className="flex min-w-0 flex-col gap-3">
         <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-zinc-500">학사·학과 캘린더에서 일정을 눌러 ☆를 누르면 여기에 담겨요.</p>
+          <p className="text-sm text-zinc-500">학과·학사 캘린더에서 ☆로 담은 일정이 여기에 모여요.</p>
           <CalendarLegend keys={["dept-event", "dept-deadline", "academic", "academic-holiday", "personal"]} />
         </div>
         <Card className="p-2! sm:p-3!">

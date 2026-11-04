@@ -11,8 +11,8 @@ export function AcademicCalendar({ items, loggedIn, manage = false }: { items: C
 
   return (
     <div className="flex flex-col gap-2">
-      <label className="flex w-fit items-center gap-2 self-end text-sm text-zinc-600">
-        <input type="checkbox" checked={showGrad} onChange={(e) => setShowGrad(e.target.checked)} className="accent-brand" />
+      <label className="flex w-fit items-center gap-1.5 self-end rounded-full bg-zinc-100 px-3 py-1 text-[12.5px] font-semibold text-zinc-600">
+        <input type="checkbox" checked={showGrad} onChange={(e) => setShowGrad(e.target.checked)} className="size-3.5 accent-brand" />
         대학원 일정도 보기 ({gradCount})
       </label>
       <CalendarView items={showGrad ? items : items.filter((i) => !isGrad(i))} loggedIn={loggedIn} manage={manage ? { calendar: "academic" } : undefined} />

@@ -1,4 +1,4 @@
-import { expect, test, type Browser } from "@playwright/test";
+import { expect, test, type Browser, type Page } from "@playwright/test";
 import { deleteUsersByPrefix, loginViaUi, service, signupViaUi } from "./helpers";
 
 // 학사/학과/내 캘린더 분리, 캘린더에서 바로 담기, 질문 게시판, 총관리자의 관리자 임명
@@ -48,6 +48,15 @@ test.afterAll(async () => {
   await s.from("events").delete().like("title", `${T}%`);
   await deleteUsersByPrefix(prefix); // questions는 profiles 삭제와 함께 지워진다
 });
+
+
+/** 달력에서 일정을 누른다. 그날 일정이 많아 '+N'에 숨어 있으면 '일정'(목록) 보기로 바꿔서 누른다 */
+async function clickCalendarEvent(page: Page, title: string) {
+  const cal = page.locator(".caialender-calendar");
+  await expect(cal).toBeVisible();
+  if (!(await cal.getByText(title).first().isVisible())) await cal.getByText("일정", { exact: true }).click();
+  await cal.getByText(title).first().click();
+}
 
 test("학사·학과 캘린더는 따로 보이고, 눌러서 담은 일정만 내 캘린더에", async ({ page }) => {
   await loginViaUi(page, email("student"));
@@ -264,7 +273,7 @@ test("관리자: 학과 캘린더에서 일정을 눌러 바로 수정하고, �
   await loginViaUi(page, email("admin"));
   await page.waitForURL("**/my");
   await page.goto("/");
-  await page.locator(".caialender-calendar").getByText(`${T} 학과 MT`).first().click();
+  await clickCalendarEvent(page, `${T} 학과 MT`);
   const popup = page.getByRole("dialog", { name: `${T} 학과 MT` });
   await popup.getByRole("link", { name: "✏️ 수정·관리" }).click();
   await expect(page.getByRole("heading", { name: "일정 검수·수정" })).toBeVisible();
@@ -276,7 +285,7 @@ test("관리자: 학과 캘린더에서 일정을 눌러 바로 수정하고, �
   const kst = new Date(Date.now() + 9 * 3600_000);
   const d = kst.getUTCDate() > 15 ? 3 : 25;
   const empty = `${kst.toISOString().slice(0, 8)}${String(d).padStart(2, "0")}`;
-  await page.locator(`.caialender-calendar [data-date="${empty}"]`).first().click({ position: { x: 8, y: 50 } });
+  await page.locator(`.caialender-calendar [data-date="${empty}"]`).first().click({ position: { x: 4, y: 4 } }); // 날짜 칸 맨 위(일정 막대가 없는 곳)
   await expect(page).toHaveURL(new RegExp(`/admin/events/new\\?date=${empty}&cal=dept`));
   await expect(page.getByLabel("시작")).toHaveValue(`${empty}T10:00`);
   await expect(page.getByLabel("캘린더")).toHaveValue("dept");
@@ -286,7 +295,8 @@ test("관리자: 학과 캘린더에서 일정을 눌러 바로 수정하고, �
   await loginViaUi(student, email("student"));
   await student.waitForURL("**/my");
   await student.goto("/");
-  await student.locator(".caialender-calendar").getByText(`${T} 학과 MT`).first().click();
+  await clickCalendarEvent(student, `${T} 학과 MT`);
+  await expect(student.getByRole("dialog", { name: `${T} 학과 MT` })).toBeVisible();
   await expect(student.getByRole("link", { name: "✏️ 수정·관리" })).toHaveCount(0);
   await student.close();
 });
