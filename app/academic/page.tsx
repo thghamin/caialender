@@ -43,7 +43,7 @@ export default async function AcademicPage() {
           <div className="flex items-center justify-end">
             <CalendarLegend keys={["academic", "dept-deadline", "academic-holiday"]} />
           </div>
-          <Card className="p-3">
+          <Card className="p-2! sm:p-3!">
             <AcademicCalendar items={events.map((e) => toCalendarItem(e, interests))} loggedIn manage={isAdminRole(user.role)} />
           </Card>
         </section>

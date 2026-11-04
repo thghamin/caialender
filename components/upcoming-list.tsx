@@ -27,7 +27,7 @@ export function UpcomingList({ events, title, limit = 8 }: { events: CalendarEve
                     <span className="text-lg font-extrabold leading-tight tabular-nums">{d.getUTCDate()}</span>
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-[0.95rem] font-semibold group-hover:text-brand">{e.title}</span>
+                    <span className="line-clamp-2 text-[0.95rem] font-semibold leading-snug group-hover:text-brand">{e.title}</span>
                     <span className="mt-0.5 flex items-center gap-1.5 text-xs text-zinc-500">
                       <KindBadge kind={e.kind} />
                       {formatKst(e.start_at, !e.all_day).replace(/^\d+월 \d+일/, "")}

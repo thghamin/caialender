@@ -39,7 +39,7 @@ export function BriefingCard({ scope }: { scope: "all" | "me" }) {
       {state.status === "error" && <p className="text-sm text-zinc-500">{state.message}</p>}
       {state.status === "ok" && (
         <>
-          <p className="whitespace-pre-wrap text-sm leading-6 text-zinc-800">{state.content}</p>
+          <p className="whitespace-pre-wrap text-[13.5px] leading-[1.7] text-zinc-800 sm:text-sm sm:leading-6">{state.content}</p>
           <p className="mt-2 text-[0.6875rem] text-zinc-400">🤖 학생회가 게시한 일정만으로 AI가 정리했어요</p>
         </>
       )}

@@ -105,6 +105,12 @@ export function CalendarView({ items, loggedIn = false, manage }: { items: Calen
         // 그달에 필요한 주만 (다음 달 날짜만 있는 빈 줄을 그리지 않는다)
         fixedWeekCount={false}
         dayMaxEvents={mobile ? 2 : 3}
+        // 휴대폰: 버튼·'+N'·칸을 가볍게 (globals.css의 cal-* 참고)
+        buttonClass="cal-btn"
+        toolbarTitleClass="cal-title"
+        moreLinkClass="cal-more"
+        moreLinkContent={(a) => `+${a.num}`}
+        dayCellClass="cal-cell"
         // 날짜는 숫자만, 오늘은 동그라미. 일요일 빨강·토요일 파랑
         dayCellTopContent={(a) => (
           <span className={`cal-day ${a.isToday ? "cal-day-today" : ""} ${a.isOther ? "cal-day-other" : a.dow === 0 ? "cal-sun" : a.dow === 6 ? "cal-sat" : ""}`}>
@@ -128,7 +134,8 @@ export function CalendarView({ items, loggedIn = false, manage }: { items: Calen
           const base = COLORS[colorKey(i)];
           return {
             id: i.id,
-            title: `${i.kind === "deadline" ? "⏰ " : ""}${i.interested ? "★ " : ""}${i.title}`,
+            // 휴대폰은 칸이 좁아 ⏰는 빼고 색으로만 마감 표시 (범례 참고)
+            title: `${i.kind === "deadline" && !mobile ? "⏰ " : ""}${i.interested ? "★ " : ""}${i.title}`,
             start: i.start,
             end: endForCalendar(i),
             allDay: i.allDay,

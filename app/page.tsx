@@ -56,7 +56,7 @@ export default async function Home() {
             </p>
             <CalendarLegend keys={["dept-event", "dept-deadline", "dept-other"]} />
           </div>
-          <Card className="p-3" data-tour="calendar">
+          <Card className="p-2! sm:p-3!" data-tour="calendar">
             <CalendarView items={events.map((e) => toCalendarItem(e, interests))} loggedIn manage={admin ? { calendar: "dept" } : undefined} />
           </Card>
         </section>

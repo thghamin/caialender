@@ -129,9 +129,10 @@ test("텍스트 공지 → AI 초안 → 검수·수정 → 게시 → 학생 �
   await expect(page.getByText("게시됨", { exact: true }).first()).toBeVisible();
 
   // 학생의 학과 캘린더에 반영 (내 캘린더에는 학생이 ☆로 담아야 들어간다)
-  await student.goto("/");
-  await expect(student.locator("aside").getByText(`새터 신청 마감 ${tag}`)).toBeVisible();
-  await expect(student.locator("aside").getByText(main!.title)).toBeVisible();
+  // (다가오는 일정은 8개까지라 실제 일정이 많으면 밀려날 수 있어, 학생 검색으로 게시 여부를 확인)
+  await student.goto(`/search?q=${tag}`);
+  await expect(student.getByText(`새터 신청 마감 ${tag}`)).toBeVisible();
+  await expect(student.getByText(main!.title).first()).toBeVisible();
   await studentCtx.close();
 });
 

@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import Link from "next/link";
 import { signup } from "@/app/auth/actions";
 import { Alert, Button, Field } from "@/components/ui";
+import { AUTO_APPROVE_SIGNUP } from "@/lib/beta";
 
 export function SignupForm() {
   const [state, action, pending] = useActionState(signup, undefined);
@@ -11,6 +12,13 @@ export function SignupForm() {
   return (
     <form action={action} className="flex flex-col gap-4">
       <Field label="이름" name="name" autoComplete="name" required maxLength={30} />
+      {/* 베타 기간: 실제 학번·메일이 아니어도 가입 가능 (메일 인증 없음) */}
+      {AUTO_APPROVE_SIGNUP && (
+        <p className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2.5 text-[13px] leading-relaxed text-sky-900" data-testid="beta-signup-note">
+          <b>베타 기간 안내</b> · 학번과 이메일은 <b>임의로 적어도 가입할 수 있어요.</b> 학번은 숫자 10자리(다른 사람과 겹치지 않게),
+          이메일은 형식만 맞으면 돼요 (예: test1234@knu.ac.kr). 로그인할 때 쓰니 꼭 기억해 두세요.
+        </p>
+      )}
       <Field label="학번" name="student_no" inputMode="numeric" pattern="\d{10}" placeholder="2027012345" required />
       <Field label="이메일" name="email" type="email" autoComplete="email" required />
       <Field label="비밀번호 (8자 이상)" name="password" type="password" autoComplete="new-password" minLength={8} required />

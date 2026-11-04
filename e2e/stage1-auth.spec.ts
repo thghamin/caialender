@@ -46,6 +46,9 @@ test("관리자 지정 후 관리자 페이지 접근", async ({ page }) => {
 });
 
 test("베타: 가입하면 바로 이용 / 승인 대기 계정은 서비스 차단 → 관리자 승인 → 이용", async ({ page, browser }) => {
+  // 가입 화면에 '학번·이메일은 임의로 적어도 된다' 베타 안내
+  await page.goto("/signup");
+  await expect(page.getByTestId("beta-signup-note")).toContainText("임의로 적어도 가입할 수 있어요");
   await signupViaUi(page, { name: "김새내", studentNo: "2027012345", grade: 1, email: studentEmail }, { approve: false });
   // 베타 기간: 승인 없이 바로 학과 캘린더로
   await expect(page).toHaveURL(/\/$/);

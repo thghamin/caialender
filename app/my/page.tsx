@@ -51,7 +51,7 @@ export default async function MyPage() {
           <p className="text-sm text-zinc-500">학사·학과 캘린더에서 일정을 눌러 ☆를 누르면 여기에 담겨요.</p>
           <CalendarLegend keys={["dept-event", "dept-deadline", "academic", "academic-holiday", "personal"]} />
         </div>
-        <Card className="p-3">
+        <Card className="p-2! sm:p-3!">
           <CalendarView
             loggedIn
             items={[
