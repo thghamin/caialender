@@ -40,7 +40,8 @@ function FeedbackDialog({ onClose }: { onClose: () => void }) {
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-[90] flex items-end justify-center bg-black/40 p-3 sm:items-center" onClick={onClose}>
+    // 휴대폰: 화면 위쪽에 바로 보이게 (아래쪽에 두면 키보드에 가려 스크롤해야 보인다)
+    <div className="fixed inset-0 z-[90] flex items-start justify-center overflow-y-auto bg-black/40 p-3 pt-[max(4.5rem,calc(env(safe-area-inset-top)+1rem))] sm:items-center sm:pt-3" onClick={onClose}>
       <div role="dialog" aria-label="의견 남기기" onClick={(e) => e.stopPropagation()} className="animate-pop-in w-full max-w-md rounded-3xl bg-white p-5 shadow-2xl">
         {done ? (
           <div className="flex flex-col items-center gap-2 py-4 text-center">
@@ -80,7 +81,8 @@ function FeedbackDialog({ onClose }: { onClose: () => void }) {
               minLength={2}
               maxLength={1000}
               rows={5}
-              autoFocus
+              // PC만 바로 입력 (휴대폰은 키보드가 바로 올라오면 화면이 밀린다)
+              autoFocus={typeof window !== "undefined" && window.matchMedia("(pointer: fine)").matches}
               aria-label="의견"
               placeholder="예: 시간표 가져오기에서 토요일 수업이 안 보여요"
               className="rounded-xl border border-zinc-300 bg-white px-3 py-2.5 text-[16px] outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 md:text-sm"
