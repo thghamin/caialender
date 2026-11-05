@@ -7,7 +7,7 @@ import { getCurrentUserId, requireUser } from "@/lib/auth";
 import { getInterestIds, getPersonalEvents, getPublishedEvents, getReminderKeys, pickMyEvents } from "@/lib/data/events";
 import { PushSetup } from "@/components/push-setup";
 import { ReminderBell } from "./reminder-bell";
-import { formatKst, requestNow } from "@/lib/datetime";
+import { formatKst, kstDate, requestNow } from "@/lib/datetime";
 import { CalendarLegend, CalendarView } from "@/components/calendar-view";
 import { toCalendarItem } from "@/lib/calendar-items";
 import { PageHero } from "@/components/page-hero";
@@ -32,7 +32,8 @@ export default async function MyPage() {
   const saved = cookieStore.get(MY_COLOR_COOKIE)?.value;
   const color = isMyColor(saved) ? saved : "red";
   const mine = pickMyEvents(events, interests);
-  const upcomingPersonal = personal.filter((p) => new Date(p.end_at).getTime() >= requestNow());
+  // 종일 일정은 마지막 날 밤까지 남긴다 (end_at이 마지막 날 0시)
+  const upcomingPersonal = personal.filter((p) => new Date(p.end_at).getTime() + (p.all_day ? 86400_000 : 0) >= requestNow());
 
   const academicCount = mine.filter((e) => e.calendar === "academic").length;
 
@@ -75,7 +76,7 @@ export default async function MyPage() {
                 title: p.title,
                 start: p.start_at,
                 end: p.end_at,
-                allDay: false,
+                allDay: p.all_day,
                 kind: "personal" as const,
                 reminder: { type: "personal" as const, day: reminders.has(`personal:${p.id}:1440`), hour: reminders.has(`personal:${p.id}:60`) },
               })),
@@ -96,7 +97,7 @@ export default async function MyPage() {
               {upcomingPersonal.map((p) => (
                 <li key={p.id} className="flex items-center justify-between text-sm">
                   <span>
-                    <span className="text-zinc-500">{formatKst(p.start_at)}</span> {p.title}
+                    <span className="text-zinc-500">{personalWhen(p)}</span> {p.title}
                   </span>
                   <span className="flex items-center gap-1">
                     <ReminderBell type="personal" id={p.id} lead={1440} initial={reminders.has(`personal:${p.id}:1440`)} />
@@ -112,4 +113,11 @@ export default async function MyPage() {
       </div>
     </div>
   );
+}
+
+/** 개인 일정 목록의 날짜: 종일은 날짜만, 여러 날이면 "첫날 ~ 마지막 날" */
+function personalWhen(p: { start_at: string; end_at: string; all_day: boolean }) {
+  const sameDay = kstDate(p.start_at) === kstDate(p.end_at);
+  if (p.all_day) return sameDay ? `${formatKst(p.start_at, false)} 종일` : `${formatKst(p.start_at, false)} ~ ${formatKst(p.end_at, false)}`;
+  return sameDay ? formatKst(p.start_at) : `${formatKst(p.start_at)} ~ ${formatKst(p.end_at)}`;
 }

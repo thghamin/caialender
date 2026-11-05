@@ -142,6 +142,19 @@ test("개인 일정: 내 캘린더에 담은 학과 일정과 겹치면 경고, 
   if (await anyway.isVisible()) await anyway.click();
   await expect(saved).toBeVisible();
 
+  // 기간 + 종일 개인 일정 (예: 여행 3일)
+  await page.getByRole("button", { name: "+ 개인 일정 추가" }).click();
+  await page.getByLabel("제목").fill("가족 여행");
+  await page.getByRole("button", { name: "기간", exact: true }).click();
+  await page.getByRole("button", { name: "📅 종일", exact: true }).click();
+  await page.getByLabel("시작 날짜").fill(ymd(kstDay(8)));
+  await page.getByLabel("종료 날짜").fill(ymd(kstDay(10)));
+  await expect(page.getByTestId("personal-summary")).toContainText("(3일)");
+  await expect(page.getByRole("button", { name: "시작 시각 고르기" })).toHaveCount(0); // 종일이면 시각 칸이 없다
+  await page.getByRole("button", { name: "추가", exact: true }).click();
+  await expect(page.getByText("개인 일정을 추가했어요 ✓")).toBeVisible();
+  await expect(page.getByText(/~ .*가족 여행/).first()).toBeVisible(); // 목록: "첫날 ~ 마지막 날 가족 여행"
+
   // 다른 학생에게는 내 개인 일정이 보이지 않는다
   await page.getByRole("button", { name: "로그아웃" }).click();
   await expect(page.getByRole("heading", { name: "로그인" })).toBeVisible();

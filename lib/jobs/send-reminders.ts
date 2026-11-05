@@ -27,12 +27,12 @@ export async function sendDueReminders(now = Date.now()) {
       ? db.from("events").select("id, title, start_at, all_day, location").in("id", eventIds).eq("status", "published").gte("start_at", windowFrom).lte("start_at", windowTo)
       : Promise.resolve({ data: [] as ReminderEvent[] }),
     personalIds.length
-      ? db.from("personal_events").select("id, title, start_at").in("id", personalIds).gte("start_at", windowFrom).lte("start_at", windowTo)
+      ? db.from("personal_events").select("id, title, start_at, all_day").in("id", personalIds).gte("start_at", windowFrom).lte("start_at", windowTo)
       : Promise.resolve({ data: [] as { id: string; title: string; start_at: string }[] }),
   ]);
   const byId = new Map<string, { e: ReminderEvent; kind: "event" | "personal" }>();
   for (const e of events ?? []) byId.set(`event:${e.id}`, { e: e as ReminderEvent, kind: "event" });
-  for (const p of personal ?? []) byId.set(`personal:${p.id}`, { e: { ...p, all_day: false, location: null }, kind: "personal" });
+  for (const p of personal ?? []) byId.set(`personal:${p.id}`, { e: { ...p, all_day: "all_day" in p && !!p.all_day, location: null }, kind: "personal" });
   for (const r of reminders ?? []) {
     const hit = byId.get(`${r.target_type}:${r.target_id}`);
     const lead = (r.lead_minutes === 60 ? 60 : 1440) as LeadMinutes;

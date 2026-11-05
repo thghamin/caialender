@@ -25,7 +25,7 @@ export type PersonalState =
       savedAt?: number;
       conflicts?: { title: string; start_at: string }[];
       /** React 19는 액션 후 폼을 비우므로, 다시 보여줄 입력값을 돌려준다 */
-      values?: { title: string; start: string; end: string };
+      values?: { title: string; start: string; end: string; allDay: boolean };
     }
   | undefined;
 
@@ -34,6 +34,7 @@ const personalSchema = z.object({
   start: z.string().min(1, "시작 시각을 입력하세요."),
   end: z.string().min(1, "종료 시각을 입력하세요."),
   memo: z.string().max(500).optional().default(""),
+  all_day: z.string().optional(),
   force: z.string().optional(),
 });
 
@@ -44,15 +45,19 @@ export async function addPersonalEvent(_prev: PersonalState, formData: FormData)
     title: String(formData.get("title") ?? ""),
     start: String(formData.get("start") ?? ""),
     end: String(formData.get("end") ?? ""),
+    allDay: formData.get("all_day") === "on",
   };
   const parsed = personalSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0].message, values };
-  const start = kstToIso(parsed.data.start);
-  const end = kstToIso(parsed.data.end);
-  if (!start?.hasTime || !end?.hasTime) return { error: "시각 형식이 올바르지 않습니다.", values };
-  if (end.iso <= start.iso) return { error: "종료 시각이 시작 시각보다 늦어야 합니다.", values };
+  const allDay = parsed.data.all_day === "on";
+  // 종일: 날짜만(첫날 ~ 마지막 날), 시간 지정: 날짜+시각 (여러 날이어도 된다)
+  const start = kstToIso(allDay ? parsed.data.start.slice(0, 10) : parsed.data.start);
+  const end = kstToIso(allDay ? parsed.data.end.slice(0, 10) : parsed.data.end);
+  if (!start || !end || (!allDay && (!start.hasTime || !end.hasTime))) return { error: "날짜·시각 형식이 올바르지 않습니다.", values };
+  if (allDay ? end.iso < start.iso : end.iso <= start.iso)
+    return { error: allDay ? "마지막 날이 첫날보다 빠를 수 없습니다." : "종료 시각이 시작 시각보다 늦어야 합니다.", values };
 
-  const candidate = { id: "new", title: parsed.data.title, start_at: start.iso, end_at: end.iso };
+  const candidate = { id: "new", title: parsed.data.title, start_at: start.iso, end_at: end.iso, all_day: allDay };
   if (!parsed.data.force) {
     const [events, interests, personal] = await Promise.all([
       getPublishedEvents(),
@@ -71,6 +76,7 @@ export async function addPersonalEvent(_prev: PersonalState, formData: FormData)
     title: parsed.data.title,
     start_at: start.iso,
     end_at: end.iso,
+    all_day: allDay,
     memo: parsed.data.memo,
   });
   if (error) return { error: `저장 실패: ${error.message}`, values };

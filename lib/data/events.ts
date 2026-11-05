@@ -34,7 +34,7 @@ export async function getPersonalEvents(userId: string): Promise<PersonalEvent[]
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("personal_events")
-    .select("id, user_id, title, start_at, end_at, memo")
+    .select("id, user_id, title, start_at, end_at, all_day, memo")
     .eq("user_id", userId)
     .order("start_at");
   if (error) throw new Error(`개인 일정을 불러오지 못했습니다: ${error.message}`);

@@ -69,6 +69,8 @@ export type PersonalEvent = {
   title: string;
   start_at: string;
   end_at: string;
+  /** 종일(시각 없음). 종일이면 end_at은 마지막 날 0시(KST) */
+  all_day: boolean;
   memo: string;
 };
 
