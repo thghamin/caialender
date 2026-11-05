@@ -10,6 +10,7 @@ import { InAppGuard } from "@/components/in-app-guard";
 import { AppSplash, SPLASH_SCRIPT } from "@/components/app-splash";
 import { FeedbackButton } from "@/app/feedback/feedback-button";
 import { getCurrentUserId } from "@/lib/auth";
+import { PushAutoSync } from "@/components/push-auto-sync";
 import "./globals.css";
 
 const geistMono = Geist_Mono({
@@ -76,6 +77,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col bg-zinc-50 text-zinc-900">
         {/* 휴대폰: 앱을 열면 1초 남짓 로고 시작 화면 */}
         <AppSplash />
+        {/* 알림을 허용한 기기는 열 때마다 구독을 서버와 맞춘다 */}
+        {loggedIn && <PushAutoSync />}
         {/* 카카오톡 등 앱 안의 브라우저면 Safari/크롬으로 열도록 (로그인 화면 포함 모든 화면) */}
         <InAppGuard />
         <SiteHeader />

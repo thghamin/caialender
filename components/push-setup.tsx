@@ -71,7 +71,10 @@ export function PushSetup() {
   const test = () =>
     start(async () => {
       const r = await sendTestPush();
-      setMsg(r.error ?? "테스트 알림을 보냈어요. 잠시 후 알림이 뜨는지 확인해 보세요.");
+      setMsg(
+        r.error ??
+          `등록된 기기 ${r.sent}곳으로 테스트 알림을 보냈어요. 안 뜨는 기기가 있으면 그 기기에서 이 화면을 열어 '알림 받기'를 다시 눌러 주세요. (아이폰은 홈 화면 앱에서, 설정 → 알림 → C:AI:ender 허용·집중 모드 해제)`,
+      );
     });
 
   return (
