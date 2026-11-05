@@ -16,21 +16,15 @@ export function buildBriefingPrompt(input: {
   scope: string;
   events: Parameters<typeof describeEvent>[0][];
 }) {
-  const now = new Date(input.now).getTime();
-  // 모델이 날짜 계산을 틀리지 않도록 '지남/진행 중/예정'을 코드에서 미리 계산해 준다
-  const lines = input.events.map((e) => {
-    const start = new Date(e.start_at).getTime();
-    const end = new Date(e.end_at ?? e.start_at).getTime() + (e.all_day ? 86400_000 : 0);
-    const state = end < now ? "지난 일정" : start <= now ? "진행 중" : "예정";
-    return `${describeEvent(e)} | 상태: ${state}`;
-  });
+  // 날짜·시각이 들어간 일정 목록은 화면에서 코드가 정확히 그려 준다. AI는 '흐름 요약'만 쓴다
+  // (AI가 시각을 옮겨 적다가 13:00을 13:30으로 바꾸는 실수를 막기 위해)
+  const lines = input.events.map((e) => describeEvent(e));
   return `너는 경북대 인공지능전공 학생에게 이번 주 일정을 알려주는 비서다. 지금은 ${formatKst(input.now)}이다.
-아래는 ${input.scope}의 ${input.weekLabel} 일정과 다가오는 마감 목록이다. 이 목록의 정보만 사용해 주간 브리핑을 써라.
-- 첫 줄: 이번 주를 한 문장으로 요약 (각 일정의 '상태'를 그대로 따를 것. '예정'인 일정을 끝났다고 쓰지 마라)
-- 이어서 목록의 '예정'과 '진행 중' 일정을 날짜순으로 빠짐없이, 일정 하나당 한 줄 "• 날짜(요일) 시각 — 제목 (장소)" 형식으로. 시작~종료는 한 줄에 함께 쓴다. 장소가 "공지에 없음"이면 괄호째 생략한다.
-- 마지막 줄: 가장 급한 마감이 있으면 그 마감을, 없으면 가장 가까운 일정을 한 문장으로 짚어 준다. "없음" 같은 단답은 쓰지 않는다.
-- 목록에 없는 일정이나 정보를 만들지 마라. 예정 일정이 없으면 "이번 주에는 남은 일정이 없어요."라고만 써라.
-- 마크다운 굵게(**)나 제목(#)은 쓰지 않는다.
+아래는 ${input.scope}의 ${input.weekLabel} 남은 일정과 다가오는 마감 목록이다. 이 목록만 보고 이번 주 흐름을 1~2문장으로 요약하라.
+- 날짜·요일·시각·숫자(예: 11월 4일, 13:00, 1시)는 절대 쓰지 마라. 날짜는 화면의 목록이 따로 보여 준다.
+- 일정 제목은 그대로 쓰되 너무 길면 핵심만 짧게 줄여도 된다. 목록에 없는 일정이나 정보를 만들지 마라.
+- 마감이 있으면 '놓치지 말 것'처럼 챙겨야 할 점을 짚어 준다.
+- 마크다운 굵게(**), 제목(#), 글머리표(•, -)는 쓰지 않는다. 존댓말(~해요)로 쓴다.
 
 [일정 목록]
 ${lines.length ? lines.join("\n") : "(없음)"}`;

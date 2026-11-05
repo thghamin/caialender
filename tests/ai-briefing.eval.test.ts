@@ -5,6 +5,7 @@
 import { describe, expect, it } from "vitest";
 import { generateText } from "@/lib/ai/provider";
 import { buildBriefingPrompt } from "@/lib/ai/prompts";
+import { cleanSummary } from "@/lib/briefing";
 import type { CalendarEvent } from "@/lib/types";
 
 const run = process.env.AI_EVAL === "1" ? describe : describe.skip;
@@ -16,7 +17,7 @@ const ev = (title: string, kind: CalendarEvent["kind"], start: string, end: stri
   }) as unknown as CalendarEvent;
 
 run("AI 주간 브리핑 평가", () => {
-  it("예정 일정을 빠짐없이, 지난 일정은 지났다고 쓴다", async () => {
+  it("흐름 요약 1~2문장: 날짜·시각 숫자를 쓰지 않는다 (목록은 코드가 그린다)", async () => {
     const events = [
       ev("동아리 박람회", "event", "2027-03-15T12:00", "2027-03-15T17:00", "일청담"),
       ev("새내기 배움터", "event", "2027-03-18T09:00", "2027-03-18T18:00", "IT-5호관"),
@@ -30,9 +31,7 @@ run("AI 주간 브리핑 평가", () => {
       maxTokens: 700,
     });
     console.log(`[${model}] ${((Date.now() - t0) / 1000).toFixed(1)}s\n${text}`);
-    for (const title of ["새내기 배움터", "2학년 전공 설명회", "학과 총회", "장학금 신청 마감"]) expect(text).toContain(title);
-    expect(text).not.toMatch(/새내기 배움터[^\n]*(끝났|종료되었)/);
-    expect(text).not.toContain("**");
+    expect(cleanSummary(text)).not.toBeNull();
     expect(text).not.toContain("공지에 없음");
   }, 120_000);
 });

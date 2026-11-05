@@ -14,10 +14,20 @@ function laterThisWeek(hoursAhead: number) {
   return new Date(Math.min(t, sundayEnd)).toISOString();
 }
 
+// 화면 표시 형식 "11월 4일(수) 13:00" (lib/datetime formatKst와 같은 형식)
+function kstText(iso: string) {
+  const d = new Date(new Date(iso).getTime() + 9 * 3600_000);
+  const w = "일월화수목금토"[d.getUTCDay()];
+  return `${d.getUTCMonth() + 1}월 ${d.getUTCDate()}일(${w}) ${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+}
+const mentoringAt = laterThisWeek(3);
+
 test.beforeAll(async () => {
   const { error } = await service().from("events").insert([
-    { title: `${T} 1학년 멘토링`, start_at: laterThisWeek(3), status: "published", target_grades: [1], location: "IT-5호관 101호" },
-    { title: `${T} 3학년 취업특강`, start_at: laterThisWeek(4), status: "published", target_grades: [3] },
+    // 이미 끝난 일정은 브리핑에 나오면 안 된다
+    { title: `${T} 지난 설명회`, start_at: new Date(Date.now() - 3 * 3600_000).toISOString(), end_at: new Date(Date.now() - 2 * 3600_000).toISOString(), status: "published", target_grades: [], location: null },
+    { title: `${T} 1학년 멘토링`, start_at: mentoringAt, status: "published", target_grades: [1], location: "IT-5호관 101호" },
+    { title: `${T} 3학년 취업특강`, start_at: laterThisWeek(4), status: "published", target_grades: [3], location: null },
   ]);
   if (error) throw error;
 });
@@ -40,6 +50,9 @@ test("전체 브리핑은 이번 주 일정을, 개인 브리핑은 내 학년 �
   console.log("전체 브리핑:\n" + all);
   expect(all).toContain(`${T} 1학년 멘토링`);
   expect(all).toContain(`${T} 3학년 취업특강`);
+  expect(all).not.toContain(`${T} 지난 설명회`);
+  // 날짜·시각은 AI가 옮겨 적지 않고 일정 그대로 (굵은 날짜 줄)
+  await expect(card.getByTestId("briefing-items").getByText(kstText(mentoringAt))).toBeVisible();
 
   await page.goto("/my");
   const myCard = page.getByTestId("briefing-card");

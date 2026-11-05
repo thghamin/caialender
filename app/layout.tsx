@@ -18,14 +18,36 @@ export const metadata: Metadata = {
   title: "C:AI:ender — 인공지능전공 학과 캘린더",
   description: "학과 공지방에 흩어진 일정을 AI로 정리한 공용 캘린더",
   // 아이폰 홈 화면에 추가했을 때 앱처럼 열리게 (아이폰은 이렇게 설치해야 알림을 받을 수 있다)
-  appleWebApp: { capable: true, title: "C:AI:ender", statusBarStyle: "default" },
+  appleWebApp: {
+    capable: true,
+    title: "C:AI:ender",
+    statusBarStyle: "default",
+    // 아이폰 홈 화면 앱을 켤 때 첫 화면이 그려지기 전 검은 화면 대신 보여 줄 시작 화면 (기기 크기별)
+    startupImage: [
+      { url: "/splash/1290x2796.png", media: "(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
+      { url: "/splash/1179x2556.png", media: "(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
+      { url: "/splash/1206x2622.png", media: "(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
+      { url: "/splash/1320x2868.png", media: "(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
+      { url: "/splash/1284x2778.png", media: "(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
+      { url: "/splash/1170x2532.png", media: "(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
+      { url: "/splash/1125x2436.png", media: "(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
+      { url: "/splash/1080x2340.png", media: "(device-width: 360px) and (device-height: 780px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
+      { url: "/splash/828x1792.png", media: "(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" },
+      { url: "/splash/1242x2688.png", media: "(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
+      { url: "/splash/750x1334.png", media: "(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" },
+      { url: "/splash/1242x2208.png", media: "(device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" },
+      { url: "/splash/640x1136.png", media: "(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" },
+    ],
+  },
   icons: { apple: "/icons/apple-touch-icon.png" },
 };
 
 /** 휴대폰에서 'PC 버전'을 고르면 화면 폭을 1280으로 잡아 PC 배치로 보여준다. 기본은 기기 폭(모바일 배치) */
 export async function generateViewport(): Promise<Viewport> {
   const pc = (await cookies()).get(VIEW_MODE_COOKIE)?.value === "pc";
-  return pc ? { width: PC_VIEWPORT_WIDTH } : { width: "device-width", initialScale: 1 };
+  // 밝은 화면 고정 + 흰 바탕색: 다크 모드 휴대폰에서도 앱을 켤 때 검은 화면이 비치지 않게
+  const base = { colorScheme: "light" as const, themeColor: "#ffffff" };
+  return pc ? { ...base, width: PC_VIEWPORT_WIDTH } : { ...base, width: "device-width", initialScale: 1 };
 }
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {

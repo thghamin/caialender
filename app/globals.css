@@ -43,6 +43,10 @@ html:has(.theme-academic) {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
+html {
+  background-color: #fbfaf9;
+  color-scheme: light;
+}
 /* 휴대폰: 기기 기본 글꼴, 기본 글자 18px (rem 단위 글자·여백이 함께 약 12% 커진다) */
 @media (max-width: 767px) {
   :root {
