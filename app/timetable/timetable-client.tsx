@@ -36,6 +36,7 @@ export function TimetableClient({ initial }: { initial: Keyed[] }) {
           📷 에브리타임 시간표 가져오기
         </button>
       </div>
+      <p className="-mt-2 text-xs text-zinc-400">토·일요일 수업도 추가할 수 있어요. 수업이 있으면 시간표에 토·일 칸이 생겨요.</p>
 
       {courses.length === 0 ? (
         <div className="rounded-xl border-2 border-dashed border-zinc-300 bg-white/70 p-6 text-center text-sm text-zinc-500">
@@ -233,6 +234,7 @@ function CourseSheet({ draft, others, onClose }: { draft: Keyed; others: Keyed[]
         >
           시간 및 장소 추가
         </button>
+        <p className="-mt-1 pb-1 text-xs text-zinc-400">요일은 월~일(토·일 포함)에서 고를 수 있어요.</p>
 
         <div className="mt-1 flex flex-wrap items-center gap-2 py-2 text-sm">
           <span className="text-zinc-500">칸 색</span>

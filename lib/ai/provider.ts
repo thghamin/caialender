@@ -85,11 +85,15 @@ export async function generateJson<T = unknown>(opts: {
   timeoutMs?: number;
   /** 이 요청만 다른 모델을 먼저 쓴다 (실패하면 OpenRouter가 기본 모델로 넘어간다) */
   model?: string;
+  /** OpenRouter 업체 선택 추가 옵션 (예: { sort: "throughput" } = 같은 모델 중 처리가 빠른 업체 먼저) */
+  providerPrefs?: object;
 }): Promise<{ data: T; model: string }> {
   const config = requireConfig();
+  const basePrefs = (config.extraBody as { provider?: object }).provider;
   const res = await post(
     config,
     {
+      ...(opts.providerPrefs ? { provider: { ...basePrefs, ...opts.providerPrefs } } : {}),
       model: opts.model ?? config.model,
       ...(opts.model && opts.model !== config.model ? { models: [opts.model, config.model] } : {}),
       messages: opts.messages,

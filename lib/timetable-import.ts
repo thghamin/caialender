@@ -58,6 +58,8 @@ export async function analyzeByBlocks(original: Buffer): Promise<{ courses: Time
     timeoutMs: 90_000,
     // 글자를 정확히 읽는 큰 이미지 모델 (실패하면 기본 모델로 넘어간다)
     model: process.env.AI_TIMETABLE_MODEL || undefined,
+    // 같은 모델 중 처리가 빠른 업체 먼저: 실제 캡처 5장 평가에서 정확도는 같고 12~25초 → 4~8초
+    providerPrefs: { sort: "throughput" },
   });
   const { courses: read, startHour } = coursesFromBlocks(raw, blocks);
   // 맨 위 시각이 9시가 아니면 모든 칸을 옮긴다 (칸 시각은 9시 기준으로 잰 값)
@@ -91,6 +93,7 @@ export async function analyzeWholeImage(bytes: Buffer, type: string): Promise<{ 
       timeoutMs: 90_000,
       // 시간표 칸의 위치(시각)를 정확히 읽는 큰 이미지 모델
       model: process.env.AI_TIMETABLE_MODEL || undefined,
+      providerPrefs: { sort: "throughput" },
     });
     const { courses: aiCourses, dropped, startHour } = normalizeTimetable(data);
     if (!aiCourses.length) return { error: "시간표에서 수업을 찾지 못했어요. 시간표 전체가 보이게 캡처해 주세요.", dropped };
