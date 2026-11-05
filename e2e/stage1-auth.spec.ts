@@ -108,6 +108,9 @@ test("관리자가 거절하면 거절 안내만 보인다", async ({ page, brow
   await loginViaUi(admin, adminEmail);
   await admin.waitForURL("**/my");
   await admin.goto("/admin/members");
+  // 관리자는 회원이 언제 가입했는지 분까지 본다 (예: 2026. 11. 6(금) 15:31)
+  await expect(admin.getByRole("columnheader", { name: "가입 일시" }).first()).toBeVisible();
+  await expect(admin.getByRole("row").filter({ hasText: email }).first()).toContainText(/\d{4}\. \d{1,2}\. \d{1,2}\([월화수목금토일]\) \d{2}:\d{2}/);
   admin.once("dialog", (d) => d.accept());
   await admin.getByRole("row").filter({ hasText: email }).first().getByRole("button", { name: "거절" }).click();
   await expect(admin.getByRole("row").filter({ hasText: email }).first().getByText("거절됨")).toBeVisible();

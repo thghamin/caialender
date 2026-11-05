@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatKst } from "@/lib/datetime";
 import { requireAdmin } from "@/lib/auth";
 import { createServiceClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui";
@@ -109,6 +110,8 @@ function MemberTable({ members, me, canApprove }: { members: Member[]; me: Profi
               {m.department ?? "-"}
               {m.grade ? ` · ${m.grade}학년` : ""}
             </dd>
+            <dt className="text-zinc-500">가입</dt>
+            <dd className="tabular-nums" data-testid="member-joined">{joined(m.created_at)}</dd>
           </dl>
           <div className="mt-2 flex flex-wrap justify-end gap-2">{actions(m)}</div>
         </li>
@@ -125,6 +128,7 @@ function MemberTable({ members, me, canApprove }: { members: Member[]; me: Profi
             <th className="px-2 py-2 font-medium">학년</th>
             <th className="px-2 py-2 font-medium">권한</th>
             <th className="px-2 py-2 font-medium">승인 상태</th>
+            <th className="px-2 py-2 font-medium">가입 일시</th>
             <th className="px-2 py-2" />
           </tr>
         </thead>
@@ -146,6 +150,7 @@ function MemberTable({ members, me, canApprove }: { members: Member[]; me: Profi
                   {APPROVAL_LABEL[m.approval_status]}
                 </span>
               </td>
+              <td className="px-2 py-2 tabular-nums text-zinc-600">{joined(m.created_at)}</td>
               <td className="px-2 py-2">
                 <div className="flex flex-wrap justify-end gap-2">
                   {canApprove(m) && <ApprovalButtons userId={m.id} status={m.approval_status} />}
@@ -162,5 +167,8 @@ function MemberTable({ members, me, canApprove }: { members: Member[]; me: Profi
     </>
   );
 }
+
+/** 가입 일시 "2026. 11. 2(월) 15:31" (KST, 분까지) */
+const joined = (iso: string) => `${new Date(new Date(iso).getTime() + 9 * 3600_000).getUTCFullYear()}. ${formatKst(iso).replace("월 ", ". ").replace("일", "")}`;
 
 const order = (r: Role) => (r === "super_admin" ? 0 : r === "admin" ? 1 : 2);
