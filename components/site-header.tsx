@@ -15,10 +15,12 @@ export async function SiteHeader() {
 
   return (
     <>
-    <header className="sticky top-0 z-30 border-b border-brand/15 bg-white/90 backdrop-blur">
+    {/* 휴대폰은 흐림 효과 없이 거의 불투명한 흰색 (흐림은 스크롤할 때 버벅임의 주원인) */}
+    <header className="sticky top-0 z-30 border-b border-brand/15 bg-white/[0.97] md:bg-white/90 md:backdrop-blur">
       <div className="h-1 bg-gradient-to-r from-brand via-brand-dark to-knu-gold" />
       <div className="max-w-6xl mx-auto px-3 sm:px-4 h-14 md:h-16 flex items-center gap-2 md:gap-3 lg:gap-6">
-        <Link href="/" className="flex shrink-0 items-center gap-1.5 font-extrabold text-[17px] tracking-tight md:gap-2 md:text-lg">
+        {/* 로고를 누르면 내 캘린더 (로그인 전에는 로그인 화면) */}
+        <Link href={user ? "/my" : "/login"} className="flex shrink-0 items-center gap-1.5 font-extrabold text-[17px] tracking-tight md:gap-2 md:text-lg">
           <Hobanu className="size-8 drop-shadow-sm md:size-9" title="" />
           <span>
             C<span className="text-brand">:AI:</span>ender

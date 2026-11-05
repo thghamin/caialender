@@ -82,6 +82,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <ViewModeToggle mode={viewMode} />
           <Link
             href="/?tour=1"
+            prefetch={false}
             className="inline-flex items-center gap-1.5 rounded-full bg-white px-5 py-2.5 text-[14px] font-bold text-brand shadow-sm ring-1 ring-brand/25 hover:bg-brand-soft"
           >
             📖 사용법 다시 보기
@@ -90,7 +91,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <p className="max-w-md text-center text-[11.5px] leading-relaxed text-zinc-400" data-testid="beta-note">
             <span className="mr-1 rounded-full bg-zinc-200/70 px-1.5 py-px text-[10.5px] font-bold text-zinc-500">BETA</span>
             C:AI:ender는 아직 정식 출시 전 서비스예요. 사용하면서 받는 피드백을 바탕으로 계속 보완하고 있어요.{" "}
-            <Link href="/qna" className="font-semibold text-zinc-500 underline underline-offset-2 hover:text-zinc-700">
+            <Link href="/qna" prefetch={false} className="font-semibold text-zinc-500 underline underline-offset-2 hover:text-zinc-700">
               의견 남기기
             </Link>
           </p>

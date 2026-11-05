@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore, useTransition } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import Link from "next/link";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/react/daygrid";
@@ -86,9 +86,11 @@ export function CalendarView({ items, loggedIn = false, manage }: { items: Calen
   const selected = items.find((i) => i.id === selectedId) ?? null;
   const mobile = useIsMobile();
   const [week, setWeek] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  const viewType = useRef<string | null>(null);
 
   return (
-    <div className={`caialender-calendar ${week ? "cal-week" : ""}`}>
+    <div ref={root} className={`caialender-calendar ${week ? "cal-week" : ""}`}>
       <FullCalendar
         plugins={[dayGridPlugin, listPlugin, classicThemePlugin, interactionPlugin]}
         // 관리자: 빈 날짜를 누르면 그날로 일정 추가 화면
@@ -110,7 +112,25 @@ export function CalendarView({ items, loggedIn = false, manage }: { items: Calen
         views={{ dayGridWeek: { dayMaxEvents: false, titleFormat: { month: "long", day: "numeric" } } }}
         // 보기 버튼: 월간 / 주간 / 목록 (목록을 눌러야 그달 일정 전체를 한눈에 본다는 걸 바로 알게)
         buttons={{ dayGridMonth: { text: "월간" }, dayGridWeek: { text: "주간" }, listMonth: { text: "목록" } }}
-        datesSet={(a) => setWeek(a.view.type === "dayGridWeek")}
+        datesSet={(a) => {
+          setWeek(a.view.type === "dayGridWeek");
+          // 보기를 바꾸면(목록 → 월간 등) 길이가 달라져 화면이 달력 아래쪽에 남는다. 달력 맨 위가 보이게 올려 준다
+          const prev = viewType.current;
+          viewType.current = a.view.type;
+          if (prev && prev !== a.view.type && root.current) {
+            const el = root.current;
+            // 새 보기가 다 그려진 다음 위치를 잰다 (머리 메뉴 높이만큼 띄워서)
+            requestAnimationFrame(() =>
+              requestAnimationFrame(() => {
+                const header = document.querySelector("header")?.getBoundingClientRect().height ?? 60;
+                const top = el.getBoundingClientRect().top;
+                if (top < header || top > window.innerHeight * 0.6) {
+                  window.scrollTo({ top: Math.max(0, window.scrollY + top - header - 12), behavior: "smooth" });
+                }
+              }),
+            );
+          }
+        }}
         // 휴대폰: 버튼·'+N'·칸을 가볍게 (globals.css의 cal-* 참고)
         buttonClass="cal-btn"
         toolbarTitleClass="cal-title"

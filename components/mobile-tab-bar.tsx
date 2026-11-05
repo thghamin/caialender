@@ -108,7 +108,7 @@ export function MobileTabBar() {
     // 떠 있는 둥근 탭 바 (화면 아래·양옆에서 살짝 띄움)
     <nav
       aria-label="모바일 메뉴"
-      className="fixed inset-x-2.5 bottom-[calc(8px+env(safe-area-inset-bottom))] z-40 rounded-[26px] border border-black/[0.06] bg-white/90 p-1.5 shadow-[0_8px_30px_-6px_rgb(0_0_0/0.18)] backdrop-blur-xl md:hidden"
+      className="fixed inset-x-2.5 bottom-[calc(8px+env(safe-area-inset-bottom))] z-40 rounded-[26px] border border-black/[0.06] bg-white/[0.97] p-1.5 shadow-[0_8px_30px_-6px_rgb(0_0_0/0.18)] md:hidden"
     >
       <ul className="flex h-[56px] gap-0.5" data-tour="tabs">
         {MAIN.map((t) => {

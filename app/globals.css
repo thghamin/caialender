@@ -75,7 +75,12 @@ body {
     radial-gradient(900px 500px at -10% 110%, rgb(196 138 60 / 0.12), transparent 60%),
     radial-gradient(color-mix(in srgb, var(--brand) 7%, transparent) 1px, transparent 1.2px);
   background-size: auto, auto, 22px 22px;
-  background-attachment: fixed;
+}
+/* 고정 배경은 PC에서만: 휴대폰에서 background-attachment: fixed는 스크롤할 때마다 화면 전체를 다시 그려 버벅인다 */
+@media (min-width: 768px) {
+  body {
+    background-attachment: fixed;
+  }
 }
 
 /* FullCalendar 색은 화면의 테마색(--brand)을 따른다: 학과 초록, 학사 KNU 빨강, 나머지 사용자 지정 */

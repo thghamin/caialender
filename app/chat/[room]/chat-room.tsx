@@ -175,10 +175,13 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
                   <button
                     type="button"
                     onClick={() => jumpTo(m.reply!.id)}
-                    className="max-w-full truncate rounded-lg border-l-2 border-brand/60 bg-zinc-100 px-2 py-1 text-left text-[12px] text-zinc-500"
+                    className="flex max-w-full items-center gap-1 rounded-lg border-l-2 border-brand/60 bg-zinc-100 px-2 py-1 text-left text-[12px] text-zinc-500"
                     data-testid="chat-reply-quote"
                   >
-                    ↪ <b className="text-zinc-600">{m.reply.nickname}</b> {m.reply.deleted ? "삭제된 메시지" : m.reply.body}
+                    <ReplyIcon className="size-3 shrink-0 -scale-x-100 text-brand/70" />
+                    <span className="min-w-0 truncate">
+                      <b className="text-zinc-600">{m.reply.nickname}</b> {m.reply.deleted ? "삭제된 메시지" : m.reply.body}
+                    </span>
                   </button>
                 )}
                 <div className="flex max-w-full items-end gap-1.5">
@@ -219,9 +222,10 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
                           setReplyTarget(m);
                           input.current?.focus();
                         }}
-                        className="rounded-full bg-zinc-100 px-3 py-1 text-[13px] font-semibold text-zinc-600 hover:bg-brand-soft hover:text-brand"
+                        className="inline-flex items-center gap-1 rounded-full bg-zinc-100 px-3 py-1 text-[13px] font-semibold text-zinc-600 hover:bg-brand-soft hover:text-brand"
                       >
-                        ↩ 답장
+                        <ReplyIcon className="size-[15px]" />
+                        답장
                       </button>
                     )}
                     {/* 다른 학생 메시지 신고 → 관리자에게 알림 */}
@@ -281,8 +285,9 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
             )}
             {replyTarget && (
               <div className="mb-1.5 flex items-center gap-2 rounded-xl bg-zinc-100 px-3 py-1.5 text-[12.5px]" data-testid="reply-bar">
+                <ReplyIcon className="size-4 shrink-0 text-brand" />
                 <span className="min-w-0 flex-1 truncate text-zinc-600">
-                  ↪ <b>{replyTarget.author.id === member.id ? "나" : replyTarget.author.nickname}</b>에게 답장: {replyTarget.body}
+                  <b>{replyTarget.author.id === member.id ? "나" : replyTarget.author.nickname}</b>에게 답장: {replyTarget.body}
                 </span>
                 <button type="button" onClick={() => setReplyTarget(null)} aria-label="답장 취소" className="shrink-0 text-base leading-none text-zinc-400">
                   ✕
@@ -373,6 +378,16 @@ export function ChatRoomView({ room, initial, member, admin }: { room: ChatRoom;
         />
       )}
     </div>
+  );
+}
+
+/** 답장 아이콘 (말풍선에서 왼쪽으로 돌아가는 화살표, 카톡·인스타 답장과 같은 모양) */
+function ReplyIcon({ className = "size-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <path d="M9 14 4 9l5-5" />
+      <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
+    </svg>
   );
 }
 

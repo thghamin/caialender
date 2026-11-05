@@ -196,8 +196,9 @@ export function PageHero({ title, subtitle, badge, tone = "custom", children }: 
       className={`relative overflow-hidden rounded-[24px] bg-gradient-to-br px-5 py-5 shadow-[0_10px_30px_-14px_rgb(0_0_0/0.18)] ring-1 sm:px-8 sm:py-7 ${t.card}`}
     >
       {/* 장식: 부드러운 빛, 희미한 글자(K:AI·KNU) */}
-      <div className="pointer-events-none absolute -right-16 -top-20 size-64 rounded-full bg-white/60 blur-2xl" />
-      <div className="pointer-events-none absolute -bottom-24 left-1/4 size-56 rounded-full bg-white/50 blur-2xl" />
+      {/* 부드러운 빛: blur 필터 대신 원형 그라데이션 (그리는 비용이 훨씬 적다) */}
+      <div className="pointer-events-none absolute -right-16 -top-20 size-64 rounded-full bg-[radial-gradient(circle,rgb(255_255_255/0.75),transparent_70%)]" />
+      <div className="pointer-events-none absolute -bottom-24 left-1/4 size-56 rounded-full bg-[radial-gradient(circle,rgb(255_255_255/0.65),transparent_70%)]" />
       {t.watermark && (
         <span className={`pointer-events-none absolute bottom-2 right-4 select-none text-[76px] font-black leading-[0.8] tracking-tighter opacity-[0.08] sm:bottom-4 sm:right-56 sm:text-[128px] ${t.accent}`}>
           {t.watermark}
