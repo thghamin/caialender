@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
+import { EventTimeFields } from "./event-time-fields";
 import { saveEvent } from "@/app/admin/actions";
 import { Alert, Button, Field } from "@/components/ui";
 import type { CalendarEvent } from "@/lib/types";
@@ -11,9 +12,6 @@ export function EventForm({ event, values, defaultCalendar = "dept" }: {
   defaultCalendar?: "dept" | "academic";
 }) {
   const [state, action, pending] = useActionState(saveEvent, undefined);
-  const [allDay, setAllDay] = useState(event?.all_day ?? false);
-  const inputType = allDay ? "date" : "datetime-local";
-  const cut = (v: string) => (allDay ? v.slice(0, 10) : v.length === 10 ? `${v}T00:00` : v);
 
   return (
     <form action={action} className="flex flex-col gap-4">
@@ -26,25 +24,16 @@ export function EventForm({ event, values, defaultCalendar = "dept" }: {
           <option value="academic">학사 캘린더 (학교 학사일정)</option>
         </select>
       </label>
-      <div className="grid grid-cols-2 gap-3">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="font-medium text-zinc-700">종류</span>
-          <select name="kind" defaultValue={event?.kind ?? "event"} className="rounded-md border border-zinc-300 bg-white px-3 py-2">
-            <option value="event">행사</option>
-            <option value="deadline">마감</option>
-            <option value="other">기타</option>
-          </select>
-        </label>
-        <label className="flex items-end gap-2 pb-2 text-sm">
-          <input type="checkbox" name="all_day" checked={allDay} onChange={(e) => setAllDay(e.target.checked)} />
-          <span>종일 (시각 없음)</span>
-        </label>
-      </div>
-      {/* 휴대폰에서는 날짜·시각이 잘리지 않게 위아래로 */}
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Field key={`s-${inputType}`} label="시작" name="start" type={inputType} defaultValue={cut(values.start)} required />
-        <Field key={`e-${inputType}`} label="종료 (선택)" name="end" type={inputType} defaultValue={values.end ? cut(values.end) : ""} />
-      </div>
+      <label className="flex flex-col gap-1 text-sm">
+        <span className="font-medium text-zinc-700">종류</span>
+        <select name="kind" defaultValue={event?.kind ?? "event"} className="rounded-md border border-zinc-300 bg-white px-3 py-2">
+          <option value="event">행사</option>
+          <option value="deadline">마감</option>
+          <option value="other">기타</option>
+        </select>
+      </label>
+      {/* 날짜는 달력 칸, 시각은 오전/오후·시·분 버튼 (종료는 선택) */}
+      <EventTimeFields initial={values} initialAllDay={event?.all_day ?? false} />
       <Field label="장소" name="location" defaultValue={event?.location ?? ""} />
       <fieldset className="flex flex-col gap-1 text-sm">
         <legend className="font-medium text-zinc-700 mb-1">대상 학년 (아무것도 선택하지 않으면 전체)</legend>

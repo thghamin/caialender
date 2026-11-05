@@ -287,7 +287,8 @@ test("관리자: 학과 캘린더에서 일정을 눌러 바로 수정하고, �
   const empty = `${kst.toISOString().slice(0, 8)}${String(d).padStart(2, "0")}`;
   await page.locator(`.caialender-calendar [data-date="${empty}"]`).first().click({ position: { x: 4, y: 4 } }); // 날짜 칸 맨 위(일정 막대가 없는 곳)
   await expect(page).toHaveURL(new RegExp(`/admin/events/new\\?date=${empty}&cal=dept`));
-  await expect(page.getByLabel("시작")).toHaveValue(`${empty}T10:00`);
+  await expect(page.getByLabel("시작 날짜")).toHaveValue(empty);
+  await expect(page.getByTestId("event-time-summary")).toContainText("오전 10:00");
   await expect(page.getByLabel("캘린더")).toHaveValue("dept");
 
   // 학생에게는 수정 버튼이 없다

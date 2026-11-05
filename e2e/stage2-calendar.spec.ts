@@ -89,12 +89,18 @@ test("개인 일정: 내 캘린더에 담은 학과 일정과 겹치면 경고, 
   await page.goto("/my");
 
   const ymd = (iso: string) => new Date(new Date(iso).getTime() + 9 * 3600_000).toISOString().slice(0, 10);
-  // 오전/오후 → 시 → 분 버튼으로 고른다
+  // 시각 칸("시작 오후 2:00 ▾")을 눌러 펼친 뒤 오전/오후 → 시 → 분 버튼으로 고른다
   const pick = async (label: "시작" | "종료", ampm: "오전" | "오후", hour: number, minute = "00") => {
+    const toggle = page.getByRole("button", { name: `${label} 시각 고르기` });
+    if (await toggle.isVisible()) await toggle.click();
     await page.getByRole("button", { name: `${label} ${ampm}`, exact: true }).click();
     await page.getByRole("button", { name: `${label} ${hour}시`, exact: true }).click();
     await page.getByRole("button", { name: `${label} ${minute}분`, exact: true }).click();
   };
+  // 내 캘린더 위쪽 '+ 개인 일정 추가'를 누르면 추가 창이 뜬다
+  await page.getByRole("button", { name: "+ 개인 일정 추가" }).click();
+  const sheet = page.getByRole("dialog", { name: "개인 일정 추가" });
+  await expect(sheet).toBeVisible();
   await page.getByLabel("제목").fill("편의점 알바");
   await page.getByLabel("날짜").fill(ymd(kstDay(2)));
   await pick("시작", "오후", 3);
@@ -106,7 +112,9 @@ test("개인 일정: 내 캘린더에 담은 학과 일정과 겹치면 경고, 
   await expect(page.getByText(/다음 일정과 시간이 겹칩니다: .*새내기 배움터/)).toBeVisible();
 
   await page.getByRole("button", { name: "겹쳐도 추가하기" }).click();
-  await expect(page.getByText("개인 일정을 추가했습니다.")).toBeVisible();
+  // 추가하면 창이 닫히고 알림 문구가 뜬다
+  await expect(page.getByText("개인 일정을 추가했어요 ✓")).toBeVisible();
+  await expect(sheet).toBeHidden();
   await expect(page.getByText("편의점 알바").first()).toBeVisible();
 
   await page.goto(`/events/${ids.g1}`);
@@ -114,6 +122,7 @@ test("개인 일정: 내 캘린더에 담은 학과 일정과 겹치면 경고, 
 
   // 두 번째 개인 일정 (테스트 일정과는 겹치지 않음)
   await page.goto("/my");
+  await page.getByRole("button", { name: "+ 개인 일정 추가" }).click();
   await page.getByLabel("제목").fill("스터디");
   await page.getByLabel("날짜").fill(ymd(kstDay(6)));
   await pick("시작", "오전", 10);
@@ -127,7 +136,7 @@ test("개인 일정: 내 캘린더에 담은 학과 일정과 겹치면 경고, 
   await expect(page.getByText("오전 10:00 ~ 오후 12:32")).toBeVisible();
   await page.getByRole("button", { name: "추가", exact: true }).click();
   // 실제 학과 일정(시간 지정 여러 날 일정 등)과 겹칠 수 있으니 경고가 뜨면 확인하고 저장
-  const saved = page.getByText("개인 일정을 추가했습니다.");
+  const saved = page.getByText("개인 일정을 추가했어요 ✓");
   const anyway = page.getByRole("button", { name: "겹쳐도 추가하기" });
   await expect(saved.or(anyway)).toBeVisible();
   if (await anyway.isVisible()) await anyway.click();

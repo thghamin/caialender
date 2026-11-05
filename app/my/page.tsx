@@ -14,7 +14,7 @@ import { PageHero } from "@/components/page-hero";
 import { UpcomingList } from "@/components/upcoming-list";
 import { BriefingCard } from "@/components/briefing-card";
 import { Card, CardTitle } from "@/components/ui";
-import { PersonalEventForm } from "./personal-form";
+import { PersonalEventButton } from "./personal-dialog";
 import { DeletePersonalButton } from "./delete-personal";
 
 export default async function MyPage() {
@@ -55,8 +55,11 @@ export default async function MyPage() {
       </PageHero>
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
       <section className="flex min-w-0 flex-col gap-3">
-        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <PersonalEventButton nowIso={new Date(requestNow()).toISOString()} />
           <p className="text-sm text-zinc-500">학과·학사 캘린더에서 ☆로 담은 일정이 여기에 모여요.</p>
+        </div>
+        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-end">
           <CalendarLegend keys={["dept-event", "dept-deadline", "academic", "academic-holiday", "personal"]} />
         </div>
         <Card className="p-2! sm:p-3!">
@@ -86,11 +89,10 @@ export default async function MyPage() {
         </Card>
         <BriefingCard scope="me" />
         <UpcomingList events={mine} title="나의 다가오는 일정" />
-        <Card>
-          <CardTitle icon="➕">개인 일정 추가</CardTitle>
-          <PersonalEventForm nowIso={new Date(requestNow()).toISOString()} />
-          {upcomingPersonal.length > 0 && (
-            <ul className="mt-4 flex flex-col gap-2 border-t border-zinc-100 pt-3">
+        {upcomingPersonal.length > 0 && (
+          <Card>
+            <CardTitle icon="🗓️">내 개인 일정</CardTitle>
+            <ul className="flex flex-col gap-2">
               {upcomingPersonal.map((p) => (
                 <li key={p.id} className="flex items-center justify-between text-sm">
                   <span>
@@ -104,8 +106,8 @@ export default async function MyPage() {
                 </li>
               ))}
             </ul>
-          )}
-        </Card>
+          </Card>
+        )}
       </aside>
       </div>
     </div>

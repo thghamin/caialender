@@ -1,14 +1,13 @@
 "use client";
 
-import { startTransition, useActionState, useState } from "react";
+import { startTransition, useActionState, useEffect, useState } from "react";
 import { addPersonalEvent } from "./actions";
 import { Alert, Button, Field } from "@/components/ui";
 import { formatKst } from "@/lib/datetime";
-import { AmPmHourPicker, Chip, clockLabel, fromMinutes, MinuteDial, toMinutes, type Clock } from "@/components/time-parts";
+import { Chip, ClockPicker, clockLabel, fromMinutes, toMinutes, type Clock } from "@/components/time-parts";
 
 // ───────── 시간 계산: 모두 KST 기준 "YYYY-MM-DDTHH:mm" 문자열로 다룬다 ─────────
 
-const pad = (n: number) => String(n).padStart(2, "0");
 /** 날짜 + 분(0시 기준, 24시간 넘으면 다음날) → "YYYY-MM-DDTHH:mm" */
 function toLocal(date: string, minutes: number) {
   const d = new Date(`${date}T00:00:00Z`);
@@ -22,8 +21,6 @@ function addDays(date: string, days: number) {
 }
 const kstLocal = (iso: string) => new Date(new Date(iso).getTime() + 9 * 3600_000).toISOString().slice(0, 16);
 
-const MINUTES = [0, 10, 20, 30, 40, 50];
-
 function initialState(nowIso: string, values?: { start: string; end: string }) {
   if (values?.start && values?.end) {
     const hm = (v: string) => Number(v.slice(11, 13)) * 60 + Number(v.slice(14, 16));
@@ -36,8 +33,12 @@ function initialState(nowIso: string, values?: { start: string; end: string }) {
   return { date: local.slice(0, 10), start: fromMinutes(startMin), end: fromMinutes(startMin + 60), endTouched: false };
 }
 
-export function PersonalEventForm({ nowIso }: { nowIso: string }) {
+export function PersonalEventForm({ nowIso, onSaved }: { nowIso: string; onSaved?: () => void }) {
   const [state, action, pending] = useActionState(addPersonalEvent, undefined);
+  // 저장되면 창을 닫는다 (창 안에서 쓸 때)
+  useEffect(() => {
+    if (state?.savedAt) onSaved?.();
+  }, [state?.savedAt, onSaved]);
   // 응답마다 다시 마운트해서 서버가 돌려준 입력값을 채운다
   return <InnerForm key={JSON.stringify(state ?? {})} state={state} action={action} pending={pending} nowIso={nowIso} />;
 }
@@ -55,6 +56,8 @@ function InnerForm({ state, action, pending, nowIso }: {
   const [end, setEndRaw] = useState<Clock>(init.end);
   // 종료를 직접 고르기 전까지는 시작 + 1시간을 따라간다
   const [endTouched, setEndTouched] = useState(init.endTouched);
+  // 시작·종료 시각 고르기는 하나씩 펼친다 (처음엔 둘 다 접힘: "시작 오후 2:00 ▾")
+  const [openClock, setOpenClock] = useState<"start" | "end" | null>(null);
 
   const setStart = (c: Clock) => {
     setStartRaw(c);
@@ -106,8 +109,18 @@ function InnerForm({ state, action, pending, nowIso }: {
         </div>
       </div>
 
-      <ClockPicker label="시작" value={start} onChange={setStart} />
-      <ClockPicker label="종료" value={end} onChange={setEnd} hint={!endTouched ? "시작 + 1시간 (바꾸면 직접 지정)" : undefined} />
+      <div className="flex flex-col gap-2">
+        <span className="text-sm font-medium text-zinc-700">시간</span>
+        <ClockPicker label="시작" value={start} onChange={setStart} open={openClock === "start"} onToggle={() => setOpenClock(openClock === "start" ? null : "start")} />
+        <ClockPicker
+          label="종료"
+          value={end}
+          onChange={setEnd}
+          hint={!endTouched ? "시작 + 1시간 (바꾸면 직접 지정)" : undefined}
+          open={openClock === "end"}
+          onToggle={() => setOpenClock(openClock === "end" ? null : "end")}
+        />
+      </div>
 
       <p className="rounded-lg bg-brand-soft px-3 py-2 text-sm">
         🕒 <b>{formatKst(`${startLocal}:00+09:00`, false)}</b> {clockLabel(start)} ~ {nextDay && <b>다음날 </b>}
@@ -142,43 +155,5 @@ function InnerForm({ state, action, pending, nowIso }: {
       )}
       <Button disabled={pending}>{pending ? "확인 중…" : "추가"}</Button>
     </form>
-  );
-}
-
-/** 오전/오후 → 시(1~12) → 분(10분 단위 버튼, '🕒 직접'을 누르면 시계로 1분 단위)을 고른다 */
-function ClockPicker({ label, value, onChange, hint }: { label: string; value: Clock; onChange: (c: Clock) => void; hint?: string }) {
-  const [dial, setDial] = useState(false);
-  const custom = !MINUTES.includes(value.minute);
-  return (
-    <fieldset className="flex flex-col gap-1.5 text-sm">
-      <legend className="mb-1.5 font-medium text-zinc-700">
-        {label} <span className="font-semibold text-brand">{clockLabel(value)}</span>
-        {hint && <span className="ml-1 text-xs font-normal text-zinc-400">{hint}</span>}
-      </legend>
-      <AmPmHourPicker label={label} value={value} onChange={onChange} />
-      <div className="flex items-start gap-1">
-        <span className="mt-2 w-6 shrink-0 text-xs text-zinc-500">분</span>
-        <div className="grid flex-1 grid-cols-4 gap-1">
-          {MINUTES.map((m) => (
-            <Chip
-              key={m}
-              active={value.minute === m && !dial}
-              onClick={() => {
-                setDial(false);
-                onChange({ ...value, minute: m });
-              }}
-              aria-label={`${label} ${pad(m)}분`}
-            >
-              :{pad(m)}
-            </Chip>
-          ))}
-          <Chip active={custom || dial} onClick={() => setDial(!dial)} aria-label={`${label} 분 직접`} className="col-span-2">
-            {custom ? `🕒 :${pad(value.minute)}` : "🕒 직접 (1분 단위)"}
-          </Chip>
-        </div>
-      </div>
-      {/* 1분 단위: 시계 바늘을 돌리거나 ±1분 */}
-      {dial && <MinuteDial label={label} minute={value.minute} onChange={(m) => onChange({ ...value, minute: m })} onDone={() => setDial(false)} />}
-    </fieldset>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 
 // 시간 고르기 공용 부품: 버튼 칩, 오전/오후·시 선택, 분 시계(드래그)
 // 개인 일정은 10분 단위 버튼 + 1분 단위 시계, 내 시간표는 5분 단위 시계로 분을 고른다.
@@ -151,5 +151,78 @@ export function Chip({ active, children, className = "", ...props }: { active: b
     >
       {children}
     </button>
+  );
+}
+
+const MINUTES = [0, 10, 20, 30, 40, 50];
+
+/**
+ * 시각 고르기: 접힌 상태에서는 "시작  오후 2:00 ▾" 한 줄, 누르면 오전/오후 → 시 → 분(10분 버튼, '🕒 직접'은 1분 단위 시계)이 펼쳐진다.
+ * open을 넘기지 않으면 항상 펼쳐 둔다.
+ */
+export function ClockPicker({ label, value, onChange, hint, open = true, onToggle }: {
+  label: string;
+  value: Clock;
+  onChange: (c: Clock) => void;
+  hint?: string;
+  open?: boolean;
+  onToggle?: () => void;
+}) {
+  const [dial, setDial] = useState(false);
+  const custom = !MINUTES.includes(value.minute);
+  return (
+    <fieldset className="flex flex-col gap-1.5 text-sm">
+      <legend className="sr-only">{label}</legend>
+      {onToggle ? (
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-expanded={open}
+          aria-label={`${label} 시각 ${open ? "접기" : "고르기"}`}
+          className={`flex items-center justify-between rounded-xl border px-3 py-2.5 text-left transition-colors ${open ? "border-brand bg-brand-soft/60" : "border-zinc-300 bg-white hover:bg-zinc-50"}`}
+        >
+          <span className="font-medium text-zinc-600">{label}</span>
+          <span className="flex items-center gap-1.5">
+            <b className="text-[15px] tabular-nums text-zinc-900">{clockLabel(value)}</b>
+            <span className={`text-zinc-400 transition-transform ${open ? "rotate-180" : ""}`} aria-hidden>
+              ▾
+            </span>
+          </span>
+        </button>
+      ) : (
+        <p className="mb-0.5 font-medium text-zinc-700">
+          {label} <span className="font-semibold text-brand">{clockLabel(value)}</span>
+        </p>
+      )}
+      {hint && <p className="-mt-0.5 text-xs text-zinc-400">{hint}</p>}
+      {open && (
+        <div className="flex flex-col gap-1.5 rounded-xl bg-zinc-50/80 p-2">
+          <AmPmHourPicker label={label} value={value} onChange={onChange} />
+          <div className="flex items-start gap-1">
+            <span className="mt-2 w-6 shrink-0 text-xs text-zinc-500">분</span>
+            <div className="grid flex-1 grid-cols-4 gap-1">
+              {MINUTES.map((m) => (
+                <Chip
+                  key={m}
+                  active={value.minute === m && !dial}
+                  onClick={() => {
+                    setDial(false);
+                    onChange({ ...value, minute: m });
+                  }}
+                  aria-label={`${label} ${pad(m)}분`}
+                >
+                  :{pad(m)}
+                </Chip>
+              ))}
+              <Chip active={custom || dial} onClick={() => setDial(!dial)} aria-label={`${label} 분 직접`} className="col-span-2">
+                {custom ? `🕒 :${pad(value.minute)}` : "🕒 직접 (1분 단위)"}
+              </Chip>
+            </div>
+          </div>
+          {/* 1분 단위: 시계 바늘을 돌리거나 ±1분 */}
+          {dial && <MinuteDial label={label} minute={value.minute} onChange={(m) => onChange({ ...value, minute: m })} onDone={() => setDial(false)} />}
+        </div>
+      )}
+    </fieldset>
   );
 }
