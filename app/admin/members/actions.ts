@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
+import { pushConfigured, sendPushToUser } from "@/lib/push";
 import { requireAdmin, requireSuperAdmin } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
@@ -10,6 +12,17 @@ export async function setMemberRole(userId: string, role: "admin" | "student"): 
   const supabase = await createClient();
   const { error } = await supabase.rpc("set_user_role", { p_user: userId, p_role: role });
   if (error) return { error: error.message };
+  // 관리자로 임명되면 그 회원의 휴대폰·PC로 알림 (응답은 기다리지 않는다)
+  if (role === "admin" && pushConfigured()) {
+    after(() =>
+      sendPushToUser(userId, {
+        title: "🎉 학생회 관리자로 임명됐어요",
+        body: "이제 공지 등록·일정 검수, 질문 답변, 소통방 관리를 할 수 있어요. 눌러서 관리 화면을 열어 보세요.",
+        url: "/admin",
+        tag: `role-admin:${userId}`,
+      }).catch(() => {}),
+    );
+  }
   revalidatePath("/admin", "layout");
   return {};
 }

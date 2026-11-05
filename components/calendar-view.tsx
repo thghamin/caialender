@@ -15,6 +15,7 @@ import "@fullcalendar/react/themes/classic/palette.css";
 import { toggleInterest } from "@/app/my/actions";
 import { toggleReminder } from "@/app/notifications/actions";
 import { formatKst } from "@/lib/datetime";
+import { shortTitle } from "@/lib/calendar-title";
 import { CALENDAR_LABEL, KIND_LABEL, type CalendarKind, type EventKind } from "@/lib/types";
 
 export type CalendarItem = {
@@ -107,6 +108,8 @@ export function CalendarView({ items, loggedIn = false, manage }: { items: Calen
         dayMaxEvents={mobile ? 2 : 3}
         // 주 보기: 시간 칸(0~24시) 대신 한 주를 큰 칸으로. 여러 날 일정은 막대로 이어지고, 그날 일정은 모두 보인다
         views={{ dayGridWeek: { dayMaxEvents: false, titleFormat: { month: "long", day: "numeric" } } }}
+        // 보기 버튼: 월간 / 주간 / 목록 (목록을 눌러야 그달 일정 전체를 한눈에 본다는 걸 바로 알게)
+        buttons={{ dayGridMonth: { text: "월간" }, dayGridWeek: { text: "주간" }, listMonth: { text: "목록" } }}
         datesSet={(a) => setWeek(a.view.type === "dayGridWeek")}
         // 휴대폰: 버튼·'+N'·칸을 가볍게 (globals.css의 cal-* 참고)
         buttonClass="cal-btn"
@@ -123,28 +126,33 @@ export function CalendarView({ items, loggedIn = false, manage }: { items: Calen
         dayHeaderClass={(a) => (a.dow === 0 ? "cal-sun" : a.dow === 6 ? "cal-sat" : "")}
         // 일정은 연한 색 막대 + 왼쪽 진한 선, 제목은 한 줄 (전체 제목은 눌러서 보기)
         eventDisplay="block"
-        eventContent={(arg) => (
-          <div
-            className="cal-ev"
-            style={{ boxShadow: `inset 3px 0 0 ${arg.event.extendedProps.base as string}` }}
-            title={arg.timeText ? `${arg.timeText} ${arg.event.title}` : arg.event.title}
-          >
-            {arg.timeText && !arg.event.allDay && <span className="cal-ev-time">{arg.timeText}</span>}
-            <span className="cal-ev-title">{arg.event.title}</span>
-          </div>
-        )}
+        eventContent={(arg) => {
+          const p = arg.event.extendedProps as { base: string; full: string; short: string; prefix: string };
+          // 휴대폰 월간 보기는 칸이 좁아 앞의 연도·학기를 뗀 짧은 제목(핵심 단어부터), 목록·주간·PC는 전체 제목
+          const title = p.prefix + (mobile && arg.view.type === "dayGridMonth" ? p.short : p.full);
+          return (
+            <div
+              className="cal-ev"
+              style={{ "--ev-base": p.base } as React.CSSProperties}
+              title={arg.timeText ? `${arg.timeText} ${p.prefix}${p.full}` : p.prefix + p.full}
+            >
+              {arg.timeText && !arg.event.allDay && <span className="cal-ev-time">{arg.timeText}</span>}
+              <span className="cal-ev-title">{title}</span>
+            </div>
+          );
+        }}
         events={items.map((i) => {
           const base = COLORS[colorKey(i)];
           return {
             id: i.id,
-            // 휴대폰은 칸이 좁아 ⏰는 빼고 색으로만 마감 표시 (범례 참고)
-            title: `${i.kind === "deadline" && !mobile ? "⏰ " : ""}${i.interested ? "★ " : ""}${i.title}`,
+            title: i.title,
             start: i.start,
             end: endForCalendar(i),
             allDay: i.allDay,
             color: `color-mix(in srgb, ${base} 15%, white)`,
             contrastColor: `color-mix(in srgb, ${base} 70%, black)`,
-            extendedProps: { base },
+            // 휴대폰은 칸이 좁아 ⏰는 빼고 색으로만 마감 표시 (범례 참고)
+            extendedProps: { base, full: i.title, short: shortTitle(i.title), prefix: `${i.kind === "deadline" && !mobile ? "⏰ " : ""}${i.interested ? "★ " : ""}` },
           };
         })}
         eventClick={(info) => {

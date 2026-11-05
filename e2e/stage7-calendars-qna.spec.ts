@@ -50,11 +50,11 @@ test.afterAll(async () => {
 });
 
 
-/** 달력에서 일정을 누른다. 그날 일정이 많아 '+N'에 숨어 있으면 '일정'(목록) 보기로 바꿔서 누른다 */
+/** 달력에서 일정을 누른다. 그날 일정이 많아 '+N'에 숨어 있으면 '목록' 보기로 바꿔서 누른다 */
 async function clickCalendarEvent(page: Page, title: string) {
   const cal = page.locator(".caialender-calendar");
   await expect(cal).toBeVisible();
-  if (!(await cal.getByText(title).first().isVisible())) await cal.getByText("일정", { exact: true }).click();
+  if (!(await cal.getByText(title).first().isVisible())) await cal.getByText("목록", { exact: true }).click();
   await cal.getByText(title).first().click();
 }
 

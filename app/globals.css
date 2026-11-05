@@ -152,6 +152,8 @@ body {
 
 /* 일정 막대: 연한 바탕 + 왼쪽 진한 선, 제목 한 줄 … (전체 제목은 눌러서) */
 .cal-ev {
+  /* 왼쪽 진한 선 (일정 종류 색) */
+  box-shadow: inset 3px 0 0 var(--ev-base);
   display: flex;
   align-items: center;
   gap: 4px;
@@ -238,14 +240,23 @@ body {
     display: none;
   }
   .caialender-calendar .cal-more {
+    /* '+1' '+2': 연한 테마색 바탕의 작은 알약으로 또렷하게 */
+    display: inline-flex;
+    width: fit-content;
     border: 0 !important;
-    background: transparent !important;
+    background: color-mix(in srgb, var(--accent) 12%, white) !important;
     box-shadow: none !important;
-    padding: 0 3px !important;
-    margin-top: 1px;
+    border-radius: 9999px !important;
+    padding: 0 6px !important;
+    margin: 1px 0 0 2px;
     font-size: 10px;
-    font-weight: 700;
-    color: #71717a;
+    font-weight: 800;
+    line-height: 1.5;
+    color: color-mix(in srgb, var(--accent) 75%, black);
+  }
+  /* 왼쪽 선은 휴대폰에서 얇게 (글자 자리를 더 준다) */
+  .cal-ev {
+    box-shadow: inset 2px 0 0 var(--ev-base);
   }
 }
 

@@ -3,7 +3,7 @@ import { formatKst } from "@/lib/datetime";
 import { requireAdmin } from "@/lib/auth";
 import { createServiceClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui";
-import { APPROVAL_LABEL, ROLE_LABEL, type ApprovalStatus, type Profile, type Role } from "@/lib/types";
+import { APPROVAL_LABEL, ROLE_LABEL, type ApprovalStatus, type Profile } from "@/lib/types";
 import { ApprovalButtons, RoleButton } from "./role-button";
 
 type Member = Profile & { email: string; created_at: string };
@@ -16,7 +16,9 @@ const STATUS_STYLE: Record<ApprovalStatus, string> = {
 
 export default async function MembersPage({ searchParams }: PageProps<"/admin/members">) {
   const me = await requireAdmin();
-  const { q: rawQ } = await searchParams;
+  const { q: rawQ, sort: rawSort } = await searchParams;
+  // 정렬: 가입순(최근 가입 먼저, 기본) / 이름순(가나다)
+  const sort = rawSort === "name" ? "name" : "joined";
   const q = typeof rawQ === "string" ? rawQ.trim().toLowerCase() : "";
 
   // 이메일은 auth 스키마에만 있어서, 관리자 확인 후 서버에서만 service role로 읽는다
@@ -30,7 +32,7 @@ export default async function MembersPage({ searchParams }: PageProps<"/admin/me
   const waiting = all.filter((m) => m.approval_status === "pending").sort((a, b) => a.created_at.localeCompare(b.created_at));
   const members = all
     .filter((m) => !q || m.email.toLowerCase().includes(q) || m.name.toLowerCase().includes(q) || (m.student_no ?? "").includes(q))
-    .sort((a, b) => order(a.role) - order(b.role) || a.name.localeCompare(b.name, "ko"));
+    .sort((a, b) => (sort === "name" ? a.name.localeCompare(b.name, "ko") || b.created_at.localeCompare(a.created_at) : b.created_at.localeCompare(a.created_at)));
 
   // DB 함수(set_approval)와 같은 규칙: 총관리자·자기 자신은 제외, 관리자의 상태는 총관리자만
   const canApprove = (m: Member) => m.id !== me.id && m.role !== "super_admin" && (m.role === "student" || me.role === "super_admin");
@@ -58,7 +60,8 @@ export default async function MembersPage({ searchParams }: PageProps<"/admin/me
       <Card className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-[1.05rem] font-bold">전체 회원 ({all.length})</h2>
-          <form className="flex w-full gap-2 sm:w-auto">
+          <form className="flex w-full flex-wrap gap-2 sm:w-auto">
+            <input type="hidden" name="sort" value={sort} />
             <input
               name="q"
               defaultValue={q}
@@ -67,6 +70,19 @@ export default async function MembersPage({ searchParams }: PageProps<"/admin/me
             />
             <button className="shrink-0 rounded-lg border border-zinc-300 bg-white px-3 text-sm hover:bg-zinc-100">검색</button>
           </form>
+        </div>
+        <div className="flex items-center gap-1.5" role="group" aria-label="정렬">
+          {([["joined", "가입순"], ["name", "이름순"]] as const).map(([k, label]) => (
+            <Link
+              key={k}
+              href={{ pathname: "/admin/members", query: { ...(q ? { q } : {}), sort: k } }}
+              aria-current={sort === k ? "true" : undefined}
+              className={`rounded-full px-3 py-1 text-[13px] font-semibold ${sort === k ? "bg-brand text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"}`}
+            >
+              {label}
+            </Link>
+          ))}
+          <span className="ml-1 text-xs text-zinc-400">{sort === "joined" ? "최근 가입한 회원부터" : "이름 가나다순"}</span>
         </div>
         <MemberTable members={members} me={me} canApprove={canApprove} />
       </Card>
@@ -171,4 +187,3 @@ function MemberTable({ members, me, canApprove }: { members: Member[]; me: Profi
 /** 가입 일시 "2026. 11. 2(월) 15:31" (KST, 분까지) */
 const joined = (iso: string) => `${new Date(new Date(iso).getTime() + 9 * 3600_000).getUTCFullYear()}. ${formatKst(iso).replace("월 ", ". ").replace("일", "")}`;
 
-const order = (r: Role) => (r === "super_admin" ? 0 : r === "admin" ? 1 : 2);
