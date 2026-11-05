@@ -75,19 +75,20 @@ export default async function MembersPage({ searchParams }: PageProps<"/admin/me
             <button className="shrink-0 rounded-lg border border-zinc-300 bg-white px-3 text-sm hover:bg-zinc-100">검색</button>
           </form>
         </div>
-        <div className="flex items-center gap-1.5" role="group" aria-label="정렬">
+        {/* 정렬 버튼: 한 줄로, 설명은 휴대폰에서 아래 줄 */}
+        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1" role="group" aria-label="정렬">
           {([["role", "기본"], ["joined", "가입순"], ["name", "이름순"]] as const).map(([k, label]) => (
             <Link
               key={k}
               href={{ pathname: "/admin/members", query: { ...(q ? { q } : {}), ...(k === "role" ? {} : { sort: k }) } }}
               aria-current={sort === k ? "true" : undefined}
-              className={`rounded-full px-3 py-1 text-[13px] font-semibold ${sort === k ? "bg-brand text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"}`}
+              className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-1.5 text-[13px] font-semibold ${sort === k ? "bg-brand text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"}`}
             >
               {label}
             </Link>
           ))}
-          <span className="ml-1 text-xs text-zinc-400">
-            {sort === "role" ? "총관리자 → 학생회 관리자 → 학생 (같은 권한은 이름순)" : sort === "joined" ? "최근 가입한 회원부터" : "이름 가나다순"}
+          <span className="w-full text-xs text-zinc-400 sm:ml-1 sm:w-auto">
+            {sort === "role" ? "총관리자 → 관리자 → 학생 순 · 같은 권한은 이름순" : sort === "joined" ? "최근 가입한 회원부터" : "이름 가나다순"}
           </span>
         </div>
         <MemberTable members={members} me={me} canApprove={canApprove} />
