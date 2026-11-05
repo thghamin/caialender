@@ -7,6 +7,7 @@ import { isMyColor, MY_COLOR_COOKIE, userColorVars } from "@/lib/my-color";
 import { PC_VIEWPORT_WIDTH, VIEW_MODE_COOKIE } from "@/lib/view-mode";
 import { ViewModeToggle } from "@/components/view-mode-toggle";
 import { InAppGuard } from "@/components/in-app-guard";
+import { AppSplash, SPLASH_SCRIPT } from "@/components/app-splash";
 import "./globals.css";
 
 const geistMono = Geist_Mono({
@@ -59,6 +60,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ko" className={`${geistMono.variable} h-full antialiased`} style={colorVars as React.CSSProperties}>
       <head>
+        {/* 시작 화면을 이 탭에서 이미 봤으면 그리기 전에 숨긴다 */}
+        <script dangerouslySetInnerHTML={{ __html: SPLASH_SCRIPT }} />
         {/* Pretendard는 PC 화면에서만 받는다(media). 휴대폰은 기기 기본 글꼴이라 내려받지 않는다 */}
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
         <link
@@ -68,6 +71,8 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         />
       </head>
       <body className="min-h-full flex flex-col bg-zinc-50 text-zinc-900">
+        {/* 휴대폰: 앱을 열면 1초 남짓 로고 시작 화면 */}
+        <AppSplash />
         {/* 카카오톡 등 앱 안의 브라우저면 Safari/크롬으로 열도록 (로그인 화면 포함 모든 화면) */}
         <InAppGuard />
         <SiteHeader />

@@ -36,7 +36,7 @@ export default async function CafeteriaPage({ searchParams }: PageProps<"/cafete
   return (
     <div className="flex flex-col gap-4">
       <PageHero
-        tone="custom"
+        tone="meal"
         badge="공학관 학생식당"
         title="공식당 메뉴"
         subtitle={

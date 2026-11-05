@@ -4,7 +4,6 @@ import { useEffect, useState, useSyncExternalStore, useTransition } from "react"
 import Link from "next/link";
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/react/daygrid";
-import timeGridPlugin from "@fullcalendar/react/timegrid";
 import listPlugin from "@fullcalendar/react/list";
 import interactionPlugin from "@fullcalendar/react/interaction";
 import { useRouter } from "next/navigation";
@@ -85,11 +84,12 @@ export function CalendarView({ items, loggedIn = false, manage }: { items: Calen
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = items.find((i) => i.id === selectedId) ?? null;
   const mobile = useIsMobile();
+  const [week, setWeek] = useState(false);
 
   return (
-    <div className="caialender-calendar">
+    <div className={`caialender-calendar ${week ? "cal-week" : ""}`}>
       <FullCalendar
-        plugins={[dayGridPlugin, timeGridPlugin, listPlugin, classicThemePlugin, interactionPlugin]}
+        plugins={[dayGridPlugin, listPlugin, classicThemePlugin, interactionPlugin]}
         // 관리자: 빈 날짜를 누르면 그날로 일정 추가 화면
         dateClick={manage ? (info) => router.push(`/admin/events/new?date=${info.dateStr.slice(0, 10)}&cal=${manage.calendar}`) : undefined}
         locale={koLocale}
@@ -98,13 +98,16 @@ export function CalendarView({ items, loggedIn = false, manage }: { items: Calen
         headerToolbar={
           mobile
             ? { start: "prev,next", center: "title", end: "today" }
-            : { start: "prev,next today", center: "title", end: "dayGridMonth,timeGridWeek,listMonth" }
+            : { start: "prev,next today", center: "title", end: "dayGridMonth,dayGridWeek,listMonth" }
         }
         footerToolbar={mobile ? { center: "dayGridMonth,listMonth" } : undefined}
         height="auto"
         // 그달에 필요한 주만 (다음 달 날짜만 있는 빈 줄을 그리지 않는다)
         fixedWeekCount={false}
         dayMaxEvents={mobile ? 2 : 3}
+        // 주 보기: 시간 칸(0~24시) 대신 한 주를 큰 칸으로. 여러 날 일정은 막대로 이어지고, 그날 일정은 모두 보인다
+        views={{ dayGridWeek: { dayMaxEvents: false, titleFormat: { month: "long", day: "numeric" } } }}
+        datesSet={(a) => setWeek(a.view.type === "dayGridWeek")}
         // 휴대폰: 버튼·'+N'·칸을 가볍게 (globals.css의 cal-* 참고)
         buttonClass="cal-btn"
         toolbarTitleClass="cal-title"

@@ -1,8 +1,8 @@
 // 페이지 상단 카드: 연한 파스텔 색 + 오른쪽 그림(달력·말풍선). 제목은 마지막 단어만 색으로 강조
 // 학과(초록)·학사(빨강)·질문(보라)은 고정색, 내 캘린더·시간표·소통방은 사용자가 고른 색(--brand)의 연한 버전
-export type HeroTone = "knu" | "dept" | "my" | "chat" | "timetable" | "qna" | "custom";
+export type HeroTone = "knu" | "dept" | "my" | "chat" | "timetable" | "qna" | "meal" | "custom";
 
-type Art = "check" | "star" | "chat" | "question";
+type Art = "check" | "star" | "chat" | "question" | "meal";
 const TONES: Record<HeroTone, { card: string; badge: string; accent: string; main: string; soft: string; deep: string; art: Art; bell?: boolean; watermark?: string }> = {
   knu: {
     card: "from-rose-50 via-white to-red-100/70 ring-red-200/60",
@@ -62,6 +62,16 @@ const TONES: Record<HeroTone, { card: string; badge: string; accent: string; mai
     deep: "#7039e0",
     art: "question",
   },
+  // 공식당 메뉴: 사용자 색 + 밥그릇 그림
+  meal: {
+    card: "from-brand-soft via-white to-brand-soft ring-brand/20",
+    badge: "bg-brand-soft text-brand ring-brand/25",
+    accent: "text-brand",
+    main: "var(--brand)",
+    soft: "color-mix(in srgb, var(--brand) 15%, white)",
+    deep: "var(--brand-dark)",
+    art: "meal",
+  },
   custom: {
     card: "from-brand-soft via-white to-brand-soft ring-brand/20",
     badge: "bg-brand-soft text-brand ring-brand/25",
@@ -90,7 +100,32 @@ function HeroArt({ tone }: { tone: HeroTone }) {
       </defs>
       {/* 움직임 선 */}
       <path d="M20 46l10 6M16 64h12M24 30l7 9" stroke={t.main} strokeWidth="4" strokeLinecap="round" opacity="0.75" />
-      {t.art === "chat" || t.art === "question" ? (
+      {t.art === "meal" ? (
+        <g filter={`url(#hero-shadow-${tone})`}>
+          {/* 김 */}
+          <g stroke={t.main} strokeWidth="4" strokeLinecap="round" fill="none" opacity="0.55">
+            <path d="M66 40c-6-6 6-10 0-17" />
+            <path d="M82 36c-6-6 6-10 0-17" />
+            <path d="M98 40c-6-6 6-10 0-17" />
+          </g>
+          {/* 젓가락 */}
+          <path d="M112 30l26-18M118 36l26-18" stroke={t.deep} strokeWidth="4.5" strokeLinecap="round" />
+          {/* 밥 */}
+          <path d="M44 74c2-16 18-26 38-26s36 10 38 26z" fill="#fff" />
+          <g fill={t.soft}>
+            <ellipse cx="66" cy="62" rx="3" ry="2" />
+            <ellipse cx="84" cy="56" rx="3" ry="2" />
+            <ellipse cx="98" cy="64" rx="3" ry="2" />
+            <ellipse cx="76" cy="68" rx="3" ry="2" />
+          </g>
+          {/* 그릇 */}
+          <path d="M34 74h96c0 26-20 44-48 44S34 100 34 74z" fill={t.main} />
+          <path d="M34 74h96" stroke={t.deep} strokeWidth="5" strokeLinecap="round" />
+          <path d="M60 118h44l-4 8H64z" fill={t.deep} />
+          {/* 그릇 무늬 */}
+          <path d="M50 90c10 6 54 6 64 0" stroke="#fff" strokeWidth="3" strokeLinecap="round" fill="none" opacity="0.6" />
+        </g>
+      ) : t.art === "chat" || t.art === "question" ? (
         <g filter={`url(#hero-shadow-${tone})`}>
           {/* 뒤 말풍선 (흰색) */}
           <path d="M70 70h56a16 16 0 0 1 16 16v20a16 16 0 0 1-16 16h-8l2 12-14-12H70a16 16 0 0 1-16-16V86a16 16 0 0 1 16-16z" fill="#fff" />
