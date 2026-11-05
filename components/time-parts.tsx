@@ -3,7 +3,7 @@
 import { useRef } from "react";
 
 // 시간 고르기 공용 부품: 버튼 칩, 오전/오후·시 선택, 분 시계(드래그)
-// 개인 일정은 :00/:30 버튼, 내 시간표는 5분 단위 시계로 분을 고른다.
+// 개인 일정은 10분 단위 버튼 + 1분 단위 시계, 내 시간표는 5분 단위 시계로 분을 고른다.
 
 export type Clock = { ampm: "am" | "pm"; hour: number; minute: number }; // hour 1~12
 

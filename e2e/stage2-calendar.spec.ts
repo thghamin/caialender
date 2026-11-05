@@ -117,10 +117,14 @@ test("개인 일정: 내 캘린더에 담은 학과 일정과 겹치면 경고, 
   await page.getByLabel("제목").fill("스터디");
   await page.getByLabel("날짜").fill(ymd(kstDay(6)));
   await pick("시작", "오전", 10);
-  // 개인 일정의 분은 :00 / :30 두 가지뿐
+  // 분은 10분 단위 버튼, '직접'을 누르면 시계로 1분 단위 (± 버튼)
   await pick("종료", "오후", 12, "30");
-  await expect(page.getByRole("button", { name: "종료 10분" })).toHaveCount(0);
-  await expect(page.getByText("오전 10:00 ~ 오후 12:30")).toBeVisible();
+  await page.getByRole("button", { name: "종료 분 직접" }).click();
+  await expect(page.getByRole("slider", { name: "종료 분" })).toBeVisible();
+  await page.getByRole("button", { name: "종료 1분 더하기" }).click();
+  await page.getByRole("button", { name: "종료 1분 더하기" }).click();
+  await page.getByRole("button", { name: "완료" }).click();
+  await expect(page.getByText("오전 10:00 ~ 오후 12:32")).toBeVisible();
   await page.getByRole("button", { name: "추가", exact: true }).click();
   // 실제 학과 일정(시간 지정 여러 날 일정 등)과 겹칠 수 있으니 경고가 뜨면 확인하고 저장
   const saved = page.getByText("개인 일정을 추가했습니다.");

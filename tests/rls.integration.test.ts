@@ -155,6 +155,24 @@ run("인증·RLS 통합 테스트", () => {
     expect(a.error).not.toBeNull();
   });
 
+  it("베타 의견: 보낸 사람은 자기 것만, 관리자는 전부 보고 확인 표시는 관리자만", async () => {
+    const { data: mine, error } = await student.from("feedback").insert({ body: "rls 의견 테스트" }).select("id").single();
+    expect(error).toBeNull();
+    expect((await student2.from("feedback").select("id").eq("id", mine!.id)).data).toEqual([]);
+    expect((await student.from("feedback").select("id").eq("id", mine!.id)).data).toHaveLength(1);
+    expect((await admin.from("feedback").select("id").eq("id", mine!.id)).data).toHaveLength(1);
+    // 학생은 확인 표시를 못 하고, 남의 이름으로 보낼 수도 없다
+    await student.from("feedback").update({ handled: true }).eq("id", mine!.id);
+    expect((await admin.from("feedback").select("handled").eq("id", mine!.id).single()).data?.handled).toBe(false);
+    const { data: s2 } = await student2.auth.getUser();
+    expect((await student.from("feedback").insert({ body: "남의 이름", user_id: s2.user!.id })).error).not.toBeNull();
+    // 승인 대기 회원은 보낼 수 없다
+    expect((await pendingUser.from("feedback").insert({ body: "대기 중 의견" })).error).not.toBeNull();
+    await admin.from("feedback").update({ handled: true }).eq("id", mine!.id);
+    expect((await admin.from("feedback").select("handled").eq("id", mine!.id).single()).data?.handled).toBe(true);
+    await admin.from("feedback").delete().eq("id", mine!.id);
+  });
+
   it("브리핑 캐시는 클라이언트에서 쓸 수 없다", async () => {
     const r = await admin.from("briefings").insert({ week_start: "2027-03-15", content: "x", source_hash: "x" });
     expect(r.error).not.toBeNull();

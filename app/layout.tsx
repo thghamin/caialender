@@ -8,6 +8,8 @@ import { PC_VIEWPORT_WIDTH, VIEW_MODE_COOKIE } from "@/lib/view-mode";
 import { ViewModeToggle } from "@/components/view-mode-toggle";
 import { InAppGuard } from "@/components/in-app-guard";
 import { AppSplash, SPLASH_SCRIPT } from "@/components/app-splash";
+import { FeedbackButton } from "@/app/feedback/feedback-button";
+import { getCurrentUserId } from "@/lib/auth";
 import "./globals.css";
 
 const geistMono = Geist_Mono({
@@ -57,6 +59,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
   const saved = cookieStore.get(MY_COLOR_COOKIE)?.value;
   const viewMode = cookieStore.get(VIEW_MODE_COOKIE)?.value === "pc" ? "pc" : "mobile";
   const colorVars = isMyColor(saved) ? userColorVars(saved) : undefined;
+  const loggedIn = !!(await getCurrentUserId());
   return (
     <html lang="ko" className={`${geistMono.variable} h-full antialiased`} style={colorVars as React.CSSProperties}>
       <head>
@@ -91,9 +94,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           <p className="max-w-md text-center text-[11.5px] leading-relaxed text-zinc-400" data-testid="beta-note">
             <span className="mr-1 rounded-full bg-zinc-200/70 px-1.5 py-px text-[10.5px] font-bold text-zinc-500">BETA</span>
             C:AI:ender는 아직 정식 출시 전 서비스예요. 사용하면서 받는 피드백을 바탕으로 계속 보완하고 있어요.{" "}
-            <Link href="/qna" prefetch={false} className="font-semibold text-zinc-500 underline underline-offset-2 hover:text-zinc-700">
-              의견 남기기
-            </Link>
+            <FeedbackButton loggedIn={loggedIn} />
           </p>
         </footer>
       </body>

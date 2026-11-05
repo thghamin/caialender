@@ -17,8 +17,8 @@ const STATUS_STYLE: Record<ApprovalStatus, string> = {
 export default async function MembersPage({ searchParams }: PageProps<"/admin/members">) {
   const me = await requireAdmin();
   const { q: rawQ, sort: rawSort } = await searchParams;
-  // 정렬: 가입순(최근 가입 먼저, 기본) / 이름순(가나다)
-  const sort = rawSort === "name" ? "name" : "joined";
+  // 정렬: 기본(총관리자 → 학생회 관리자 → 학생, 같은 권한 안에서는 이름순) / 가입순(최근 가입 먼저) / 이름순(가나다)
+  const sort = rawSort === "name" ? "name" : rawSort === "joined" ? "joined" : "role";
   const q = typeof rawQ === "string" ? rawQ.trim().toLowerCase() : "";
 
   // 이메일은 auth 스키마에만 있어서, 관리자 확인 후 서버에서만 service role로 읽는다
@@ -32,7 +32,11 @@ export default async function MembersPage({ searchParams }: PageProps<"/admin/me
   const waiting = all.filter((m) => m.approval_status === "pending").sort((a, b) => a.created_at.localeCompare(b.created_at));
   const members = all
     .filter((m) => !q || m.email.toLowerCase().includes(q) || m.name.toLowerCase().includes(q) || (m.student_no ?? "").includes(q))
-    .sort((a, b) => (sort === "name" ? a.name.localeCompare(b.name, "ko") || b.created_at.localeCompare(a.created_at) : b.created_at.localeCompare(a.created_at)));
+    .sort((a, b) =>
+      sort === "joined"
+        ? b.created_at.localeCompare(a.created_at)
+        : (sort === "role" ? ROLE_ORDER[a.role] - ROLE_ORDER[b.role] : 0) || a.name.localeCompare(b.name, "ko") || b.created_at.localeCompare(a.created_at),
+    );
 
   // DB 함수(set_approval)와 같은 규칙: 총관리자·자기 자신은 제외, 관리자의 상태는 총관리자만
   const canApprove = (m: Member) => m.id !== me.id && m.role !== "super_admin" && (m.role === "student" || me.role === "super_admin");
@@ -61,7 +65,7 @@ export default async function MembersPage({ searchParams }: PageProps<"/admin/me
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-[1.05rem] font-bold">전체 회원 ({all.length})</h2>
           <form className="flex w-full flex-wrap gap-2 sm:w-auto">
-            <input type="hidden" name="sort" value={sort} />
+            {sort !== "role" && <input type="hidden" name="sort" value={sort} />}
             <input
               name="q"
               defaultValue={q}
@@ -72,17 +76,19 @@ export default async function MembersPage({ searchParams }: PageProps<"/admin/me
           </form>
         </div>
         <div className="flex items-center gap-1.5" role="group" aria-label="정렬">
-          {([["joined", "가입순"], ["name", "이름순"]] as const).map(([k, label]) => (
+          {([["role", "기본"], ["joined", "가입순"], ["name", "이름순"]] as const).map(([k, label]) => (
             <Link
               key={k}
-              href={{ pathname: "/admin/members", query: { ...(q ? { q } : {}), sort: k } }}
+              href={{ pathname: "/admin/members", query: { ...(q ? { q } : {}), ...(k === "role" ? {} : { sort: k }) } }}
               aria-current={sort === k ? "true" : undefined}
               className={`rounded-full px-3 py-1 text-[13px] font-semibold ${sort === k ? "bg-brand text-white" : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200"}`}
             >
               {label}
             </Link>
           ))}
-          <span className="ml-1 text-xs text-zinc-400">{sort === "joined" ? "최근 가입한 회원부터" : "이름 가나다순"}</span>
+          <span className="ml-1 text-xs text-zinc-400">
+            {sort === "role" ? "총관리자 → 학생회 관리자 → 학생 (같은 권한은 이름순)" : sort === "joined" ? "최근 가입한 회원부터" : "이름 가나다순"}
+          </span>
         </div>
         <MemberTable members={members} me={me} canApprove={canApprove} />
       </Card>
@@ -183,6 +189,8 @@ function MemberTable({ members, me, canApprove }: { members: Member[]; me: Profi
     </>
   );
 }
+
+const ROLE_ORDER: Record<Profile["role"], number> = { super_admin: 0, admin: 1, student: 2 };
 
 /** 가입 일시 "2026. 11. 2(월) 15:31" (KST, 분까지) */
 const joined = (iso: string) => `${new Date(new Date(iso).getTime() + 9 * 3600_000).getUTCFullYear()}. ${formatKst(iso).replace("월 ", ". ").replace("일", "")}`;

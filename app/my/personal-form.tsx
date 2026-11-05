@@ -4,7 +4,7 @@ import { startTransition, useActionState, useState } from "react";
 import { addPersonalEvent } from "./actions";
 import { Alert, Button, Field } from "@/components/ui";
 import { formatKst } from "@/lib/datetime";
-import { AmPmHourPicker, Chip, clockLabel, fromMinutes, toMinutes, type Clock } from "@/components/time-parts";
+import { AmPmHourPicker, Chip, clockLabel, fromMinutes, MinuteDial, toMinutes, type Clock } from "@/components/time-parts";
 
 // ───────── 시간 계산: 모두 KST 기준 "YYYY-MM-DDTHH:mm" 문자열로 다룬다 ─────────
 
@@ -22,7 +22,7 @@ function addDays(date: string, days: number) {
 }
 const kstLocal = (iso: string) => new Date(new Date(iso).getTime() + 9 * 3600_000).toISOString().slice(0, 16);
 
-const MINUTES = [0, 30];
+const MINUTES = [0, 10, 20, 30, 40, 50];
 
 function initialState(nowIso: string, values?: { start: string; end: string }) {
   if (values?.start && values?.end) {
@@ -145,8 +145,10 @@ function InnerForm({ state, action, pending, nowIso }: {
   );
 }
 
-/** 오전/오후 → 시(1~12) → 분(:00 / :30)을 버튼으로 고른다 */
+/** 오전/오후 → 시(1~12) → 분(10분 단위 버튼, '🕒 직접'을 누르면 시계로 1분 단위)을 고른다 */
 function ClockPicker({ label, value, onChange, hint }: { label: string; value: Clock; onChange: (c: Clock) => void; hint?: string }) {
+  const [dial, setDial] = useState(false);
+  const custom = !MINUTES.includes(value.minute);
   return (
     <fieldset className="flex flex-col gap-1.5 text-sm">
       <legend className="mb-1.5 font-medium text-zinc-700">
@@ -154,16 +156,29 @@ function ClockPicker({ label, value, onChange, hint }: { label: string; value: C
         {hint && <span className="ml-1 text-xs font-normal text-zinc-400">{hint}</span>}
       </legend>
       <AmPmHourPicker label={label} value={value} onChange={onChange} />
-      <div className="flex items-center gap-1">
-        <span className="w-6 shrink-0 text-xs text-zinc-500">분</span>
-        <div className="grid flex-1 grid-cols-2 gap-1">
+      <div className="flex items-start gap-1">
+        <span className="mt-2 w-6 shrink-0 text-xs text-zinc-500">분</span>
+        <div className="grid flex-1 grid-cols-4 gap-1">
           {MINUTES.map((m) => (
-            <Chip key={m} active={value.minute === m} onClick={() => onChange({ ...value, minute: m })} aria-label={`${label} ${pad(m)}분`}>
+            <Chip
+              key={m}
+              active={value.minute === m && !dial}
+              onClick={() => {
+                setDial(false);
+                onChange({ ...value, minute: m });
+              }}
+              aria-label={`${label} ${pad(m)}분`}
+            >
               :{pad(m)}
             </Chip>
           ))}
+          <Chip active={custom || dial} onClick={() => setDial(!dial)} aria-label={`${label} 분 직접`} className="col-span-2">
+            {custom ? `🕒 :${pad(value.minute)}` : "🕒 직접 (1분 단위)"}
+          </Chip>
         </div>
       </div>
+      {/* 1분 단위: 시계 바늘을 돌리거나 ±1분 */}
+      {dial && <MinuteDial label={label} minute={value.minute} onChange={(m) => onChange({ ...value, minute: m })} onDone={() => setDial(false)} />}
     </fieldset>
   );
 }
